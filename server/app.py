@@ -47,6 +47,14 @@ def resolve_config_path() -> pathlib.Path:
                 return app_bundle_dir / "config.json"
             return mac_cfg
 
+        if sys.platform.startswith("linux"):
+            cwd_cfg = pathlib.Path.cwd() / "config.json"
+            if cwd_cfg.exists():
+                return cwd_cfg
+            linux_cfg_dir = pathlib.Path.home() / ".config" / "buaa-signin"
+            linux_cfg_dir.mkdir(parents=True, exist_ok=True)
+            return linux_cfg_dir / "config.json"
+
         appdata = os.environ.get("APPDATA")
         if appdata:
             appdata_dir = pathlib.Path(appdata) / "BUAA-Signin"
@@ -149,6 +157,16 @@ def save_config(cfg: Dict[str, Any]):
             mac_support_dir = pathlib.Path.home() / "Library" / "Application Support" / "BUAA-Signin"
             mac_support_dir.mkdir(parents=True, exist_ok=True)
             fallback_cfg = mac_support_dir / "config.json"
+            try:
+                with open(fallback_cfg, "w", encoding="utf-8") as f:
+                    json.dump(cfg, f, ensure_ascii=False, indent=2)
+                CONFIG_FILE = fallback_cfg
+            except Exception:
+                pass
+        elif sys.platform.startswith("linux"):
+            linux_cfg_dir = pathlib.Path.home() / ".config" / "buaa-signin"
+            linux_cfg_dir.mkdir(parents=True, exist_ok=True)
+            fallback_cfg = linux_cfg_dir / "config.json"
             try:
                 with open(fallback_cfg, "w", encoding="utf-8") as f:
                     json.dump(cfg, f, ensure_ascii=False, indent=2)

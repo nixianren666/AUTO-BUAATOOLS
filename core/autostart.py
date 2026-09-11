@@ -24,6 +24,13 @@ def get_mac_plist_path() -> pathlib.Path:
     return agents_dir / MAC_PLIST_NAME
 
 
+def get_linux_service_path() -> pathlib.Path:
+    """获取 Linux 专属 systemd user service 路径"""
+    service_dir = pathlib.Path.home() / ".config" / "systemd" / "user"
+    service_dir.mkdir(parents=True, exist_ok=True)
+    return service_dir / "buaa-signin.service"
+
+
 def get_executable_command() -> str:
     """获取启动命令，编译环境下为二进制绝对路径，源码环境下为 python + run.py"""
     if getattr(sys, "frozen", False):
@@ -54,6 +61,15 @@ def get_autostart_status() -> bool:
             return plist_path.exists() and plist_path.stat().st_size > 0
         except Exception as e:
             logger.warning(f"读取 macOS 自启配置失败: {e}")
+            return False
+    elif sys.platform.startswith("linux"):
+        if os.path.exists("/.dockerenv") or bool(os.environ.get("DOCKER_CONTAINER")):
+            return False
+        try:
+            service_file = get_linux_service_path()
+            return service_file.exists() and service_file.stat().st_size > 0
+        except Exception as e:
+            logger.warning(f"读取 Linux 自启服务失败: {e}")
             return False
     return False
 
@@ -115,6 +131,36 @@ def set_autostart(enable: bool) -> bool:
             return True
         except Exception as e:
             logger.error(f"设置 macOS 自启配置失败: {e}")
+            return False
+    elif sys.platform.startswith("linux"):
+        if os.path.exists("/.dockerenv") or bool(os.environ.get("DOCKER_CONTAINER")):
+            return True
+        try:
+            service_file = get_linux_service_path()
+            if enable:
+                service_content = f"""[Unit]
+Description=AUTO-BUAA Course Signin Pro Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}
+ExecStart={sys.executable} run.py --headless --host 0.0.0.0 --port 18346
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+"""
+                service_file.write_text(service_content, encoding="utf-8")
+                logger.info(f"已成功写入 Linux systemd 用户级自启动服务: {service_file}")
+            else:
+                if service_file.exists():
+                    service_file.unlink()
+                    logger.info(f"已移除 Linux systemd 用户级自启动服务: {service_file}")
+            return True
+        except Exception as e:
+            logger.warning(f"设置 Linux 自启服务失败: {e}")
             return False
     return False
 

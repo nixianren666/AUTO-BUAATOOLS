@@ -4,14 +4,14 @@
 
 ![AUTO-BUAA Logo](server/static/buaa_logo.svg)
 
-**北航师生专属的轻量化、多账号并发守护、博雅抢课打卡、Origin 极简质感桌面客户端**
+**北航师生专属的轻量化、多账号并发守护、博雅抢课打卡、Origin 极简质感全平台客户端**
 
-[![Version](https://img.shields.io/badge/version-1.2.0--beta-blue.svg)](https://github.com/)
+[![Version](https://img.shields.io/badge/version-1.2.0--beta-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 
-[免责声明](#-免责声明) • [项目介绍](#-项目介绍) • [核心特性](#-核心功能亮点) • [使用方法](#-使用方法) • [测试说明与反馈](#-测试阶段说明与问题反馈) • [鸣谢致敬](#-致谢与鸣谢)
+[免责声明](#-免责声明) • [项目介绍](#-项目介绍) • [核心特性](#-核心功能亮点) • [使用方法](#-使用方法) • [Linux & Docker 部署](#方案-5linux-服务器与-docker-极简部署247-云端守护-) • [测试说明与反馈](#-测试阶段说明与问题反馈) • [鸣谢致敬](#-致谢与鸣谢)
 
 </div>
 
@@ -21,7 +21,7 @@
 
 1. **用途限制**：本程序仅供北京航空航天大学师生在日常学习、自动化运维研究及个人开发场景下交流测试使用，**严禁将本软件用于任何商业用途、非法营利或侵害学校正当教学秩序的行为**。
 2. **责任边界**：使用本程序所产生的全部选课、签到、签退及出勤判定结果，均由**使用者本人独立承担全部责任与后果**。开发者团队及开源社区不对因软件故障、网络中断、学校官方接口升级或不可抗力等造成的未出勤、错过选课或其他衍生学业损失承担任何法律及民事责任。
-3. **安全与协议合规**：本程序为 **100% 纯本地客户端**，不设任何中心代理服务器，所有鉴权凭据及通信均直接与北航官方服务器（`sso.buaa.edu.cn`、`iclass.buaa.edu.cn`、`bykc.buaa.edu.cn`、`d.buaa.edu.cn`）进行 TLS 加密交互。软件首次启动将弹出强制免责声明提示窗口，用户须主动确认签署后方可进入主界面。
+3. **安全与协议合规**：本程序为 **100% 纯本地客户端/独立私有服务**，不设任何中心代理服务器，所有鉴权凭据及通信均直接与北航官方服务器（`sso.buaa.edu.cn`、`iclass.buaa.edu.cn`、`bykc.buaa.edu.cn`、`d.buaa.edu.cn`）进行 TLS 加密交互。首次启动将提示签署免责声明，用户须主动确认签署后方可进入使用。
 
 ---
 
@@ -29,7 +29,7 @@
 
 **AUTO-BUAA** (BUAA Signin Pro) 诞生于对北航师生日常教学与博雅课程管理痛点的深度解决。我们在继承前人优秀开源成果的基础上，对底层通讯协议与交互逻辑进行了彻底重构，打造出集**常规课堂智能守护**与**博雅选修课全生命周期自动化托管**于一体的双核心客户端。
 
-程序前端采用基于 **Origin Web** 极致极简克制美学与 **Emil Kowalski 微动效系统**，搭配全流体背景粒子与毛玻璃可调透光质感；后端基于轻量高效的异步并发架构，兼顾 Windows 后台托盘低功耗驻留与开机自启动守护。
+程序前端基于 **Origin Web** 极致极简克制美学与 **Emil Kowalski 微动效系统**，搭配全流体背景粒子与毛玻璃可调透光质感；后端基于轻量高效的异步并发架构，兼顾 Windows/macOS 桌面原生体验，以及 Linux 服务器与 NAS 容器云端 24/7 无人值守守护。
 
 ---
 
@@ -65,11 +65,10 @@
   - 上层覆盖高质感毛玻璃（Backdrop Filter），设置中心提供**单个直观的透光度滑块**，可随心调节磨砂玻璃浓度；
   - 官方标准北航校徽矢量 Logo 与纯净文字标识。
 
-### 5. 🛡️ Windows 深度系统级融合
-- **系统托盘常驻守护**：关闭窗口不会杀死进程，而是平滑最小化至右下角系统托盘；点击托盘图标随时恢复展开；
-- **单实例互斥与防多开**：重复双击启动程序时，自动唤醒并展开已运行的实例，绝不产生多余僵尸进程；
-- **托盘右键彻底退出**：托盘右键菜单提供唯一“彻底退出应用”指令，安全终止所有后台监听协程并释放系统资源；
-- **稳定开机自启动开关**：设置界面内置 Windows 系统级开机自启开关，直接配置当前用户注册表 `Run` 键，免管理员提权，稳定可靠。
+### 5. 🖥️ 全平台深度原生融合与部署生态
+- **Windows 原生集成**：托盘常驻守护、单实例防多开唤醒、注册表级免提权开机自启动；
+- **macOS 原生适配**：Apple Silicon (M1~M4) / Intel 架构原生编译，支持 DMG 磁盘镜像拖拽安装与 LaunchAgents 开机自启守护；
+- **Linux / Docker 云端部署**：全自动感知无显示环境并智能切换至 Headless 纯后端模式，支持通过 `http://<IP>:<PORT>` 局域网/公网远程 WebUI 访问。
 
 ---
 
@@ -80,7 +79,7 @@
 2. 双击打开安装向导，按照提示选择安装路径；
 3. 安装程序会自动在桌面与开始菜单创建快捷方式，并支持在 Windows“应用和功能”中一键干净卸载。
 
-### 方案 2：绿色便携版（免安装 ⭐⭐⭐）
+### 方案 2：Windows 绿色便携版（免安装 ⭐⭐⭐）
 1. 下载可执行文件：`BUAA-Signin.exe` 或 `BUAA-Signin-v1.2.0-portable.exe`；
 2. 将程序放置在任意目录（例如桌面或个人工具箱），双击即可直接运行；
 3. 绿色便携版将配置文件保存在同级目录下，即插即用，随拷随走。
@@ -114,12 +113,71 @@
 
 ---
 
+### 方案 5：Linux 服务器与 Docker 极简部署（24/7 云端守护 ⭐⭐⭐）
+
+适合部署在 Linux 云服务器 (VPS)、家庭 NAS (群晖 Synology / 极空间 / 威联通 QNAP)、软路由或树莓派上，实现 24 小时全天候无人值守自动抢课签到。
+
+通过浏览器直接访问 `http://<服务器IP>:18346`，即可在任何设备（手机、平板、电脑）上使用全功能 WebUI。
+
+#### 方式 A：Docker Compose 一键部署（极力推荐）
+1. 确保已安装 Docker 与 Docker Compose；
+2. 在项目根目录下执行：
+   ```bash
+   docker compose up -d
+   ```
+3. 部署完成后，在浏览器中打开：
+   ```
+   http://<你的服务器IP>:18346
+   ```
+   > 💡 容器默认映射端口 `18346`，并将 `./config.json` 挂载到容器内，配置与账号数据在宿主机持久化保存，升级或重启容器不丢失配置。
+
+#### 方式 B：Docker 原生镜像构建运行
+```bash
+# 1. 构建 Docker 镜像
+docker build -t auto-buaa .
+
+# 2. 后台启动容器并挂载配置
+docker run -d \
+  --name auto-buaa \
+  --restart unless-stopped \
+  -p 18346:18346 \
+  -v $(pwd)/config.json:/app/config.json \
+  auto-buaa
+```
+
+#### 方式 C：Linux 终端原生 Python 部署
+无需 GUI 桌面环境，程序自动检测并以纯后端 Headless 模式运行：
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 命令行指定参数运行
+python run.py --headless --host 0.0.0.0 --port 18346
+
+# 或者直接使用预置启动脚本
+chmod +x start-server.sh
+./start-server.sh
+```
+
+#### 方式 D：Systemd 系统级常驻服务
+项目内附带现成 Systemd 服务模板：
+```bash
+# 1. 拷贝配置文件
+sudo cp systemd/auto-buaa.service /etc/systemd/system/
+
+# 2. 根据实际路径调整 WorkingDirectory 和 ExecStart，然后启动
+sudo systemctl daemon-reload
+sudo systemctl enable --now auto-buaa
+```
+
+---
+
 ## 🧪 测试阶段说明与问题反馈
 
 > [!IMPORTANT]
 > **当前版本：v1.2.0-beta（公共测试版）**
 > 
-> 本程序目前正处于**公开测试与快速迭代阶段**。尽管核心选课抢课协议、多账号调度逻辑与网络容灾机制经过了严格的单元测试与沙箱验证，但面对学校服务器不同学期接口变动、节假日调休课表、极端弱网环境以及不同版本 Windows 系统的显示缩放差异，软件的稳定性和部分功能体验**未必完全完美**。
+> 本程序目前正处于**公开测试与快速迭代阶段**。尽管核心选课抢课协议、多账号调度逻辑与网络容灾机制经过了严格的单元测试与沙箱验证，但面对学校服务器不同学期接口变动、节假日调休课表、极端弱网环境以及不同版本操作系统的显示缩放差异，软件的稳定性和部分功能体验**未必完全完美**。
 > 
 > 我们非常重视每一位同学与老师的实际使用体验！
 > 如果您在测试过程中遇到以下任何情况：
@@ -128,26 +186,32 @@
 > - 选课/打卡未准时触发或报错
 > - UI 布局错位、窗口缩放不适配或动效卡顿
 > 
-> **诚挚欢迎并在评论区 / [GitHub Issues](https://github.com/) 中向我们提交反馈与建议！** 您的每一次 Issue 都是帮助本项目走向稳定与完善的重要推动力。
+> **诚挚欢迎在 [GitHub Issues](https://github.com/nixianren666/AUTO-BUAATOOLS/issues) 中向我们提交反馈与建议！** 您的每一次 Issue 都是帮助本项目走向稳定与完善的重要推动力。
 
 ---
 
 ## 📂 项目工程目录
 
 ```
-ubaa/
+AUTO-BUAATOOLS/
 ├── BUAA-Signin-Setup-v1.2.0.exe     # Windows 官方安装向导程序
-├── BUAA-Signin-v1.2.0-portable.exe  # v1.2.0 绿色免安装便携版
-├── BUAA-Signin.exe                  # 编译好的单文件绿色版主程序
-├── README.md                        # 项目详细说明文档与免责条款
-├── config.json                      # 纯净配置文件模板（无任何账号隐私）
-├── requirements.txt                 # Python 运行时依赖列表
-├── run.py                           # 启动入口（调起本地 FastAPI 及 Edge 窗体）
-├── start.bat / 启动签到软件.bat      # 极简双击启动脚本
+├── BUAA-Signin-v1.2.0-portable.exe  # Windows v1.2.0 绿色免安装便携版
+├── BUAA-Signin.exe                  # Windows 单文件绿色版主程序
+├── BUAA-Signin.spec                 # Windows PyInstaller 一键打包规格
+├── BUAA-Signin-mac.spec             # macOS PyInstaller 独立 App 打包规格
+├── Dockerfile                       # Linux / Docker 容器化构建文件
+├── docker-compose.yml               # Docker Compose 一键式编排模版
+├── start-server.sh                  # Linux 极简后台服务启动脚本
+├── README.md                        # 项目详细说明文档、多平台使用指南与免责条款
+├── config.json                      # 纯净配置文件模板（严格脱敏，无任何隐私泄露）
+├── requirements.txt                 # Python 跨平台运行时依赖列表
+├── run.py                           # 统一启动入口（自动感知 GUI/Headless 环境）
+├── start.bat / 启动签到软件.bat      # Windows 极简双击启动脚本
 ├── tray_icon.png                    # 系统托盘图标资产
-├── BUAA-Signin.spec                 # PyInstaller 一键编译规格文件
+├── .github/workflows/
+│   └── build-macos.yml              # macOS 多架构 CI/CD 自动构建及发布工作流
 ├── core/                            # 核心底层业务与网络通讯协议
-│   ├── autostart.py                 # Windows 注册表开机自启动管理
+│   ├── autostart.py                 # 跨平台自启动管理 (Windows / macOS / Linux)
 │   ├── boya_client.py               # 博雅选课池拉取、抢课提交与打卡签退
 │   ├── boya_crypto.py               # 博雅平台 AES-128-ECB 动态解密
 │   ├── boya_scheduler.py            # 博雅自动化巡检、抢课与签到调度器
@@ -156,20 +220,25 @@ ubaa/
 │   ├── scheduler.py                 # 常规课堂课前10分钟随机规划调度器
 │   └── webvpn.py                    # WebVPN 动态加解密与内外网通道适配
 ├── server/                          # 服务与前端渲染层
-│   ├── app.py                       # FastAPI 状态控制中心与 REST API 路由
+│   ├── app.py                       # FastAPI 状态控制中心与跨平台路径自适应
 │   └── static/                      # 前端界面资产 (Origin 极简 + Emil Kowalski 微动效)
 │       ├── buaa_logo.svg            # 北航高清矢量校徽
 │       ├── index.html               # 交互界面结构
-│       ├── css/style.css            # 苹果毛玻璃拟态与流体动效样式
+│       ├── css/style.css            # 极简质感拟态与流体动效样式
 │       └── js/app.js                # 响应式前端状态管理与交互逻辑
-├── tests/                           # 自动化单元测试与回归套件
+├── systemd/                         # Linux 守护进程配置模版
+│   └── auto-buaa.service            # Systemd 服务单元文件
+├── tests/                           # 自动化单元测试与回归套件 (39 个测试 100% 通过)
 │   ├── test_core.py                 # WebVPN、CAS 协议与加解密测试
 │   ├── test_api.py                  # API 端点与静态路由集成测试
+│   ├── test_autostart.py            # 跨平台自启动逻辑模拟测试 (Win/Mac/Linux)
 │   ├── test_multi_account.py        # 多账号并发与调度测试
 │   ├── test_boya_crypto.py          # 博雅解密算法测试
 │   ├── test_boya_api.py             # 博雅 API 路由测试
 │   └── test_boya_scheduler.py       # 博雅调度器测试
-└── installer/                       # Inno Setup 安装包制作配置
+├── scripts/
+│   └── smoke_test_mac.py            # macOS 自动化冒烟测试脚本
+└── installer/                       # Inno Setup Windows 安装包制作配置
     └── setup.iss                    # 安装包编译向导脚本
 ```
 
@@ -197,4 +266,3 @@ ubaa/
 <div align="center">
   <sub>Built with ❤️ for BUAAers</sub>
 </div>
-
