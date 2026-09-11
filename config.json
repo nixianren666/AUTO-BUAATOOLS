@@ -1,0 +1,9 @@
+{
+  "active_username": "",
+  "accounts": [],
+  "global_auto_checkin": false,
+  "checkin_interval": 20,
+  "default_mode": "direct",
+  "autostart": false,
+  "disclaimer_accepted": false
+}

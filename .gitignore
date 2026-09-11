@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+
+# PyInstaller / Build artifacts
+build/
+dist/
+*.spec.bak
+
+# Log files
+*.log
+
+# Local environment & caches
+.env
+.venv/
+env/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# User-specific / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Ignore other staging folders
+Github¿â/

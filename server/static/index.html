@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BUAA 课程签到 Pro - Origin v1.2.0</title>
+  <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.2.0">
+</head>
+<body class="origin-theme">
+  <!-- Gemini iOS 风格背景：底层流动光斑与星尘粒子 -->
+  <canvas id="ambientParticlesCanvas" class="ambient-particles-canvas"></canvas>
+  <!-- 中层：整层全屏毛玻璃与质感噪点滤镜 -->
+  <div id="glassVeil" class="origin-glass-veil"></div>
+
+  <div class="origin-app-layout">
+    
+    <!-- ==================== LEFT NAVIGATION RAIL ==================== -->
+    <aside class="origin-sidebar">
+      <!-- 品牌标识 -->
+      <div class="origin-brand">
+        <div class="origin-logo-mark buaa-seal-box">
+          <img src="/static/images/buaa_logo.svg" alt="BUAA Logo" class="origin-buaa-logo" width="30" height="30">
+        </div>
+        <div class="origin-brand-meta">
+          <div class="origin-brand-title">
+            <span class="brand-text">AUTO-BUAA</span>
+            <span class="origin-tag">v1.2.0</span>
+          </div>
+          <div class="origin-brand-sub">课程与博雅自动守护套件</div>
+        </div>
+      </div>
+
+      <!-- 核心功能导航菜单 -->
+      <nav class="origin-nav">
+        <div class="origin-nav-label">PLATFORM</div>
+
+        <button class="origin-nav-item active" id="navBtnRegular" onclick="switchMainView('regular')">
+          <span class="nav-item-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          </span>
+          <span class="nav-item-title">常规课堂考勤</span>
+          <span class="nav-badge" id="navBadgeClasses">0</span>
+        </button>
+
+        <button class="origin-nav-item" id="navBtnBoya" onclick="switchMainView('boya')">
+          <span class="nav-item-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </span>
+          <span class="nav-item-title">自动博雅套件</span>
+          <span class="nav-badge highlight" id="navBadgeBoya">NEW</span>
+        </button>
+
+        <div class="origin-nav-label" style="margin-top: 16px;">MANAGEMENT</div>
+
+        <button class="origin-nav-item" id="navBtnAccounts" onclick="openAccountCardsModal()">
+          <span class="nav-item-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <span class="nav-item-title">学生账号中心</span>
+          <span class="nav-badge" id="navBadgeAccounts">1</span>
+        </button>
+
+        <button class="origin-nav-item" id="navBtnLogs" onclick="switchMainView('logs')">
+          <span class="nav-item-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+          </span>
+          <span class="nav-item-title">实时终端监控</span>
+          <span class="origin-status-dot green"></span>
+        </button>
+      </nav>
+
+      <!-- 侧边栏底部：当前活跃学生信息卡 -->
+      <div class="origin-sidebar-footer">
+        <div class="origin-user-capsule" onclick="openAccountCardsModal()" title="点击管理多账号或切换当前操作学生">
+          <div class="origin-avatar" id="sidebarAvatar">学</div>
+          <div class="origin-user-info">
+            <div class="origin-user-name" id="sidebarStudentName">未登录</div>
+            <div class="origin-user-id" id="sidebarStudentId">请添加账号</div>
+          </div>
+          <div class="origin-user-action">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+
+        <div class="origin-network-strip">
+          <button class="origin-network-btn" id="modeBtn" onclick="toggleMode()" title="切换网络接入通道">
+            <span class="origin-status-dot green" id="modeDot"></span>
+            <span id="modeText">校园网直连</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN WORKSPACE ==================== -->
+    <main class="origin-main">
+      <!-- 顶部轻量操作栏 (Top Utility Bar) -->
+      <header class="origin-topbar">
+        <div class="topbar-breadcrumb">
+          <span class="breadcrumb-root">PLATFORM</span>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-current" id="topbarCurrentSection">常规课堂考勤</span>
+        </div>
+
+        <div class="topbar-actions">
+          <!-- 背景材质透明度微调浮窗 (单一逻辑顺畅滑杆) -->
+          <div class="glass-control-wrapper" id="glassControlWrapper">
+            <button class="origin-pill-btn" onclick="toggleGlassPopover(event)" id="glassControlBtn" title="调节背景毛玻璃透明度">
+              <span class="glass-icon">🪟</span>
+              <span class="glass-text" id="glassPercentText">透光 65%</span>
+              <span class="glass-arrow">▾</span>
+            </button>
+            <div class="glass-popover hidden" id="glassPopover" onclick="event.stopPropagation()">
+              <div class="glass-popover-header">
+                <span class="popover-title">背景材质透光度</span>
+              </div>
+              <div class="glass-slider-row">
+                <div class="slider-label-row">
+                  <span>透光度</span>
+                  <span class="slider-val" id="opacityValLabel">65%</span>
+                </div>
+                <input type="range" id="glassOpacitySlider" min="20" max="90" value="65" oninput="updateGlassOpacity(this.value)">
+              </div>
+            </div>
+          </div>
+
+          <!-- 开机自启动开关 -->
+          <div class="origin-autostart-widget" id="autostartWidget" title="开启后 Windows 开机自动静默启动并在右下角系统托盘常驻守护">
+            <span class="autostart-icon">⚡</span>
+            <span class="autostart-text">开机自启</span>
+            <label class="origin-toggle">
+              <input type="checkbox" id="autostartCheckbox" onchange="toggleAutostart(this.checked)">
+              <span class="origin-slider"></span>
+            </label>
+          </div>
+
+          <!-- 精密等宽时钟 -->
+          <div class="origin-clock" id="liveClock">
+            <span class="clock-time">--:--:--</span>
+          </div>
+
+          <!-- 退出按钮 -->
+          <button class="origin-icon-btn exit-btn" onclick="requestAppExit()" title="彻底退出软件并终止后台服务">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- 工作区主容器 (Stacked Card Field) -->
+      <div class="origin-content-scroll" id="mainContentScroll">
+
+        <!-- ==================== VIEW 1: 常规课堂签到 ==================== -->
+        <section class="origin-view-section" id="viewRegular">
+          <!-- 核心态势看板卡片 (Hero Overview Card) -->
+          <div class="origin-card hero-card">
+            <div class="hero-card-left">
+              <div class="hero-status-pill">
+                <span class="origin-status-dot green"></span>
+                <span>DAEMON ACTIVE · 智能考勤守护中</span>
+              </div>
+              <h2 class="hero-headline">今日课程考勤</h2>
+              <p class="hero-subtitle">
+                当前守护账号：<strong id="heroStudentName">--</strong> (<span id="heroStudentId">--</span>) · 上课前 10 分钟自动在合规窗口完成极速打卡
+              </p>
+            </div>
+            
+            <div class="hero-metrics-strip">
+              <div class="hero-metric-tile">
+                <span class="metric-label">今日总排课</span>
+                <span class="metric-value" id="metricTotalClasses">0</span>
+              </div>
+              <div class="hero-metric-tile">
+                <span class="metric-label">已成功签到</span>
+                <span class="metric-value green" id="metricSignedClasses">0</span>
+              </div>
+              <div class="hero-metric-tile">
+                <span class="metric-label">待签到课程</span>
+                <span class="metric-value cyan" id="metricPendingClasses">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作条与控制器 -->
+          <div class="origin-toolbar">
+            <div class="toolbar-left">
+              <div class="origin-switch-capsule">
+                <span class="switch-label">自动签到守护</span>
+                <label class="origin-toggle">
+                  <input type="checkbox" id="autoCheckinToggle" onchange="toggleAutoCheckin(this.checked)">
+                  <span class="origin-slider"></span>
+                </label>
+              </div>
+              <button class="origin-btn origin-btn-ghost" onclick="refreshCurrentStudentClasses()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span>刷新课表</span>
+              </button>
+            </div>
+
+            <div class="toolbar-right">
+              <button class="origin-btn origin-btn-secondary" onclick="openManualSignModal()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>手动 ID 签到</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 课堂考勤卡片网格流 -->
+          <div class="origin-grid-feed" id="classesFeed">
+            <!-- 动态卡片 -->
+          </div>
+        </section>
+
+
+        <!-- ==================== VIEW 2: 自动博雅全能套件 ==================== -->
+        <section class="origin-view-section hidden" id="viewBoya">
+          <!-- 毕业考核学分与自动化大看板 (Origin Financial Style) -->
+          <div class="origin-card boya-hero-card">
+            <div class="boya-hero-top">
+              <div class="boya-hero-info">
+                <div class="hero-status-pill purple">
+                  <span class="origin-status-dot purple"></span>
+                  <span>AUTOBOYA INTEGRATED · 智能秒抢与微扰定位打卡</span>
+                </div>
+                <h2 class="hero-headline">博雅课程守护</h2>
+                <p class="hero-subtitle">
+                  全自动抢选与高斯微扰定位打卡 · 严选支持线上自主打卡之课程
+                </p>
+              </div>
+
+              <!-- 右侧控制组：生源校区与自动化开关 -->
+              <div class="boya-controls-group">
+                <div class="boya-ctrl-item">
+                  <span class="ctrl-caption">生源校区</span>
+                  <select id="boyaCampusSelect" class="origin-select" onchange="changeBoyaCampus(this.value)">
+                    <option value="北京">北京校区 (学院路/沙河)</option>
+                    <option value="杭州">杭州校区 (中法航空)</option>
+                  </select>
+                </div>
+
+                <div class="boya-ctrl-item">
+                  <span class="ctrl-caption">自动秒抢</span>
+                  <label class="origin-toggle">
+                    <input type="checkbox" id="boyaAutoSelectToggle" onchange="toggleBoyaAutoSelect(this.checked)">
+                    <span class="origin-slider"></span>
+                  </label>
+                </div>
+
+                <div class="boya-ctrl-item">
+                  <span class="ctrl-caption">微扰打卡</span>
+                  <label class="origin-toggle">
+                    <input type="checkbox" id="boyaAutoSignToggle" onchange="toggleBoyaAutoSign(this.checked)">
+                    <span class="origin-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 学分毕业里程碑进度槽 -->
+            <div class="boya-progress-wrapper">
+              <div class="boya-progress-header">
+                <div class="progress-title-col">
+                  <span class="progress-big-number" id="boyaEarnedCredits">0.0</span>
+                  <span class="progress-denominator">/ 4.0 毕业要求学分</span>
+                </div>
+                <div class="progress-rate-tag" id="boyaCompletionRate">达成度 0%</div>
+              </div>
+              <div class="origin-progress-bar">
+                <div class="origin-progress-fill" id="boyaProgressFill" style="width: 0%;"></div>
+              </div>
+              
+              <!-- 官方四大博雅课程类别微胶囊 -->
+              <div class="boya-milestone-pills" id="boyaCategoryMilestones">
+                <div class="milestone-pill"><span class="m-label">美育</span><span class="m-val" id="pillArt">0 门</span></div>
+                <div class="milestone-pill"><span class="m-label">劳育</span><span class="m-val" id="pillLabor">0 门</span></div>
+                <div class="milestone-pill"><span class="m-label">国家安全</span><span class="m-val" id="pillSec">0 门</span></div>
+                <div class="milestone-pill"><span class="m-label">德育</span><span class="m-val" id="pillMoral">0 门</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 选课导航条与过滤器 -->
+          <div class="origin-toolbar boya-toolbar">
+            <!-- 选项卡分段胶囊 (Segmented Pills) -->
+            <div class="origin-segmented-control">
+              <button class="segmented-btn active" id="tabBoyaSelected" onclick="switchBoyaTab('selected')">
+                <span>已选修课程</span>
+                <span class="seg-count" id="countBoyaSelected">0</span>
+              </button>
+              <button class="segmented-btn" id="tabBoyaAll" onclick="switchBoyaTab('all')">
+                <span>全量选课池</span>
+                <span class="seg-count" id="countBoyaAll">0</span>
+              </button>
+            </div>
+
+            <!-- 搜索框 -->
+            <div class="origin-search-box">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="boyaSearchInput" placeholder="按课程名或教师检索..." oninput="handleBoyaSearch(this.value)">
+            </div>
+
+            <!-- 刷新按钮 -->
+            <button class="origin-btn origin-btn-ghost" onclick="fetchBoyaData(true)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>同步博雅</span>
+            </button>
+          </div>
+
+          <!-- 已选课程时间状态筛选器 (未来及正在进行 vs 历史选课) -->
+          <div class="selected-time-filter-strip hidden" id="selectedTimeFilterStrip">
+            <span class="time-filter-label">已选进度：</span>
+            <div class="filter-time-group">
+              <button class="filter-pill active" id="btnFilterOngoingUpcoming" onclick="filterSelectedTime('upcoming', this)">
+                <span>⏳ 未来及正在进行</span>
+              </button>
+              <button class="filter-pill" id="btnFilterPast" onclick="filterSelectedTime('past', this)">
+                <span>📜 历史选课</span>
+              </button>
+              <button class="filter-pill" id="btnFilterAllSelected" onclick="filterSelectedTime('all', this)">
+                <span>全部已选</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 选课多维筛选矩阵 (四大门类与智能快捷过滤) -->
+          <div class="origin-filter-matrix" id="boyaFilterMatrix">
+            <div class="filter-category-group">
+              <button class="filter-pill active" onclick="filterBoyaCategory('全部', this)">全部类别</button>
+              <button class="filter-pill" onclick="filterBoyaCategory('美育', this)">🎨 美育</button>
+              <button class="filter-pill" onclick="filterBoyaCategory('劳育', this)">🛠️ 劳育</button>
+              <button class="filter-pill" onclick="filterBoyaCategory('国家安全', this)">🛡️ 国家安全</button>
+              <button class="filter-pill" onclick="filterBoyaCategory('德育', this)">📖 德育</button>
+            </div>
+            <div class="filter-feature-group">
+              <button class="feature-toggle-pill" id="btnFilterAutoSign" onclick="toggleFilterAutoSign(this)" title="仅显示支持线上定位打卡的课程，排除线下人工核验课">
+                <span class="dot"></span>
+                <span>🛰️ 仅看可自动打卡</span>
+              </button>
+              <button class="feature-toggle-pill" id="btnFilterAvailable" onclick="toggleFilterAvailable(this)" title="仅显示当前尚有名额的课程">
+                <span class="dot"></span>
+                <span>✨ 仅看有名额</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 博雅卡片网格流 -->
+          <div class="origin-grid-feed" id="boyaCoursesFeed">
+            <!-- 动态卡片 -->
+          </div>
+        </section>
+
+
+        <!-- ==================== VIEW 3: 运行终端日志 ==================== -->
+        <section class="origin-view-section hidden" id="viewLogs">
+          <div class="origin-card terminal-card">
+            <div class="terminal-header">
+              <div class="terminal-title">
+                <span class="origin-status-dot green"></span>
+                <span>SYSTEM LOG MONITOR · 全局审计日志</span>
+              </div>
+              <div class="terminal-actions">
+                <div class="origin-segmented-control small">
+                  <button class="segmented-btn active" id="logCatRegular" onclick="setLogCategory('regular')">常规课堂</button>
+                  <button class="segmented-btn" id="logCatBoya" onclick="setLogCategory('boya')">自动博雅</button>
+                </div>
+                <button class="origin-btn origin-btn-danger-ghost" onclick="clearLogs()">清空日志</button>
+              </div>
+            </div>
+            
+            <div class="terminal-body" id="logsContainer">
+              <!-- 实时日志流 -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 模态框：多学生账号管理 -->
+    <div class="origin-modal-backdrop hidden" id="accountCardsModal">
+      <div class="origin-modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">学生账号管理中心</h3>
+          <button class="origin-icon-btn" onclick="closeAccountCardsModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">已添加的学生账号均在后台保持并发鉴权守护，点击卡片可切换当前前台查看与操作的学生。</p>
+          <div class="accounts-grid-stream" id="accountsModalList"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="origin-btn origin-btn-ghost" onclick="closeAccountCardsModal()">关闭</button>
+          <button class="origin-btn origin-btn-primary" onclick="openLoginModalFromCenter()">+ 添加新学生账号</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模态框：添加 / 登录学生账号 -->
+    <div class="origin-modal-backdrop hidden" id="loginModal">
+      <div class="origin-modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title" id="loginModalTitle">北航统一身份认证登录</h3>
+          <button class="origin-icon-btn" onclick="closeLoginModal()">✕</button>
+        </div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="modal-body">
+            <div class="form-group">
+              <label>统一认证学号 / 工号</label>
+              <input type="text" id="loginUsername" required placeholder="例如: 2337xxxx" class="origin-input">
+            </div>
+            <div class="form-group">
+              <label>统一认证密码</label>
+              <input type="password" id="loginPassword" required placeholder="统一身份认证密码" class="origin-input">
+            </div>
+            <div class="form-group">
+              <label>登录网络通道</label>
+              <select id="loginModeSelect" class="origin-select">
+                <option value="direct">校园网直连 (校内高速专网)</option>
+                <option value="webvpn">WebVPN 外网通道 (校外无缝穿透)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="origin-checkbox-label">
+                <input type="checkbox" id="rememberMe" checked>
+                <span>记住凭据并在本地安全加密存储 (AES-128)</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="origin-btn origin-btn-ghost" onclick="closeLoginModal()">取消</button>
+            <button type="submit" class="origin-btn origin-btn-primary" id="loginSubmitBtn">确认登录并接入守护</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 模态框：手动 ID 签到 -->
+    <div class="origin-modal-backdrop hidden" id="manualSignModal">
+      <div class="origin-modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">指定排课 ID 补签</h3>
+          <button class="origin-icon-btn" onclick="closeManualSignModal()">✕</button>
+        </div>
+        <form id="manualSignForm" onsubmit="handleManualSignSubmit(event)">
+          <div class="modal-body">
+            <div class="form-group">
+              <label>课堂排课 ID (CourseSchedId)</label>
+              <input type="text" id="manualCourseId" required placeholder="输入 8 位或更多位排课 ID" class="origin-input">
+              <span class="field-hint">用于不在今日课表推荐列表中的临时加课或手动补签</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="origin-btn origin-btn-ghost" onclick="closeManualSignModal()">取消</button>
+            <button type="submit" class="origin-btn origin-btn-primary" id="manualSignSubmitBtn">立即发送打卡请求</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 模态框：首次启动法律免责声明弹窗 (Origin 规范) -->
+    <div class="origin-modal-backdrop hidden" id="disclaimerModal" style="z-index: 999999;">
+      <div class="origin-modal-dialog disclaimer-dialog">
+        <div class="modal-header">
+          <div class="disclaimer-title-row">
+            <span class="disclaimer-badge">LEGAL NOTICE</span>
+            <h3 class="modal-title">免责声明与使用条款</h3>
+          </div>
+          <span class="origin-version">v1.2.0</span>
+        </div>
+        <div class="modal-body">
+          <div class="origin-callout">
+            <strong>使用前必读：</strong>感谢您使用 BUAA 课程独立签到助手。在进入系统前，请您认真、完整阅读以下免责声明与风险告知条款。
+          </div>
+          
+          <div class="origin-disclaimer-text">
+            <p><strong>1. 开源学习与学术研究定位</strong><br>
+            本软件为开源个人学习交流、网络协议研究与课业日程辅助工具，完全免费且代码公开。严禁将本软件用于任何商业营利、代抢牟利或任何违反《北京航空航天大学学生违纪处分办法》及校规校纪之行为。</p>
+
+            <p><strong>2. 自动化网络请求与不可抗力风险</strong><br>
+            本程序提供的课堂考勤签到与博雅选课/打卡均为本地模拟网络请求。对于因校园网络波动、WebVPN 网关不稳定、教务/博雅系统接口改版、课表临时调整、考勤规则变更等原因导致的考勤遗漏、选课未成或考勤异常，本软件及其开发者不承担任何直接、间接或连带的行政或法律责任。</p>
+
+            <p><strong>3. 用户最终自主核验与兜底义务</strong><br>
+            本程序仅作为自动化辅助工具，<strong>不替代任何人工最终确认</strong>。用户有义务定期登录北京航空航天大学官方教务系统及博雅课堂管理系统，自主核验实际选课结果、签到记录及毕业学分达成进度。</p>
+
+            <p><strong>4. 账号凭证高强度安全与隐私承诺</strong><br>
+            本软件高度重视您的隐私与账号安全。所有统一身份认证账号、密码及会话凭证均仅存储于您当前的本地计算机中（采用 AES 加密保护），<strong>绝无任何向第三方服务器上报或收集的行为</strong>。请妥善保管个人计算机及凭证，切勿在公共设备上开启“记住凭据”。</p>
+
+            <p><strong>5. 法律责任自愿承担</strong><br>
+            您点击“同意并进入系统”即表明您已完全理解并自愿接受上述条款，自愿承担因使用本软件所产生的全部风险与使用后果。</p>
+          </div>
+
+          <div class="origin-agree-card">
+            <label class="origin-checkbox-label">
+              <input type="checkbox" id="disclaimerCheck" onchange="handleDisclaimerCheckChange(this)">
+              <span class="agree-text">我已仔细阅读并完全知晓上述全部风险，承诺遵守学校各项规章制度，本人自愿承担一切使用后果与法律责任。</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="origin-btn origin-btn-ghost" onclick="handleDisclaimerDecline()">退出软件</button>
+          <button type="button" class="origin-btn origin-btn-primary" id="disclaimerAgreeBtn" disabled onclick="handleDisclaimerAccept()">同意并进入系统</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 浮动消息提示容器 -->
+    <div class="origin-toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/static/js/app.js?v=1.2.0"></script>
+</body>
+</html>
