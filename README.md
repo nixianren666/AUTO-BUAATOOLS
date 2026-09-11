@@ -85,11 +85,15 @@
 2. 将程序放置在任意目录（例如桌面或个人工具箱），双击即可直接运行；
 3. 绿色便携版将配置文件保存在同级目录下，即插即用，随拷随走。
 
-### 方案 3：macOS 绿色免安装独立版（Apple Silicon & Intel ⭐⭐⭐）
-1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载适配您 Mac 芯片架构的压缩包：
-   - **Apple Silicon 芯片（M1 / M2 / M3 / M4 等）**：`BUAA-Signin-macOS-arm64.zip`
-   - **Intel 处理器芯片**：`BUAA-Signin-macOS-x86_64.zip`
-2. 解压后直接获得独立应用 **`BUAA-Signin.app`**，双击直接运行，**完全免安装，随拷随用**；
+### 方案 3：macOS 官方独立版（DMG 镜像盘 & 绿色免安装 ZIP ⭐⭐⭐）
+1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载适合您 Mac 的分发包：
+   - **Apple Silicon 芯片（M1 / M2 / M3 / M4 等，主流推荐）**：
+     - 💿 **DMG 镜像盘**：`BUAA-Signin-macOS-arm64.dmg`（双击挂载磁盘，支持一键拖入 Applications 或直接点开）
+     - 📦 **绿色便携 ZIP**：`BUAA-Signin-macOS-arm64.zip`（解压即得 `BUAA-Signin.app`）
+   - **Intel 处理器芯片**：
+     - 💿 **DMG 镜像盘**：`BUAA-Signin-macOS-x86_64.dmg`
+     - 📦 **绿色便携 ZIP**：`BUAA-Signin-macOS-x86_64.zip`
+2. **免安装随拷随用**：无论通过 DMG 运行还是解压出的 `BUAA-Signin.app`，都是原生独立应用，双击直接运行，**无需任何安装配置**；
 3. **首次启动提示**：开源个人应用初次在 Mac 打开时，若系统 Gatekeeper 提示“无法打开未知开发者”，按住键盘 `Control` 键右键点击应用图标并选择“打开”即可正常运行。
 
 ### 方案 4：开发者源码跨平台运行 (Windows / macOS / Linux)
