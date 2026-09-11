@@ -125,6 +125,12 @@ def restore_window():
                 ctypes.windll.user32.SetForegroundWindow(hwnd)
         except Exception:
             pass
+    elif sys.platform == "darwin":
+        try:
+            from AppKit import NSApplication
+            NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+        except Exception:
+            pass
 
 
 def exit_all():

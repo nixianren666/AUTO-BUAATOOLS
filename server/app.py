@@ -35,6 +35,18 @@ def resolve_config_path() -> pathlib.Path:
         if portable_cfg.exists():
             return portable_cfg
 
+        if sys.platform == "darwin":
+            mac_support_dir = pathlib.Path.home() / "Library" / "Application Support" / "BUAA-Signin"
+            mac_support_dir.mkdir(parents=True, exist_ok=True)
+            mac_cfg = mac_support_dir / "config.json"
+            if mac_cfg.exists():
+                return mac_cfg
+            # 也可检查 .app 同级目录的便携式配置
+            app_bundle_dir = exe_dir.parent.parent.parent
+            if (app_bundle_dir / "config.json").exists():
+                return app_bundle_dir / "config.json"
+            return mac_cfg
+
         appdata = os.environ.get("APPDATA")
         if appdata:
             appdata_dir = pathlib.Path(appdata) / "BUAA-Signin"
@@ -132,17 +144,28 @@ def save_config(cfg: Dict[str, Any]):
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        # 如果当前位置不可写，自动降级切换至 APPDATA 写入
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            fallback_cfg = pathlib.Path(appdata) / "BUAA-Signin" / "config.json"
-            fallback_cfg.parent.mkdir(parents=True, exist_ok=True)
+        # 如果当前位置不可写，自动降级切换至用户数据目录写入
+        if sys.platform == "darwin":
+            mac_support_dir = pathlib.Path.home() / "Library" / "Application Support" / "BUAA-Signin"
+            mac_support_dir.mkdir(parents=True, exist_ok=True)
+            fallback_cfg = mac_support_dir / "config.json"
             try:
                 with open(fallback_cfg, "w", encoding="utf-8") as f:
                     json.dump(cfg, f, ensure_ascii=False, indent=2)
                 CONFIG_FILE = fallback_cfg
             except Exception:
                 pass
+        else:
+            appdata = os.environ.get("APPDATA")
+            if appdata:
+                fallback_cfg = pathlib.Path(appdata) / "BUAA-Signin" / "config.json"
+                fallback_cfg.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    with open(fallback_cfg, "w", encoding="utf-8") as f:
+                        json.dump(cfg, f, ensure_ascii=False, indent=2)
+                    CONFIG_FILE = fallback_cfg
+                except Exception:
+                    pass
         print(f"Failed to save config: {e}")
 
 

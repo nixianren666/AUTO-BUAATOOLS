@@ -1,0 +1,69 @@
+﻿name: Build and Release macOS App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+jobs:
+  build-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            arch: arm64
+            suffix: arm64
+          - os: macos-13
+            arch: x86_64
+            suffix: x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Run unit test suite
+        run: |
+          python -m unittest discover -s tests
+
+      - name: Build macOS .app with PyInstaller
+        run: |
+          pyinstaller --noconfirm BUAA-Signin-mac.spec
+
+      - name: Execute live smoke test
+        run: |
+          python scripts/smoke_test_mac.py
+
+      - name: Archive .app into portable zip
+        run: |
+          cd dist
+          zip -r -y "BUAA-Signin-macOS-${{ matrix.suffix }}.zip" BUAA-Signin.app
+          cd ..
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BUAA-Signin-macOS-${{ matrix.suffix }}
+          path: dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip
+
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.2.0 "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
