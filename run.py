@@ -188,42 +188,89 @@ def run_server(port: int):
     server.run()
 
 
+def parse_arguments():
+    import argparse
+    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.2.0")
+    parser.add_argument("--headless", action="store_true", help="无头模式：纯 Web 服务运行（适合 Linux 服务器、Docker 容器与后台驻留）")
+    parser.add_argument("--host", type=str, default=None, help="监听主机地址（桌面模式默认 127.0.0.1，无头模式默认 0.0.0.0）")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"监听端口号（默认 {DEFAULT_PORT}）")
+    parser.add_argument("--autostart", action="store_true", help="开机自启静默启动模式")
+    parser.add_argument("--minimized", action="store_true", help="最小化启动模式")
+    return parser.parse_args()
+
+
 def main():
     global window, tray_icon
 
-    # 1. 单实例互斥检查：如果已有实例在运行，直接唤醒前台窗口并极速退出本进程
-    if check_and_wake_existing(DEFAULT_PORT):
+    args = parse_arguments()
+
+    # 自动识别环境：判定是否进入 Headless 纯 Web 服务模式
+    is_linux = sys.platform.startswith("linux")
+    has_display = bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+    is_docker = os.path.exists("/.dockerenv") or bool(os.environ.get("DOCKER_CONTAINER"))
+    env_headless = os.environ.get("HEADLESS", "").lower() in ("1", "true", "yes")
+
+    is_headless = args.headless or env_headless or is_docker or (is_linux and not has_display)
+    port = args.port
+
+    # 1. 如果是无头服务模式（Linux 服务器 / Docker / 终端守护），直接启动主线程 Web 服务
+    if is_headless:
+        host = args.host or "0.0.0.0"
+        print("=" * 66)
+        print("  🚀 AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
+        print("=" * 66)
+        print(f"  版本:     v1.2.0-beta")
+        print(f"  监听地址: http://{host}:{port}")
+        print(f"  本地访问: http://127.0.0.1:{port}")
+        print(f"  网络访问: http://<你的服务器IP>:{port}")
+        print("=" * 66)
+        print("  [提示] 按 Ctrl+C 可安全终止服务\n")
+
+        sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+        from server.app import app
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level="info",
+        )
+        return
+
+    # 2. 桌面模式：单实例互斥检查（如果已有实例在运行，直接唤醒前台窗口并退出本进程）
+    if check_and_wake_existing(port):
         print("BUAA 课程签到助手实例已在运行中，已成功唤醒主窗口。")
         sys.exit(0)
 
-    # 2. 判断是否为开机自启模式
-    start_hidden = "--autostart" in sys.argv or "--minimized" in sys.argv
+    # 判断是否为开机自启模式
+    start_hidden = args.autostart or args.minimized
 
     # 3. 启动后台 FastAPI 服务线程
-    server_thread = threading.Thread(target=run_server, args=(DEFAULT_PORT,), daemon=True)
+    server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
     server_thread.start()
 
     # 等待服务端口就绪
-    wait_for_server(DEFAULT_PORT, timeout=3.5)
+    wait_for_server(port, timeout=3.5)
 
-    # 4. 创建 Windows 任务栏系统托盘
-    # 严格按照需求：右键菜单仅保留一个按钮——“退出应用”
-    tray_img = get_tray_image()
-    tray_menu = pystray.Menu(
-        pystray.MenuItem("退出应用", lambda icon, item: exit_all())
-    )
-    tray_icon = CustomTrayIcon(
-        name="BUAA-Signin",
-        icon=tray_img,
-        title="BUAA 课程独立签到助手 v1.2.0 (后台运行中)",
-        menu=tray_menu,
-    )
-    tray_icon.run_detached()
+    # 4. 创建桌面任务栏系统托盘（右键菜单仅保留一个按钮——“退出应用”）
+    try:
+        tray_img = get_tray_image()
+        tray_menu = pystray.Menu(
+            pystray.MenuItem("退出应用", lambda icon, item: exit_all())
+        )
+        tray_icon = CustomTrayIcon(
+            name="BUAA-Signin",
+            icon=tray_img,
+            title="BUAA 课程独立签到助手 v1.2.0 (后台运行中)",
+            menu=tray_menu,
+        )
+        tray_icon.run_detached()
+    except Exception as te:
+        print(f"系统托盘创建跳过: {te}")
 
     # 5. 启动原生桌面窗体 (pywebview)
     try:
         import webview
-        url = f"http://127.0.0.1:{DEFAULT_PORT}"
+        url = f"http://127.0.0.1:{port}"
         window = webview.create_window(
             title=APP_TITLE,
             url=url,
@@ -240,7 +287,7 @@ def main():
     except Exception as e:
         # 回退模式（如无图形渲染驱动）：使用默认浏览器打开
         if not start_hidden:
-            webbrowser.open(f"http://127.0.0.1:{DEFAULT_PORT}")
+            webbrowser.open(f"http://127.0.0.1:{port}")
         while not is_exiting:
             time.sleep(1)
 

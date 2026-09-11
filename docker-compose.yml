@@ -1,0 +1,15 @@
+﻿version: '3.8'
+
+services:
+  auto-buaa:
+    build: .
+    image: auto-buaa:v1.2.0
+    container_name: auto-buaa
+    restart: unless-stopped
+    ports:
+      - "18346:18346"
+    volumes:
+      - ./config.json:/app/config.json
+    environment:
+      - TZ=Asia/Shanghai
+      - HEADLESS=1
