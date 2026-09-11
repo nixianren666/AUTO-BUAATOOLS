@@ -1,4 +1,4 @@
-name: Build and Release macOS App
+﻿name: Build and Release macOS App
 
 on:
   workflow_dispatch:
@@ -53,20 +53,30 @@ jobs:
         run: |
           PYTHONPATH=. python scripts/smoke_test_mac.py
 
-      - name: Archive .app into portable zip
+      - name: Create DMG Disk Image and Zip Archive
         run: |
+          # 1. Create elegant DMG with Applications symlink
+          mkdir -p dist/dmg_root
+          cp -R dist/BUAA-Signin.app dist/dmg_root/
+          ln -s /Applications dist/dmg_root/Applications
+          hdiutil create -volname "BUAA-Signin" -srcfolder dist/dmg_root -ov -format UDZO "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg"
+
+          # 2. Also package zip for direct portability
           cd dist
           zip -r -y "BUAA-Signin-macOS-${{ matrix.suffix }}.zip" BUAA-Signin.app
           cd ..
 
-      - name: Upload Build Artifact
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: BUAA-Signin-macOS-${{ matrix.suffix }}
-          path: dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip
+          path: |
+            dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg
+            dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip
 
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh release upload v1.2.0 "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
           gh release upload v1.2.0 "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
