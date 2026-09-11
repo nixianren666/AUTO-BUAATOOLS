@@ -3,3 +3,10 @@ fastapi>=0.110.0
 uvicorn>=0.28.0
 cryptography>=42.0.0
 pydantic>=2.6.0
+pystray>=0.19.5
+pillow>=10.0.0
+pywebview>=5.0.0
+pyobjc-core>=10.0; sys_platform == 'darwin'
+pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'
+pyobjc-framework-WebKit>=10.0; sys_platform == 'darwin'
+

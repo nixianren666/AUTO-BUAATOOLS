@@ -9,7 +9,7 @@
 [![Version](https://img.shields.io/badge/version-1.2.0--beta-blue.svg)](https://github.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue.svg)](https://www.microsoft.com/)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 
 [免责声明](#-免责声明) • [项目介绍](#-项目介绍) • [核心特性](#-核心功能亮点) • [使用方法](#-使用方法) • [测试说明与反馈](#-测试阶段说明与问题反馈) • [鸣谢致敬](#-致谢与鸣谢)
 
@@ -85,11 +85,18 @@
 2. 将程序放置在任意目录（例如桌面或个人工具箱），双击即可直接运行；
 3. 绿色便携版将配置文件保存在同级目录下，即插即用，随拷随走。
 
-### 方案 3：开发者源码本地运行
+### 方案 3：macOS 绿色免安装独立版（Apple Silicon & Intel ⭐⭐⭐）
+1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载适配您 Mac 芯片架构的压缩包：
+   - **Apple Silicon 芯片（M1 / M2 / M3 / M4 等）**：`BUAA-Signin-macOS-arm64.zip`
+   - **Intel 处理器芯片**：`BUAA-Signin-macOS-x86_64.zip`
+2. 解压后直接获得独立应用 **`BUAA-Signin.app`**，双击直接运行，**完全免安装，随拷随用**；
+3. **首次启动提示**：开源个人应用初次在 Mac 打开时，若系统 Gatekeeper 提示“无法打开未知开发者”，按住键盘 `Control` 键右键点击应用图标并选择“打开”即可正常运行。
+
+### 方案 4：开发者源码跨平台运行 (Windows / macOS / Linux)
 1. **克隆代码并进入目录**：
    ```bash
-   git clone <你的GitHub仓库链接>
-   cd ubaa
+   git clone https://github.com/nixianren666/AUTO-BUAATOOLS.git
+   cd AUTO-BUAATOOLS
    ```
 2. **安装 Python 运行依赖**（推荐 Python 3.10+）：
    ```bash
@@ -99,7 +106,7 @@
    ```bash
    python run.py
    ```
-   或在 Windows 下双击 `start.bat` / `启动签到软件.bat`。
+   Windows 下亦可双击 `start.bat` / `启动签到软件.bat`。
 
 ---
 
