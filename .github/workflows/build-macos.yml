@@ -1,4 +1,4 @@
-﻿name: Build and Release macOS App
+name: Build and Release macOS App
 
 on:
   workflow_dispatch:
@@ -48,7 +48,7 @@ jobs:
 
       - name: Execute live smoke test
         run: |
-          python scripts/smoke_test_mac.py
+          PYTHONPATH=. python scripts/smoke_test_mac.py
 
       - name: Archive .app into portable zip
         run: |

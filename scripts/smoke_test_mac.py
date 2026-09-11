@@ -1,10 +1,13 @@
-﻿import subprocess
+import subprocess
 import time
 import urllib.request
 import json
 import os
 import sys
 import pathlib
+
+# Ensure project root is in sys.path
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.resolve()))
 
 print("=== Starting macOS Smoke Test for BUAA-Signin ===")
 
