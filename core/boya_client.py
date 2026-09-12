@@ -42,7 +42,7 @@ class BoyaClient:
     def __init__(self, mode: str = "direct", token: Optional[str] = None) -> None:
         self.mode = mode.lower()  # "direct" 或 "webvpn"
         self.token = token
-        self.http_client = httpx.Client(timeout=25, follow_redirects=False)
+        self.http_client = httpx.Client(timeout=25, follow_redirects=False, verify=False)
 
     def upstream(self, url: str) -> str:
         if self.mode == "webvpn":
@@ -134,6 +134,10 @@ class BoyaClient:
                 elif 300 <= resp.status_code <= 399:
                     break
                 else:
+                    if resp.status_code == 200:
+                        t = self._extract_token(resp.text)
+                        if t:
+                            return t
                     break
         return None
 

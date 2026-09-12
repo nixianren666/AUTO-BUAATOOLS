@@ -314,6 +314,10 @@ class IclassClient:
         """
         login_name = await self.resolve_login_name()
         if not login_name:
+            login_name = self.user_info.get("schoolid")
+            if login_name:
+                self.login_name = str(login_name)
+        if not login_name:
             self.last_error = self.last_error or "无法从北航课堂系统中解析登录名 (loginName)"
             return False
 
