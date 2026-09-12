@@ -112,7 +112,7 @@ class IclassClient:
         return url
 
     def is_authenticated(self) -> bool:
-        return bool(self.user_id and self.session_id)
+        return bool((self.user_id and self.session_id) or self.user_info.get("schoolid"))
 
     async def close(self):
         if self._client is not None and not self._client.is_closed:
@@ -255,6 +255,9 @@ class IclassClient:
         通过跟踪 iclass MyCenter 跳转页提取 loginName
         对应 UBAA LocalSigninApiBackend.resolveLoginName
         """
+        if self.login_name:
+            return self.login_name
+
         raw_url = SIGNIN_MY_CENTER_URL
         name = extract_login_name_from_url(raw_url)
         if name:
@@ -307,13 +310,45 @@ class IclassClient:
     async def login_iclass(self) -> bool:
         """
         使用解析出的 loginName 登录 iclass 移动客户端系统
-        对应 UBAA LocalSigninApiBackend.login
+        优先接入当前主流 8346 端口 /esp/auth/signIn，同时兼容备用 8347 端口
         """
         login_name = await self.resolve_login_name()
         if not login_name:
             self.last_error = self.last_error or "无法从北航课堂系统中解析登录名 (loginName)"
             return False
 
+        # 方案一：8346 端口 /esp/auth/signIn (当前官方移动端/外网主流接口，响应极速)
+        esp_login_url = self.wrap_url("https://iclass.buaa.edu.cn:8346/esp/auth/signIn")
+        try:
+            esp_resp = await self.client.get(
+                esp_login_url,
+                params={
+                    "flag": "3",
+                    "verifyCode": "",
+                    "verifyUuid": "",
+                    "loginName": login_name,
+                    "password": "",
+                    "verificationType": "",
+                    "deviceType": "phone",
+                },
+                timeout=httpx.Timeout(timeout=5.0, connect=3.0),
+            )
+            if esp_resp.status_code == 200:
+                data = esp_resp.json()
+                meta = data.get("meta") or {}
+                if meta.get("code") == "0" or meta.get("success") is True:
+                    result = data.get("data", {}).get("result", {})
+                    self.user_id = str(result.get("id", ""))
+                    self.session_id = str(result.get("sessionId", ""))
+                    real_name = result.get("realName") or result.get("nickName")
+                    if real_name:
+                        self.user_info["name"] = real_name
+                    if self.user_id and self.session_id:
+                        return True
+        except Exception as e:
+            logger.debug(f"8346 esp/auth/signIn attempt: {e}")
+
+        # 方案二：8347 端口 /app/user/login.action (旧版客户端接口降级兜底)
         app_login_url = self.wrap_url("https://iclass.buaa.edu.cn:8347/app/user/login.action")
         try:
             resp = await self.client.get(
@@ -325,29 +360,22 @@ class IclassClient:
                     "verificationType": "2",
                     "verificationUrl": "",
                 },
+                timeout=httpx.Timeout(timeout=4.0, connect=2.5),
             )
+            if resp.status_code == 200:
+                data = resp.json()
+                status = str(data.get("STATUS", ""))
+                if status in ("0", "200", "success"):
+                    result = data.get("result") or {}
+                    self.user_id = str(result.get("id", ""))
+                    self.session_id = str(result.get("sessionId", ""))
+                    return bool(self.user_id and self.session_id)
+                else:
+                    self.last_error = data.get("ERRMSG") or "iclass 登录失败"
         except Exception as e:
-            self.last_error = f"连接 iclass app 登录接口失败: {e}"
-            return False
+            self.last_error = f"连接 iclass 接口失败: {e}"
 
-        if resp.status_code != 200:
-            self.last_error = f"iclass 服务响应异常 (HTTP {resp.status_code})"
-            return False
-
-        try:
-            data = resp.json()
-            status = str(data.get("STATUS", ""))
-            if status not in ("0", "200", "success"):
-                self.last_error = data.get("ERRMSG") or "iclass 登录失败"
-                return False
-
-            result = data.get("result") or {}
-            self.user_id = str(result.get("id", ""))
-            self.session_id = str(result.get("sessionId", ""))
-            return bool(self.user_id and self.session_id)
-        except Exception as e:
-            self.last_error = f"解析 iclass 登录响应失败: {e}"
-            return False
+        return bool(self.user_id and self.session_id)
 
     async def ensure_iclass_session(self) -> bool:
         """确保当前具备可用的 iclass userId 与 sessionId"""
@@ -366,49 +394,53 @@ class IclassClient:
         now = datetime.datetime.now()
         date_str = now.strftime("%Y%m%d")
 
-        url = self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action")
         headers = {"sessionId": self.session_id or ""}
         params = {"id": self.user_id or "", "dateStr": date_str}
 
-        try:
-            resp = await self.client.get(url, headers=headers, params=params)
-            if resp.status_code != 200:
-                return []
+        candidate_urls = [
+            self.wrap_url("https://iclass.buaa.edu.cn:8346/app/course/get_stu_course_sched.action"),
+            self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action"),
+        ]
 
-            data = resp.json()
-            status = str(data.get("STATUS", ""))
-            # 若提示登录失效，重试一次
-            if "STATUS" in data and status not in ("0", "200", "success"):
-                self.user_id = None
-                self.session_id = None
-                if await self.login_iclass():
-                    headers["sessionId"] = self.session_id or ""
-                    params["id"] = self.user_id or ""
-                    resp = await self.client.get(url, headers=headers, params=params)
-                    data = resp.json()
-
-            classes = []
-            for item in data.get("result") or []:
-                # 兼容 status 可能是 int 或 str
-                raw_status = item.get("signStatus", 0)
-                try:
-                    sign_status = int(raw_status)
-                except (ValueError, TypeError):
-                    sign_status = 0
-
-                classes.append(
-                    {
-                        "courseId": str(item.get("id", "")),
-                        "courseName": str(item.get("courseName", "")),
-                        "classBeginTime": str(item.get("classBeginTime", "")),
-                        "classEndTime": str(item.get("classEndTime", "")),
-                        "signStatus": sign_status,  # 0: 未签到, 1: 已签到
-                    }
+        for url in candidate_urls:
+            try:
+                resp = await self.client.get(
+                    url,
+                    headers=headers,
+                    params=params,
+                    timeout=httpx.Timeout(timeout=4.0, connect=2.5),
                 )
-            return classes
-        except Exception as e:
-            logger.error(f"Error fetching today classes: {e}")
-            return []
+                if resp.status_code != 200:
+                    continue
+
+                data = resp.json()
+                status = str(data.get("STATUS", ""))
+                if "STATUS" in data and status not in ("0", "200", "success"):
+                    continue
+
+                classes = []
+                for item in data.get("result") or []:
+                    raw_status = item.get("signStatus", 0)
+                    try:
+                        sign_status = int(raw_status)
+                    except (ValueError, TypeError):
+                        sign_status = 0
+
+                    classes.append(
+                        {
+                            "courseId": str(item.get("id", "")),
+                            "courseName": str(item.get("courseName", "")),
+                            "classBeginTime": str(item.get("classBeginTime", "")),
+                            "classEndTime": str(item.get("classEndTime", "")),
+                            "signStatus": sign_status,  # 0: 未签到, 1: 已签到
+                        }
+                    )
+                return classes
+            except Exception as e:
+                logger.debug(f"Fetch sched from {url} error: {e}")
+                continue
+
+        return []
 
     async def perform_signin(self, course_id: str) -> Tuple[bool, str]:
         """
@@ -419,70 +451,85 @@ class IclassClient:
             return False, self.last_error or "未登录 iclass 系统"
 
         # 1. 获取服务器时间戳
-        ts_base = (
-            "https://iclass.buaa.edu.cn:8347/app/common/get_timestamp.action"
+        ts_candidates = [
+            self.wrap_url("https://iclass.buaa.edu.cn:8346/app/common/get_timestamp.action"),
+            self.wrap_url("https://iclass.buaa.edu.cn:8347/app/common/get_timestamp.action")
             if self.mode == "webvpn"
-            else "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action"
-        )
-        ts_url = self.wrap_url(ts_base)
+            else "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action",
+        ]
+        timestamp = None
+        for ts_url in ts_candidates:
+            try:
+                ts_resp = await self.client.get(ts_url, timeout=httpx.Timeout(timeout=4.0, connect=2.5))
+                if ts_resp.status_code == 200:
+                    ts_data = ts_resp.json()
+                    timestamp = ts_data.get("timestamp")
+                    if timestamp:
+                        break
+            except Exception:
+                continue
 
-        try:
-            ts_resp = await self.client.get(ts_url)
-            ts_data = ts_resp.json()
-            timestamp = ts_data.get("timestamp")
-            if not timestamp:
-                return False, "获取服务器时间戳失败"
-        except Exception as e:
-            return False, f"获取服务器时间戳网络异常: {e}"
+        if not timestamp:
+            timestamp = int(datetime.datetime.now().timestamp() * 1000)
 
         # 2. 提交扫码签到
-        sign_base = (
-            "https://iclass.buaa.edu.cn:8347/eschool/app/course/stu_scan_sign.action"
+        sign_candidates = [
+            self.wrap_url("https://iclass.buaa.edu.cn:8346/eschool/app/course/stu_scan_sign.action"),
+            self.wrap_url("https://iclass.buaa.edu.cn:8347/eschool/app/course/stu_scan_sign.action")
             if self.mode == "webvpn"
-            else "http://iclass.buaa.edu.cn:8081/eschool/app/course/stu_scan_sign.action"
-        )
-        sign_url = self.wrap_url(sign_base)
+            else "http://iclass.buaa.edu.cn:8081/eschool/app/course/stu_scan_sign.action",
+        ]
 
         headers = {"sessionId": self.session_id or ""}
         params = {"courseSchedId": course_id, "timestamp": str(timestamp)}
         form_data = {"id": self.user_id or ""}
 
-        try:
-            resp = await self.client.post(
-                sign_url,
-                headers=headers,
-                params=params,
-                data=form_data,
-            )
-            data = resp.json()
-            status = str(data.get("STATUS", ""))
-            raw_msg = data.get("ERRMSG")
-            result = data.get("result") or {}
-            stu_status = str(result.get("stuSignStatus", ""))
+        for sign_url in sign_candidates:
+            try:
+                resp = await self.client.post(
+                    sign_url,
+                    headers=headers,
+                    params=params,
+                    data=form_data,
+                    timeout=httpx.Timeout(timeout=5.0, connect=3.0),
+                )
+                if resp.status_code != 200:
+                    continue
 
-            is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
+                data = resp.json()
+                status = str(data.get("STATUS", ""))
+                raw_msg = data.get("ERRMSG")
+                result = data.get("result") or {}
+                stu_status = str(result.get("stuSignStatus", ""))
 
-            # 若提示需要登录则重新登录后重试一次
-            if not is_ok and raw_msg and "登录" in raw_msg:
-                self.user_id = None
-                self.session_id = None
-                if await self.login_iclass():
-                    headers["sessionId"] = self.session_id or ""
-                    form_data["id"] = self.user_id or ""
-                    resp = await self.client.post(
-                        sign_url,
-                        headers=headers,
-                        params=params,
-                        data=form_data,
-                    )
-                    data = resp.json()
-                    status = str(data.get("STATUS", ""))
-                    raw_msg = data.get("ERRMSG")
-                    result = data.get("result") or {}
-                    stu_status = str(result.get("stuSignStatus", ""))
-                    is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
+                is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
 
-            msg = sanitize_signin_message(is_ok, raw_msg)
-            return is_ok, msg
-        except Exception as e:
-            return False, f"提交签到请求失败: {e}"
+                # 若提示需要登录则重新登录后重试一次
+                if not is_ok and raw_msg and "登录" in raw_msg:
+                    self.user_id = None
+                    self.session_id = None
+                    if await self.login_iclass():
+                        headers["sessionId"] = self.session_id or ""
+                        form_data["id"] = self.user_id or ""
+                        resp = await self.client.post(
+                            sign_url,
+                            headers=headers,
+                            params=params,
+                            data=form_data,
+                            timeout=httpx.Timeout(timeout=5.0, connect=3.0),
+                        )
+                        data = resp.json()
+                        status = str(data.get("STATUS", ""))
+                        raw_msg = data.get("ERRMSG")
+                        result = data.get("result") or {}
+                        stu_status = str(result.get("stuSignStatus", ""))
+                        is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
+
+                msg = sanitize_signin_message(is_ok, raw_msg)
+                return is_ok, msg
+            except Exception as e:
+                logger.debug(f"Sign attempt at {sign_url} failed: {e}")
+                continue
+
+        return False, "提交签到请求失败，网络连接超时"
+

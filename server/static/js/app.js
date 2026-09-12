@@ -113,7 +113,7 @@ async function fetchInitialState() {
 
     updateUIElements();
 
-    if (appState.authenticated) {
+    if (appState.authenticated || appState.accounts.length > 0) {
       fetchClasses();
       fetchBoyaData(false);
     } else if (appState.accounts.length === 0) {
