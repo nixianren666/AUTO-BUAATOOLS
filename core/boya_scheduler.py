@@ -21,7 +21,13 @@ logger = logging.getLogger(__name__)
 def parse_dt(value: Optional[str]) -> Optional[datetime]:
     if not value:
         return None
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y/%m/%d %H:%M",
+    ):
         try:
             return datetime.strptime(value[:19], fmt)
         except ValueError:
@@ -120,6 +126,8 @@ class BoyaScheduler:
         self.done_records: Set[str] = set()
         # 记录选课成功或已报名的历史：(username, course_id_or_name)
         self.chosen_history: Set[Tuple[str, str]] = set()
+        # 记录各账号后台周期静默同步已选课表的时间戳：username -> float
+        self.last_sync_times: Dict[str, float] = {}
 
     def start(self, interval_seconds: int = 60) -> None:
         if self.running:
@@ -161,11 +169,24 @@ class BoyaScheduler:
             if not boya_client or not boya_client.is_authenticated():
                 continue
 
+            # 定期静默同步最新已选课程（每 5 分钟巡检一次）
+            # 确保无论课程是本软件自动抢到的，还是学生在微信小程序/学校官网自行选中的，都能被守护引擎自动捕获并无缝纳入自动签到/签退！
+            if username not in self.last_sync_times:
+                self.last_sync_times[username] = time.time()
+            elif time.time() - self.last_sync_times[username] > 300:
+                try:
+                    synced = acc.boya_client.query_chosen_courses()
+                    if synced:
+                        acc.boya_selected_courses = synced
+                    self.last_sync_times[username] = time.time()
+                except Exception as sync_e:
+                    logger.debug(f"Auto sync chosen courses error for {username}: {sync_e}")
+
             # 1. 自动抢选课流程
             if getattr(acc, "boya_auto_select", False):
                 self._check_auto_select(acc, now)
 
-            # 2. 自动签到/签退流程
+            # 2. 自动签到/签退流程（覆盖全部已选课程，包含自选与代抢课程）
             if getattr(acc, "boya_auto_sign", False):
                 self._check_auto_sign(acc, now)
 
@@ -305,8 +326,25 @@ class BoyaScheduler:
 
             cfg = parse_sign_config(course.get("courseSignConfig"))
             points = cfg.get("signPointList") or []
+            
+            # 【重要逻辑增强】：如果学生手动在手机/网页端选的课在已选课程接口中缺少签到配置，
+            # 自动从全量学期课池 boya_all_courses 中检索补齐老师配置的签到定位经纬度与时间窗口！
             if not points:
-                continue  # 无定位配置无法执行自主签到
+                pool_match = next((c for c in getattr(acc, "boya_all_courses", []) if (
+                    str(c.get("id")) == cid_str or str(c.get("courseId")) == cid_str or 
+                    (c.get("courseName") and c.get("courseName") == course.get("courseName"))
+                )), None)
+                if pool_match:
+                    cfg = parse_sign_config(pool_match.get("courseSignConfig"))
+                    points = cfg.get("signPointList") or []
+                    if not course.get("courseStartDate"):
+                        course["courseStartDate"] = pool_match.get("courseStartDate")
+                        course["courseStartTime"] = pool_match.get("courseStartTime")
+                        course["courseEndDate"] = pool_match.get("courseEndDate")
+                        course["courseEndTime"] = pool_match.get("courseEndTime")
+
+            if not points:
+                continue  # 无自主定位打卡配置（如线下纸质签名或闸机刷卡课），安全跳过
 
             ref_point = points[-1]
             try:

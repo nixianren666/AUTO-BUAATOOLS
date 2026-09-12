@@ -1253,6 +1253,10 @@ async def sign_boya_course(req: BoyaSignRequest):
     action_text = "签退" if req.sign_type == 2 else "签到"
     try:
         res = acc.boya_client.sign_course(req.course_id, lat=lat, lng=lng, sign_type=req.sign_type)
+        # 同步记录至守护调度器防重记录，避免后台巡检重复打卡
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        record_key = f"{acc.username}_{'signout' if req.sign_type == 2 else 'sign'}_{req.course_id}_{today_str}"
+        boya_scheduler.done_records.add(record_key)
         add_log("success", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 手动{action_text}成功！微扰定位坐标: ({lat}, {lng})", username=acc.username, user_name=acc.name, category="boya")
         return {"status": "success", "result": res}
     except Exception as e:
