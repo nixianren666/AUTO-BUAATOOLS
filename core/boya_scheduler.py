@@ -114,10 +114,12 @@ class BoyaScheduler:
         self.interval_seconds = 60
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-        # 记录 3 次失败熔断字典：(username, course_id) -> fail_count
-        self.fail_counters: Dict[Tuple[str, int], int] = {}
+        # 记录 3 次失败熔断字典：(username, target_key) -> fail_count
+        self.fail_counters: Dict[Tuple[str, Any], int] = {}
         # 已完成操作防重记录：(username, action, course_id, date_str) -> bool
         self.done_records: Set[str] = set()
+        # 记录选课成功或已报名的历史：(username, course_id_or_name)
+        self.chosen_history: Set[Tuple[str, str]] = set()
 
     def start(self, interval_seconds: int = 60) -> None:
         if self.running:
@@ -172,21 +174,42 @@ class BoyaScheduler:
         user_name = acc.name
         campus = getattr(acc, "campus", "北京")
         cached_courses: List[Dict[str, Any]] = getattr(acc, "boya_all_courses", [])
-        selected_ids: Set[int] = {c.get("id") or c.get("courseId") for c in getattr(acc, "boya_selected_courses", [])}
+        
+        # 建立当前已选课程的完备索引（提取所有可能的 ID 形式与课程名）
+        selected_ids: Set[str] = set()
+        selected_names: Set[str] = set()
+        for c in getattr(acc, "boya_selected_courses", []):
+            for k in ("id", "courseId", "course_id", "chosenCourseId"):
+                v = c.get(k)
+                if v is not None:
+                    selected_ids.add(str(v))
+            name = (c.get("courseName") or c.get("name") or "").strip()
+            if name:
+                selected_names.add(name)
 
         for course in cached_courses:
-            cid = course.get("id")
-            if not cid or cid in selected_ids:
+            cid = course.get("id") or course.get("courseId")
+            if not cid:
+                continue
+            cid_str = str(cid)
+            cname = (course.get("courseName") or course.get("name") or cid_str).strip()
+
+            # 防重检查 1：已在已选课程列表中
+            if cid_str in selected_ids or cname in selected_names:
                 continue
 
-            # 检查熔断
+            # 防重检查 2：已在运行时已选历史中（已抢中或服务端提示已报名过）
+            if (username, cid_str) in self.chosen_history or (username, cname) in self.chosen_history:
+                continue
+
+            # 检查熔断：连续失败达 3 次则本轮停止重试
             fail_key = (username, cid)
-            if self.fail_counters.get(fail_key, 0) >= 3:
+            fail_key_str = (username, cid_str)
+            if self.fail_counters.get(fail_key, 0) >= 3 or self.fail_counters.get(fail_key_str, 0) >= 3:
                 continue
 
-            # 检查候选条件
+            # 检查候选条件（校区、分类、自主签到、选课时间窗口、容量）
             if is_auto_select_candidate(course, now, campus=campus):
-                cname = course.get("courseName") or course.get("name") or str(cid)
                 self.add_log(
                     "info",
                     f"发现符合策略的博雅课程 [{cname} (ID: {cid})]，正在触发自动抢课...",
@@ -196,6 +219,11 @@ class BoyaScheduler:
                 )
                 try:
                     res = acc.boya_client.select_course(cid)
+                    # 抢课成功！登记历史防重
+                    self.chosen_history.add((username, cid_str))
+                    self.chosen_history.add((username, cname))
+                    self.fail_counters.pop(fail_key, None)
+                    self.fail_counters.pop(fail_key_str, None)
                     self.add_log(
                         "success",
                         f"🎉 成功抢中博雅课程 [{cname}]！已加入课表",
@@ -209,19 +237,49 @@ class BoyaScheduler:
                     except Exception:
                         pass
                 except BoyaApiError as e:
-                    self.fail_counters[fail_key] = self.fail_counters.get(fail_key, 0) + 1
-                    attempts = self.fail_counters[fail_key]
-                    self.add_log(
-                        "warning",
-                        f"抢课 [{cname}] 响应提示: {e.message} (累计失败: {attempts}/3 次)",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
+                    err_msg = str(e.message or "")
+                    already_selected_keywords = ["已报名", "重复报名", "已经选", "已存在", "已参加", "请勿重复", "不可重复"]
+                    if any(kw in err_msg for kw in already_selected_keywords):
+                        # 服务器反馈已经报名或不可重复，明确为已选课程，坚决不再重复发送请求！
+                        self.chosen_history.add((username, cid_str))
+                        self.chosen_history.add((username, cname))
+                        self.fail_counters.pop(fail_key, None)
+                        self.fail_counters.pop(fail_key_str, None)
+                        self.add_log(
+                            "info",
+                            f"博雅课程 [{cname} (ID: {cid})] 提示已报名/已在选课记录中，已自动标记并停止后续抢课请求。",
+                            username=username,
+                            user_name=user_name,
+                            category="boya",
+                        )
+                        try:
+                            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
+                        except Exception:
+                            pass
+                    else:
+                        self.fail_counters[fail_key] = self.fail_counters.get(fail_key, 0) + 1
+                        self.fail_counters[fail_key_str] = self.fail_counters[fail_key]
+                        attempts = self.fail_counters[fail_key]
+                        if attempts >= 3:
+                            self.add_log(
+                                "warning",
+                                f"抢课 [{cname}] 连续尝试失败达到安全上限 (3次)，已触发熔断保护，本轮停止重试以防风控。",
+                                username=username,
+                                user_name=user_name,
+                                category="boya",
+                            )
+                        else:
+                            self.add_log(
+                                "warning",
+                                f"抢课 [{cname}] 响应提示: {e.message} (重试 {attempts}/3 次)",
+                                username=username,
+                                user_name=user_name,
+                                category="boya",
+                            )
                 except Exception as e:
                     self.add_log(
                         "error",
-                        f"抢课 [{cname}] 发生异常: {e}",
+                        f"抢课 [{cname}] 发生网络异常: {e}",
                         username=username,
                         user_name=user_name,
                         category="boya",
@@ -231,12 +289,20 @@ class BoyaScheduler:
         username = acc.username
         user_name = acc.name
         chosen_courses: List[Dict[str, Any]] = getattr(acc, "boya_selected_courses", [])
+        today_str = now.strftime("%Y-%m-%d")
 
         for course in chosen_courses:
             cid = course.get("id") or course.get("courseId")
             if not cid:
                 continue
-            cname = course.get("courseName") or course.get("name") or str(cid)
+            cid_str = str(cid)
+            cname = course.get("courseName") or course.get("name") or cid_str
+
+            # 检查课程状态：已结课或已结束跳过
+            status_str = str(course.get("courseStatus") or course.get("status") or "")
+            if "结课" in status_str or "结束" in status_str:
+                continue
+
             cfg = parse_sign_config(course.get("courseSignConfig"))
             points = cfg.get("signPointList") or []
             if not points:
@@ -250,64 +316,108 @@ class BoyaScheduler:
             except (ValueError, TypeError):
                 continue
 
-            today_str = now.strftime("%Y-%m-%d")
-
             # 1. 签到检查
-            sign_key = f"{username}_sign_{cid}_{today_str}"
-            if sign_key not in self.done_records and in_window(cfg.get("signStartDate"), cfg.get("signEndDate"), now):
-                lat, lng = random_point_in_radius(base_lat, base_lng, radius)
-                self.add_log(
-                    "info",
-                    f"进入博雅课程 [{cname}] 签到窗口，正在生成定位坐标 ({lat}, {lng}) 提交签到...",
-                    username=username,
-                    user_name=user_name,
-                    category="boya",
-                )
-                try:
-                    acc.boya_client.sign_course(cid, lat, lng, sign_type=1)
-                    self.done_records.add(sign_key)
+            sign_key = f"{username}_sign_{cid_str}_{today_str}"
+            already_signed = (course.get("signStatus") == 1 or course.get("courseSignStatus") == 1 or course.get("signInStatus") == 1)
+            if already_signed:
+                self.done_records.add(sign_key)
+
+            sign_fail_key = (username, f"sign_{cid_str}_{today_str}")
+            if sign_key not in self.done_records and self.fail_counters.get(sign_fail_key, 0) < 3:
+                in_sign_window = in_window(cfg.get("signStartDate"), cfg.get("signEndDate"), now)
+                if not in_sign_window and not cfg.get("signStartDate"):
+                    c_start = parse_dt(f"{course.get('courseStartDate')} {course.get('courseStartTime')}") if course.get('courseStartDate') and course.get('courseStartTime') else None
+                    if c_start:
+                        from datetime import timedelta
+                        if c_start - timedelta(minutes=15) <= now <= c_start + timedelta(minutes=30):
+                            in_sign_window = True
+
+                if in_sign_window:
+                    lat, lng = random_point_in_radius(base_lat, base_lng, radius)
                     self.add_log(
-                        "success",
-                        f"✅ 博雅课程 [{cname}] 自动签到成功！",
+                        "info",
+                        f"进入博雅课程 [{cname}] 签到窗口，正在生成定位坐标 ({lat}, {lng}) 提交签到...",
                         username=username,
                         user_name=user_name,
                         category="boya",
                     )
-                except Exception as e:
-                    self.add_log(
-                        "warning",
-                        f"博雅课程 [{cname}] 自动签到未能完成: {e}",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
+                    try:
+                        acc.boya_client.sign_course(cid, lat, lng, sign_type=1)
+                        self.done_records.add(sign_key)
+                        self.fail_counters.pop(sign_fail_key, None)
+                        self.add_log(
+                            "success",
+                            f"✅ 博雅课程 [{cname}] 自动签到成功！",
+                            username=username,
+                            user_name=user_name,
+                            category="boya",
+                        )
+                    except Exception as e:
+                        err_msg = str(e)
+                        if any(kw in err_msg for kw in ["已签到", "不能重复", "已完成"]):
+                            self.done_records.add(sign_key)
+                            self.fail_counters.pop(sign_fail_key, None)
+                            self.add_log("info", f"博雅课程 [{cname}] 提示已完成签到，记录完成状态。", username=username, user_name=user_name, category="boya")
+                        else:
+                            self.fail_counters[sign_fail_key] = self.fail_counters.get(sign_fail_key, 0) + 1
+                            attempts = self.fail_counters[sign_fail_key]
+                            self.add_log(
+                                "warning" if attempts < 3 else "error",
+                                f"博雅课程 [{cname}] 自动签到未能完成: {e} ({attempts}/3 次)",
+                                username=username,
+                                user_name=user_name,
+                                category="boya",
+                            )
 
             # 2. 签退检查
-            signout_key = f"{username}_signout_{cid}_{today_str}"
-            if signout_key not in self.done_records and in_window(cfg.get("signOutStartDate"), cfg.get("signOutEndDate"), now):
-                lat, lng = random_point_in_radius(base_lat, base_lng, radius)
-                self.add_log(
-                    "info",
-                    f"进入博雅课程 [{cname}] 签退窗口，正在生成定位坐标 ({lat}, {lng}) 提交签退...",
-                    username=username,
-                    user_name=user_name,
-                    category="boya",
-                )
-                try:
-                    acc.boya_client.sign_course(cid, lat, lng, sign_type=2)
-                    self.done_records.add(signout_key)
+            signout_key = f"{username}_signout_{cid_str}_{today_str}"
+            already_signed_out = (course.get("signOutStatus") == 1 or course.get("courseSignOutStatus") == 1)
+            if already_signed_out:
+                self.done_records.add(signout_key)
+
+            signout_fail_key = (username, f"signout_{cid_str}_{today_str}")
+            if signout_key not in self.done_records and self.fail_counters.get(signout_fail_key, 0) < 3:
+                in_signout_window = in_window(cfg.get("signOutStartDate"), cfg.get("signOutEndDate"), now)
+                if not in_signout_window and not cfg.get("signOutStartDate"):
+                    c_end = parse_dt(f"{course.get('courseEndDate')} {course.get('courseEndTime')}") if course.get('courseEndDate') and course.get('courseEndTime') else None
+                    if c_end:
+                        from datetime import timedelta
+                        if c_end - timedelta(minutes=15) <= now <= c_end + timedelta(minutes=30):
+                            in_signout_window = True
+
+                if in_signout_window:
+                    lat, lng = random_point_in_radius(base_lat, base_lng, radius)
                     self.add_log(
-                        "success",
-                        f"🏁 博雅课程 [{cname}] 自动签退成功！",
+                        "info",
+                        f"进入博雅课程 [{cname}] 签退窗口，正在生成定位坐标 ({lat}, {lng}) 提交签退...",
                         username=username,
                         user_name=user_name,
                         category="boya",
                     )
-                except Exception as e:
-                    self.add_log(
-                        "warning",
-                        f"博雅课程 [{cname}] 自动签退未能完成: {e}",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
+                    try:
+                        acc.boya_client.sign_course(cid, lat, lng, sign_type=2)
+                        self.done_records.add(signout_key)
+                        self.fail_counters.pop(signout_fail_key, None)
+                        self.add_log(
+                            "success",
+                            f"🏁 博雅课程 [{cname}] 自动签退成功！",
+                            username=username,
+                            user_name=user_name,
+                            category="boya",
+                        )
+                    except Exception as e:
+                        err_msg = str(e)
+                        if any(kw in err_msg for kw in ["已签退", "不能重复", "已完成"]):
+                            self.done_records.add(signout_key)
+                            self.fail_counters.pop(signout_fail_key, None)
+                            self.add_log("info", f"博雅课程 [{cname}] 提示已完成签退，记录完成状态。", username=username, user_name=user_name, category="boya")
+                        else:
+                            self.fail_counters[signout_fail_key] = self.fail_counters.get(signout_fail_key, 0) + 1
+                            attempts = self.fail_counters[signout_fail_key]
+                            self.add_log(
+                                "warning" if attempts < 3 else "error",
+                                f"博雅课程 [{cname}] 自动签退未能完成: {e} ({attempts}/3 次)",
+                                username=username,
+                                user_name=user_name,
+                                category="boya",
+                            )

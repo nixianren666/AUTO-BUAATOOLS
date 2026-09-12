@@ -14,7 +14,7 @@ let appState = {
   currentCaptchaId: "",
   logsTimer: null,
   currentLogFilter: "",
-  currentLogCategory: "regular",
+  currentLogCategory: "all",
   currentMainView: "regular", // "regular" | "boya" | "logs"
   boyaTab: "all", // 默认聚焦全量选课池，方便快速查阅与抢课
   boyaCourses: [],
@@ -91,6 +91,8 @@ function switchMainView(viewName) {
 
   if (viewName === "boya") {
     fetchBoyaData(false);
+  } else if (viewName === "logs") {
+    fetchLogs();
   }
 }
 
@@ -713,8 +715,12 @@ async function changeBoyaCampus(campus) {
 
 function setLogCategory(cat) {
   appState.currentLogCategory = cat;
-  document.getElementById("logCatRegular").classList.toggle("active", cat === "regular");
-  document.getElementById("logCatBoya").classList.toggle("active", cat === "boya");
+  const btnAll = document.getElementById("logCatAll");
+  const btnReg = document.getElementById("logCatRegular");
+  const btnBoya = document.getElementById("logCatBoya");
+  if (btnAll) btnAll.classList.toggle("active", cat === "all");
+  if (btnReg) btnReg.classList.toggle("active", cat === "regular");
+  if (btnBoya) btnBoya.classList.toggle("active", cat === "boya");
   fetchLogs();
 }
 
@@ -728,8 +734,25 @@ async function fetchLogs() {
   const container = document.getElementById("logsContainer");
   if (!container) return;
 
+  // 更新终端标题，显示当前绑定的学生与分类
+  const titleEl = document.getElementById("logTerminalTitle");
+  if (titleEl) {
+    const studentName = appState.activeUser ? (appState.activeUser.name || appState.activeUser.username) : "系统全部";
+    const catLabel = appState.currentLogCategory === "boya" ? "自动博雅" : (appState.currentLogCategory === "regular" ? "常规课程" : "总日志");
+    titleEl.textContent = `运行审计日志 · 当前学生: ${studentName} [${catLabel}]`;
+  }
+
   try {
-    const url = appState.currentLogCategory === "boya" ? "/api/boya/logs" : "/api/logs";
+    const params = new URLSearchParams();
+    if (appState.activeUsername) {
+      params.append("username", appState.activeUsername);
+    }
+    if (appState.currentLogCategory && appState.currentLogCategory !== "all") {
+      params.append("category", appState.currentLogCategory);
+    } else {
+      params.append("category", "all");
+    }
+    const url = `/api/logs?${params.toString()}`;
     const res = await fetch(url);
     const data = await res.json();
     const logs = data.logs || [];
@@ -759,15 +782,21 @@ async function fetchLogs() {
 
 async function clearLogs() {
   try {
-    const url = appState.currentLogCategory === "boya" ? "/api/boya/logs" : "/api/logs/clear";
-    if (appState.currentLogCategory === "boya") {
-      // clear local
-    } else {
-      await fetch(url, { method: "POST" });
+    const params = new URLSearchParams();
+    if (appState.activeUsername) {
+      params.append("username", appState.activeUsername);
     }
+    if (appState.currentLogCategory && appState.currentLogCategory !== "all") {
+      params.append("category", appState.currentLogCategory);
+    } else {
+      params.append("category", "all");
+    }
+    const url = `/api/logs/clear?${params.toString()}`;
+    await fetch(url, { method: "POST" });
     const c = document.getElementById("logsContainer");
     if (c) c.innerHTML = "";
-    showToast("终端日志已清空", "info");
+    showToast("当前视板块日志已清空", "info");
+    fetchLogs();
   } catch (e) {}
 }
 
@@ -822,6 +851,7 @@ async function switchStudentAccount(username) {
       closeAccountCardsModal();
       fetchClasses();
       fetchBoyaData();
+      fetchLogs();
       showToast(`已切换至学生: ${appState.activeUser ? appState.activeUser.name : username}`, "success");
     }
   } catch (e) {}

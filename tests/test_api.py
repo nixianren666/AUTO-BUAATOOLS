@@ -85,6 +85,56 @@ class TestApiServer(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "ok")
 
+    def test_logs_isolation_by_user_and_category(self):
+        from server.app import add_log, logs_list
+        # 清空测试前的日志
+        self.client.post("/api/logs/clear")
+        logs_list.clear()
+
+        # 构造各学生与业务分类日志
+        add_log("info", "系统守护进程启动成功", username="", category="system")
+        add_log("info", "学生1常规签到成功", username="student1", category="regular")
+        add_log("info", "学生1抢中博雅课程", username="student1", category="boya")
+        add_log("info", "学生2常规课堂待考勤", username="student2", category="regular")
+        add_log("info", "学生2已选博雅课程同步", username="student2", category="boya")
+
+        # 1. 学生1 - 总日志 (应当只包含 学生1的日志 + 系统公共日志，绝不包含学生2)
+        r_s1_all = self.client.get("/api/logs?username=student1&category=all").json()
+        s1_all_msgs = [l["message"] for l in r_s1_all["logs"]]
+        self.assertIn("系统守护进程启动成功", s1_all_msgs)
+        self.assertIn("学生1常规签到成功", s1_all_msgs)
+        self.assertIn("学生1抢中博雅课程", s1_all_msgs)
+        self.assertNotIn("学生2常规课堂待考勤", s1_all_msgs)
+        self.assertNotIn("学生2已选博雅课程同步", s1_all_msgs)
+
+        # 2. 学生1 - 常规课程 (应当只包含 学生1的常规日志，绝不包含博雅日志)
+        r_s1_reg = self.client.get("/api/logs?username=student1&category=regular").json()
+        s1_reg_msgs = [l["message"] for l in r_s1_reg["logs"]]
+        self.assertIn("学生1常规签到成功", s1_reg_msgs)
+        self.assertNotIn("学生1抢中博雅课程", s1_reg_msgs)
+        self.assertNotIn("学生2常规课堂待考勤", s1_reg_msgs)
+
+        # 3. 学生1 - 自动博雅 (应当只包含 学生1的博雅日志，绝不包含常规日志)
+        r_s1_boya = self.client.get("/api/logs?username=student1&category=boya").json()
+        s1_boya_msgs = [l["message"] for l in r_s1_boya["logs"]]
+        self.assertIn("学生1抢中博雅课程", s1_boya_msgs)
+        self.assertNotIn("学生1常规签到成功", s1_boya_msgs)
+        self.assertNotIn("学生2已选博雅课程同步", s1_boya_msgs)
+
+        # 4. 学生2 - 常规与博雅隔离
+        r_s2_reg = self.client.get("/api/logs?username=student2&category=regular").json()
+        s2_reg_msgs = [l["message"] for l in r_s2_reg["logs"]]
+        self.assertIn("学生2常规课堂待考勤", s2_reg_msgs)
+        self.assertNotIn("学生1常规签到成功", s2_reg_msgs)
+
+        # 5. 精确清空学生1的博雅日志
+        self.client.post("/api/logs/clear?username=student1&category=boya")
+        r_s1_boya_after = self.client.get("/api/logs?username=student1&category=boya").json()
+        self.assertEqual(len(r_s1_boya_after["logs"]), 0)
+        # 常规日志依然健在
+        r_s1_reg_after = self.client.get("/api/logs?username=student1&category=regular").json()
+        self.assertIn("学生1常规签到成功", [l["message"] for l in r_s1_reg_after["logs"]])
+
 
 if __name__ == "__main__":
     unittest.main()
