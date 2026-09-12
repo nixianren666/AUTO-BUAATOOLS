@@ -213,5 +213,34 @@ class TestBoyaScheduler(unittest.TestCase):
         scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 1)
 
+    def test_self_selected_course_auto_sign(self):
+        acc = DummyBoyaAccount()
+        now = datetime.now()
+        start = (now - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        end = (now + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+
+        # 模拟学生自己在手机端选的课（queryChosenCourse 仅返回基础信息，缺少 signPointList）
+        acc.boya_selected_courses = [{
+            "id": 5555,
+            "courseName": "中国古典诗词意境鉴赏",
+            "courseSignConfig": "{}",
+            "signStatus": 0,
+        }]
+
+        # 课池中有该课程的完整定位与签到时间配置
+        acc.boya_all_courses = [{
+            "id": 5555,
+            "courseName": "中国古典诗词意境鉴赏",
+            "courseSignConfig": f'{{"signPointList":[{{"lat":39.9822,"lng":116.3475,"radius":30}}],"signStartDate":"{start}","signEndDate":"{end}"}}',
+        }]
+
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
+        scheduler.tick()
+
+        # 验证：守护引擎应当成功跨表检索补齐经纬度，并成功触发自动签到！
+        signed_cids = [x[0] for x in acc.boya_client.signed_courses]
+        self.assertIn(5555, signed_cids)
+        self.assertEqual(acc.boya_client.signed_courses[0][3], 1)  # sign_type = 1 签到
+
 if __name__ == "__main__":
     unittest.main()
