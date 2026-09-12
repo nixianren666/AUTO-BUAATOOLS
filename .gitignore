@@ -28,3 +28,5 @@ Thumbs.db
 
 # Ignore other staging folders
 Github¿â/
+
+dist_installer/

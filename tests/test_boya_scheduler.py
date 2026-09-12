@@ -142,5 +142,76 @@ class TestBoyaScheduler(unittest.TestCase):
         scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 3)
 
+    def test_duplicate_course_avoidance(self):
+        acc = DummyBoyaAccount()
+        now = datetime.now()
+        start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 候选课池有一门课 ID 10017
+        acc.boya_all_courses = [{
+            "id": 10017,
+            "courseName": "航空航天概论讲座",
+            "coursePosition": "沙河校区J1-101",
+            "courseKind": "博雅科技",
+            "courseCurrentCount": 10,
+            "courseMaxCount": 100,
+            "courseSelectStartDate": start,
+            "courseSelectEndDate": end,
+            "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
+        }]
+
+        # 学生已选课程列表中已有这门课 (比如 courseId 为 10017)
+        acc.boya_selected_courses = [{
+            "id": 88312,
+            "courseId": 10017,
+            "courseName": "航空航天概论讲座",
+            "chosenCourseId": 88312,
+        }]
+
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
+        scheduler.tick()
+
+        # 必须跳过，绝不发起抢课请求
+        self.assertEqual(acc.boya_client.select_call_count, 0)
+
+    def test_server_already_enrolled_stops_subsequent_attempts(self):
+        acc = DummyBoyaAccount()
+        now = datetime.now()
+        start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
+
+        acc.boya_all_courses = [{
+            "id": 10018,
+            "courseName": "中国传统书画鉴赏",
+            "coursePosition": "学院路校区三号楼",
+            "courseKind": "博雅美育",
+            "courseCurrentCount": 10,
+            "courseMaxCount": 100,
+            "courseSelectStartDate": start,
+            "courseSelectEndDate": end,
+            "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
+        }]
+        acc.boya_selected_courses = []
+
+        # 模拟服务端返回：已报名过该课程，请不要重复报名
+        def mock_select(cid):
+            acc.boya_client.select_call_count += 1
+            from core.boya_client import BoyaApiError
+            raise BoyaApiError("1002", "已报名过该课程，请不要重复报名")
+
+        acc.boya_client.select_course = mock_select
+
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
+        
+        # 第 1 轮 tick: 发起一次请求，服务端提示已报名
+        scheduler.tick()
+        self.assertEqual(acc.boya_client.select_call_count, 1)
+        self.assertIn((acc.username, "10018"), scheduler.chosen_history)
+
+        # 第 2 轮 tick: 应被 chosen_history 拦截，绝不再发起第二次请求
+        scheduler.tick()
+        self.assertEqual(acc.boya_client.select_call_count, 1)
+
 if __name__ == "__main__":
     unittest.main()

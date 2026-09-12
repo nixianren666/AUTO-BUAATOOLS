@@ -227,9 +227,14 @@ class BoyaClient:
         res = []
         for item in raw_list:
             info = item.get("courseInfo") or {}
+            real_cid = info.get("id") or item.get("courseId") or item.get("course_id")
+            chosen_reg_id = item.get("id")
             merged = {**info, **item}
+            if real_cid is not None:
+                merged["id"] = real_cid
+                merged["courseId"] = real_cid
+            merged["chosenCourseId"] = chosen_reg_id
             merged["selected"] = True
-            merged["chosenCourseId"] = item.get("id")
             res.append(merged)
         return res
 

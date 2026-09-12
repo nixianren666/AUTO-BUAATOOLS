@@ -358,11 +358,12 @@
             <div class="terminal-header">
               <div class="terminal-title">
                 <span class="origin-status-dot green"></span>
-                <span>SYSTEM LOG MONITOR · 全局审计日志</span>
+                <span id="logTerminalTitle">运行审计日志 · 当前学生: 全部</span>
               </div>
               <div class="terminal-actions">
                 <div class="origin-segmented-control small">
-                  <button class="segmented-btn active" id="logCatRegular" onclick="setLogCategory('regular')">常规课堂</button>
+                  <button class="segmented-btn active" id="logCatAll" onclick="setLogCategory('all')">总日志</button>
+                  <button class="segmented-btn" id="logCatRegular" onclick="setLogCategory('regular')">常规课程</button>
                   <button class="segmented-btn" id="logCatBoya" onclick="setLogCategory('boya')">自动博雅</button>
                 </div>
                 <button class="origin-btn origin-btn-danger-ghost" onclick="clearLogs()">清空日志</button>

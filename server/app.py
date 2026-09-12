@@ -1301,30 +1301,52 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
 
 @app.get("/api/logs")
 async def get_logs(username: Optional[str] = Query(None), category: Optional[str] = Query(None)):
-    """支持按学生账号和业务类别（regular常规课程 / boya博雅课程）隔离获取日志"""
+    """支持按学生账号和业务类别（all总日志 / regular常规课程 / boya自动博雅）隔离获取日志"""
     filtered = logs_list
+
+    # 1. 账号过滤
     if username:
-        filtered = [l for l in filtered if l.get("username") == username]
-    if category:
-        filtered = [l for l in filtered if l.get("category", "regular") == category]
+        if category == "all":
+            # 总日志：显示当前学生自己的全部日志，以及系统公共日志（username 为空）
+            filtered = [l for l in filtered if l.get("username") == username or not l.get("username")]
+        else:
+            # 常规课程、自动博雅或未指定板块的纯用户过滤：严格限定该学生
+            filtered = [l for l in filtered if l.get("username") == username]
+
+    # 2. 业务板块类别过滤
+    if category and category != "all":
+        if category == "regular":
+            # 常规课程：包含 regular 与 iclass 考勤日志
+            filtered = [l for l in filtered if l.get("category", "regular") in ("regular", "iclass")]
+        elif category == "boya":
+            # 自动博雅：仅包含 boya 相关日志
+            filtered = [l for l in filtered if l.get("category", "regular") == "boya"]
+        else:
+            filtered = [l for l in filtered if l.get("category", "regular") == category]
+
     return {"logs": filtered, "username": username, "category": category}
 
 
 @app.post("/api/logs/clear")
 async def clear_logs(username: Optional[str] = Query(None), category: Optional[str] = Query(None)):
     global logs_list
-    if username and category:
-        logs_list = [l for l in logs_list if not (l.get("username") == username and l.get("category", "regular") == category)]
-        add_log("info", f"学生 [{username}] 的 { '博雅' if category == 'boya' else '常规' } 专属日志已清空。", category=category)
+    if username and category and category != "all":
+        cat_matches = ("regular", "iclass") if category == "regular" else (category,)
+        logs_list = [
+            l for l in logs_list
+            if not (l.get("username") == username and l.get("category", "regular") in cat_matches)
+        ]
+        add_log("info", f"学生 [{username}] 的 {'自动博雅' if category == 'boya' else '常规课程'} 专属日志已清空。", category="system")
     elif username:
         logs_list = [l for l in logs_list if l.get("username") != username]
-        add_log("info", f"学生账号 [{username}] 的全部日志已清空。")
-    elif category:
-        logs_list = [l for l in logs_list if l.get("category", "regular") != category]
-        add_log("info", f"全系统 { '博雅' if category == 'boya' else '常规' } 实时运行日志已清空。", category=category)
+        add_log("info", f"学生账号 [{username}] 的全部日志已清空。", category="system")
+    elif category and category != "all":
+        cat_matches = ("regular", "iclass") if category == "regular" else (category,)
+        logs_list = [l for l in logs_list if l.get("category", "regular") not in cat_matches]
+        add_log("info", f"全系统 {'自动博雅' if category == 'boya' else '常规课程'} 实时运行日志已清空。", category="system")
     else:
         logs_list.clear()
-        add_log("info", "全系统实时运行日志已清空。")
+        add_log("info", "全系统实时运行日志已清空。", category="system")
     return {"status": "ok"}
 
 
