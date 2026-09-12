@@ -27,8 +27,19 @@ class SafeStream(io.StringIO):
 
 if sys.stdout is None or not hasattr(sys.stdout, "isatty"):
     sys.stdout = SafeStream()
+elif hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 if sys.stderr is None or not hasattr(sys.stderr, "isatty"):
     sys.stderr = SafeStream()
+elif hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 import uvicorn
 import pystray
@@ -217,7 +228,7 @@ def main():
     if is_headless:
         host = args.host or "0.0.0.0"
         print("=" * 66)
-        print("  🚀 AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
+        print("  [*] AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
         print("=" * 66)
         print(f"  版本:     v1.2.0-beta")
         print(f"  监听地址: http://{host}:{port}")
