@@ -51,19 +51,73 @@ DEFAULT_PORT = 18346
 window = None
 tray_icon = None
 is_exiting = False
+_single_instance_mutex = None
+
+
+def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
+    """
+    确保全系统绝对单实例运行：
+    1. Windows 采用 Win32 Named Mutex (内核级互斥体)
+    2. 其他平台/备用采用本地专用互斥端口占用检测
+    若已有实例在运行，则恢复并置顶已有主窗口，并返回 False（应立即退出）
+    """
+    global _single_instance_mutex
+
+    already_running = False
+
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            MUTEX_NAME = "Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122"
+            _single_instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
+            last_err = ctypes.windll.kernel32.GetLastError()
+            if last_err == 183:  # ERROR_ALREADY_EXISTS
+                already_running = True
+        except Exception:
+            pass
+
+    # 备用检查：测试本地端口是否已被前一个实例占用
+    if not already_running:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_sock:
+                test_sock.settimeout(0.3)
+                if test_sock.connect_ex(("127.0.0.1", port)) == 0:
+                    already_running = True
+        except Exception:
+            pass
+
+    if already_running:
+        # 激活并前台化既有窗口
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                hwnd = ctypes.windll.user32.FindWindowW(None, APP_TITLE)
+                if hwnd:
+                    ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                    ctypes.windll.user32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+
+        # 发送本地 HTTP 唤醒信标（显式禁用系统代理，直连 127.0.0.1）
+        check_and_wake_existing(port)
+        return False
+
+    return True
 
 
 def check_and_wake_existing(port: int = DEFAULT_PORT) -> bool:
-    """向已在运行的后台实例发送前台唤醒信标"""
+    """向已在运行的后台实例发送前台唤醒信标（直连本地回环，绕过任何系统代理）"""
     try:
         import urllib.request
+        proxy_handler = urllib.request.ProxyHandler({})
+        opener = urllib.request.build_opener(proxy_handler)
         req = urllib.request.Request(
             f"http://127.0.0.1:{port}/api/window/show",
             data=b"{}",
             headers={"Content-Type": "application/json", "User-Agent": "BUAA-Signin-Launcher"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=0.8) as resp:
+        with opener.open(req, timeout=0.8) as resp:
             if resp.status == 200:
                 return True
     except Exception:
@@ -248,7 +302,7 @@ def main():
         return
 
     # 2. 桌面模式：单实例互斥检查（如果已有实例在运行，直接唤醒前台窗口并退出本进程）
-    if check_and_wake_existing(port):
+    if not acquire_single_instance(port):
         print("BUAA 课程签到助手实例已在运行中，已成功唤醒主窗口。")
         sys.exit(0)
 

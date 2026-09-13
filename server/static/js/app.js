@@ -76,7 +76,7 @@ function switchMainView(viewName) {
   const breadcrumb = document.getElementById("topbarCurrentSection");
   if (breadcrumb) {
     if (viewName === "regular") breadcrumb.textContent = "常规课堂考勤";
-    else if (viewName === "boya") breadcrumb.textContent = "自动博雅套件 / 毕业学分与选课";
+    else if (viewName === "boya") breadcrumb.textContent = "自动博雅套件 / 学期博雅素养与选课";
     else if (viewName === "logs") breadcrumb.textContent = "实时终端监控 / 系统全局审计";
   }
 
@@ -376,9 +376,19 @@ function getCourseAttendanceInfo(c) {
   if (c.attendance_status && typeof c.attendance_status === "object") {
     return c.attendance_status;
   }
-  const raw = c.attendanceStatus ?? c.courseAttendanceStatus ?? c.checkInStatus ?? c.kaoqinStatus;
-  const isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
-  const isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
+  const raw = c.checkin ?? c.attendanceStatus ?? c.courseAttendanceStatus ?? c.checkInStatus ?? c.kaoqinStatus;
+  let isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
+  let isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
+
+  if (c.signInfo) {
+    try {
+      const sInfo = typeof c.signInfo === "string" ? JSON.parse(c.signInfo) : c.signInfo;
+      if (sInfo && typeof sInfo === "object") {
+        if (sInfo.signIn) isSigned = true;
+        if (sInfo.signOut) isSignedOut = true;
+      }
+    } catch (e) {}
+  }
 
   if (raw === 1 || raw === "1" || raw === "合格" || raw === "通过" || raw === "正常") {
     return { passed: true, text: "考勤通过", badge: "badge-green" };
@@ -406,7 +416,7 @@ function getCourseExamInfo(c) {
   if (c.exam_status && typeof c.exam_status === "object") {
     return c.exam_status;
   }
-  const raw = c.examStatus ?? c.checkStatus ?? c.passStatus ?? c.isPass ?? c.kaoheStatus;
+  const raw = c.pass ?? c.examStatus ?? c.checkStatus ?? c.passStatus ?? c.isPass ?? c.kaoheStatus;
   if (raw === 1 || raw === "1" || raw === "通过" || raw === "合格" || raw === "PASS") {
     return { passed: true, text: "考核通过", badge: "badge-green" };
   }
@@ -436,6 +446,7 @@ function getCourseExamInfo(c) {
 // 最终考核判定：考勤和考核都通过才算完成最终考核
 function isCourseFinalPassed(c) {
   if (c.final_passed === true) return true;
+  if (c.pass === 1 && (c.checkin === 1 || (c.signInfo && String(c.signInfo).includes("signIn")))) return true;
   const att = getCourseAttendanceInfo(c);
   const exam = getCourseExamInfo(c);
   return att.passed === true && exam.passed === true;

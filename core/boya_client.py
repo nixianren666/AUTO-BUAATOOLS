@@ -235,6 +235,14 @@ class BoyaClient:
                 merged["courseId"] = real_cid
             merged["chosenCourseId"] = chosen_reg_id
             merged["selected"] = True
+            if "checkin" in item:
+                merged["checkin"] = item["checkin"]
+            if "pass" in item:
+                merged["pass"] = item["pass"]
+            if "score" in item:
+                merged["score"] = item["score"]
+            if "signInfo" in item:
+                merged["signInfo"] = item["signInfo"]
             res.append(merged)
         return res
 
@@ -242,6 +250,7 @@ class BoyaClient:
         """获取学生博雅学分完成情况与分类考核统计"""
         data = self.call("queryStatisticByUserId", {})
         return data.get("data") or {}
+
 
     def select_course(self, course_id: int) -> Dict[str, Any]:
         """执行真实抢课/选课"""
@@ -260,3 +269,36 @@ class BoyaClient:
             "signCourseByUser",
             {"courseId": course_id, "signLat": lat, "signLng": lng, "signType": sign_type},
         )
+
+
+def extract_real_name_from_stats(stats: Dict[str, Any]) -> Optional[str]:
+    """从 queryStatisticByUserId 返回的数据树或顶层字段中提取学生真实姓名"""
+    if not isinstance(stats, dict):
+        return None
+
+    # 1. 顶层 userInfo 提取
+    top_user = stats.get("userInfo")
+    if isinstance(top_user, dict):
+        rn = top_user.get("realName") or top_user.get("name")
+        if rn and str(rn).strip():
+            return str(rn).strip()
+    if stats.get("realName"):
+        return str(stats["realName"]).strip()
+
+    # 2. 多层分类统计树提取
+    statistical = stats.get("statistical")
+    if not isinstance(statistical, dict):
+        return None
+    boya_courses = statistical.get("60|博雅课程")
+    if not isinstance(boya_courses, dict):
+        return None
+    for cat_data in boya_courses.values():
+        if isinstance(cat_data, dict):
+            u_list = cat_data.get("courseUserList") or []
+            for u_item in u_list:
+                if isinstance(u_item, dict):
+                    user_info = u_item.get("userInfo") or {}
+                    real_name = user_info.get("realName") or user_info.get("name")
+                    if real_name and str(real_name).strip():
+                        return str(real_name).strip()
+    return None

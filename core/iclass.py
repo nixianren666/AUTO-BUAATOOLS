@@ -373,6 +373,9 @@ class IclassClient:
                     result = data.get("result") or {}
                     self.user_id = str(result.get("id", ""))
                     self.session_id = str(result.get("sessionId", ""))
+                    real_name = result.get("realName") or result.get("nickName")
+                    if real_name:
+                        self.user_info["name"] = real_name
                     return bool(self.user_id and self.session_id)
                 else:
                     self.last_error = data.get("ERRMSG") or "iclass 登录失败"
@@ -430,12 +433,29 @@ class IclassClient:
                     except (ValueError, TypeError):
                         sign_status = 0
 
+                    c_sched_id = str(item.get("id") or item.get("courseSchedId") or "")
+                    c_id = str(item.get("courseId") or c_sched_id)
+                    begin_time = str(item.get("classBeginTime") or "")
+                    end_time = str(item.get("classEndTime") or "")
+                    start_str = begin_time[11:16] if len(begin_time) >= 16 else (begin_time or "--")
+                    end_str = end_time[11:16] if len(end_time) >= 16 else (end_time or "--")
+                    room = str(item.get("classroomName") or item.get("classroom") or item.get("roomName") or "校内教室")
+                    teacher = str(item.get("teacherName") or item.get("teacher") or "任课教师")
+
                     classes.append(
                         {
-                            "courseId": str(item.get("id", "")),
-                            "courseName": str(item.get("courseName", "")),
-                            "classBeginTime": str(item.get("classBeginTime", "")),
-                            "classEndTime": str(item.get("classEndTime", "")),
+                            "id": c_sched_id,
+                            "courseSchedId": c_sched_id,
+                            "courseId": c_id,
+                            "courseName": str(item.get("courseName") or "未知课程"),
+                            "classBeginTime": begin_time,
+                            "classEndTime": end_time,
+                            "startTime": start_str,
+                            "endTime": end_str,
+                            "classroomName": room,
+                            "classroom": room,
+                            "teacherName": teacher,
+                            "teacher": teacher,
                             "signStatus": sign_status,  # 0: 未签到, 1: 已签到
                         }
                     )
