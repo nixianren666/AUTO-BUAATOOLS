@@ -139,8 +139,8 @@ def is_auto_select_candidate(
     if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now):
         return False
     # 检查容量
-    cur = course.get("courseCurrentCount")
-    max_c = course.get("courseMaxCount")
+    cur = course.get("courseCurrentCount") if course.get("courseCurrentCount") is not None else (course.get("courseCurrentNum") if course.get("courseCurrentNum") is not None else course.get("currentCount"))
+    max_c = course.get("courseMaxCount") if course.get("courseMaxCount") is not None else (course.get("courseMaxNum") if course.get("courseMaxNum") is not None else course.get("maxCount"))
     if cur is not None and max_c is not None:
         try:
             if int(cur) >= int(max_c):

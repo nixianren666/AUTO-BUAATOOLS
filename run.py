@@ -119,6 +119,26 @@ def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
     return True
 
 
+def release_single_instance(lock: Any = None) -> None:
+    """释放单实例互斥锁与文件句柄"""
+    global _single_instance_mutex, _open_lock_files
+    if sys.platform == "win32" and _single_instance_mutex:
+        try:
+            import ctypes
+            ctypes.windll.kernel32.CloseHandle(_single_instance_mutex)
+        except Exception:
+            pass
+        _single_instance_mutex = None
+    for f in _open_lock_files:
+        try:
+            import fcntl
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            f.close()
+        except Exception:
+            pass
+    _open_lock_files = []
+
+
 def check_and_wake_existing(port: int = DEFAULT_PORT) -> bool:
     """向已在运行的后台实例发送前台唤醒信标（直连本地回环，绕过任何系统代理）"""
     try:
