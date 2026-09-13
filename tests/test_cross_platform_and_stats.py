@@ -189,6 +189,89 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         docker_file = os.path.join(BASE_DIR, "Dockerfile")
         self.assertTrue(os.path.exists(docker_file), "Dockerfile 必须存在")
 
+    def test_courses_time_overlap_detection(self):
+        """测试博雅课程防选错：精准判断上课时间区间重叠冲突"""
+        from core.boya_scheduler import courses_time_overlap
+
+        # 1. 重叠情况：14:00-16:00 与 15:00-17:00
+        c1 = {"courseStartDate": "2026-09-14", "courseStartTime": "14:00:00", "courseEndDate": "2026-09-14", "courseEndTime": "16:00:00"}
+        c2 = {"courseStartDate": "2026-09-14", "courseStartTime": "15:00:00", "courseEndDate": "2026-09-14", "courseEndTime": "17:00:00"}
+        self.assertTrue(courses_time_overlap(c1, c2), "有重叠区间的课程应判定为冲突")
+
+        # 2. 完全包含情况：13:00-17:00 包含 14:00-15:00
+        c3 = {"courseStartDate": "2026-09-14", "courseStartTime": "13:00:00", "courseEndDate": "2026-09-14", "courseEndTime": "17:00:00"}
+        c4 = {"courseStartDate": "2026-09-14", "courseStartTime": "14:00:00", "courseEndDate": "2026-09-14", "courseEndTime": "15:00:00"}
+        self.assertTrue(courses_time_overlap(c3, c4), "包含区间的课程应判定为冲突")
+
+        # 3. 相邻不重叠情况：14:00-16:00 与 16:00-18:00
+        c5 = {"courseStartDate": "2026-09-14", "courseStartTime": "16:00:00", "courseEndDate": "2026-09-14", "courseEndTime": "18:00:00"}
+        self.assertFalse(courses_time_overlap(c1, c5), "紧邻起止但无交集的课程不应判定为冲突")
+
+        # 4. 不同日期情况
+        c6 = {"courseStartDate": "2026-09-15", "courseStartTime": "14:00:00", "courseEndDate": "2026-09-15", "courseEndTime": "16:00:00"}
+        self.assertFalse(courses_time_overlap(c1, c6), "不同日期的课程不应判定为冲突")
+
+    def test_category_demands_and_priority_sorting(self):
+        """测试素养板块达标缺口计算与候选课程优先级权重排序"""
+        from core.boya_scheduler import get_user_category_demands, calculate_candidate_priority
+
+        # 假设学生当前美育已满 1 门，但德育 0/2，劳育 0/2，安全 0/1
+        selected = [
+            {"courseKind": "美育", "courseStartDate": "2026-09-10 14:00:00", "final_passed": True}
+        ]
+        demands = get_user_category_demands(selected)
+        self.assertEqual(demands["美育"]["remaining"], 0, "美育已满额，缺口应为0")
+        self.assertEqual(demands["德育"]["remaining"], 2, "德育未修，缺口应为2")
+        self.assertEqual(demands["劳育"]["remaining"], 2, "劳育未修，缺口应为2")
+        self.assertEqual(demands["安全健康"]["remaining"], 1, "安全健康未修，缺口应为1")
+
+        moral_course = {"courseName": "德育讲座", "courseKind": "德育"}
+        art_course = {"courseName": "美学赏析", "courseKind": "美育"}
+        self.assertGreater(
+            calculate_candidate_priority(moral_course, demands),
+            calculate_candidate_priority(art_course, demands),
+            "未达标板块课程优先级必须高于已达标板块课程"
+        )
+
+    def test_candidate_safety_guards(self):
+        """测试不选选不了的课：取消、停开、已结束课程过滤"""
+        now = datetime.datetime(2026, 9, 14, 10, 0, 0)
+        c_cancelled = {
+            "courseName": "已停开课程",
+            "courseStatus": "已停开",
+            "courseSelectStartDate": "2026-09-10 09:00:00",
+            "courseSelectEndDate": "2026-09-20 18:00:00",
+            "courseCurrentCount": 0,
+            "courseMaxCount": 50,
+        }
+        self.assertFalse(is_auto_select_candidate(c_cancelled, now), "已停开课程不可选")
+
+        c_past = {
+            "courseName": "昨天已上完的课",
+            "courseSelectStartDate": "2026-09-10 09:00:00",
+            "courseSelectEndDate": "2026-09-20 18:00:00",
+            "courseStartDate": "2026-09-13",
+            "courseEndDate": "2026-09-13",
+            "courseEndTime": "18:00:00",
+            "courseCurrentCount": 0,
+            "courseMaxCount": 50,
+        }
+        self.assertFalse(is_auto_select_candidate(c_past, now), "已过上课时间的课程不可选")
+
+    def test_app_icon_assets_integrity(self):
+        """全平台图标与静态资源文件完整性检查"""
+        required_assets = [
+            os.path.join(BASE_DIR, "app_icon.ico"),
+            os.path.join(BASE_DIR, "app_icon.icns"),
+            os.path.join(BASE_DIR, "tray_icon.png"),
+            os.path.join(BASE_DIR, "server", "static", "favicon.ico"),
+            os.path.join(BASE_DIR, "server", "static", "images", "app_logo.png"),
+        ]
+        for path in required_assets:
+            self.assertTrue(os.path.exists(path), f"资源文件必须存在: {path}")
+            self.assertGreater(os.path.getsize(path), 100, f"资源文件不可为空: {path}")
+
 
 if __name__ == "__main__":
     unittest.main()
+

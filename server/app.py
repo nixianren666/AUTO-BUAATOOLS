@@ -1912,3 +1912,12 @@ async def serve_index():
         )
     return {"message": "BUAA Signin UI files not found"}
 
+
+@app.get("/favicon.ico")
+async def serve_favicon():
+    fav_file = STATIC_DIR / "favicon.ico"
+    if fav_file.exists():
+        return FileResponse(fav_file)
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
+

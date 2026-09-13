@@ -4,7 +4,7 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.')],
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.icns', '.')],
     hiddenimports=[
         'cryptography',
         'httpx',
@@ -67,7 +67,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='BUAA-Signin.app',
-    icon=None,
+    icon='app_icon.icns',
     bundle_identifier='com.buaa.signin',
     info_plist={
         'CFBundleDisplayName': 'BUAA 课程独立签到助手',

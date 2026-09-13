@@ -5,7 +5,7 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.')],
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.ico', '.')],
     hiddenimports=[
         'cryptography',
         'cryptography.hazmat.primitives.ciphers',
@@ -61,4 +61,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='app_icon.ico',
 )
