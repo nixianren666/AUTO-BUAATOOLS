@@ -498,9 +498,19 @@ function renderBoyaStatistics(stats) {
   let art = stats.art_completed ?? stats.art_courses_count ?? stats.artCount ?? 0;
   let sec = stats.security_health_completed ?? stats.security_courses_count ?? stats.securityCount ?? 0;
 
-  // 从当前已选课程列表中核算双通过门数
+  // 严格限定当前学期时间范围（彻底排除历史学年往期结课）
+  const semStart = stats.semester_start ? parseIsoOrSpaceDate(stats.semester_start + " 00:00:00") : null;
+  const semEnd = stats.semester_end ? parseIsoOrSpaceDate(stats.semester_end + " 23:59:59") : null;
+
+  // 从当前已选课程列表中核算双通过门数（仅核对落在本学期范围内的课程）
   let listMoral = 0, listLabor = 0, listArt = 0, listSec = 0;
   for (const c of appState.boyaSelected) {
+    if (semStart && semEnd) {
+      const cDate = parseIsoOrSpaceDate(c.courseStartDate || c.courseEndDate || c.selectDate);
+      if (cDate && (cDate < semStart || cDate > semEnd)) {
+        continue; // 忽略非本学期的历史选课
+      }
+    }
     if (isCourseFinalPassed(c)) {
       const cat = normalizeBoyaCategory(c);
       if (cat === "德育") listMoral++;
@@ -533,10 +543,16 @@ function renderBoyaStatistics(stats) {
   const elEarned = document.getElementById("boyaEarnedCredits");
   const elRate = document.getElementById("boyaCompletionRate");
   const elFill = document.getElementById("boyaProgressFill");
+  const elDenom = document.getElementById("boyaSemesterDenominator");
 
   if (elEarned) elEarned.textContent = `${totalPassed}`;
   if (elRate) elRate.textContent = `学期达标完成度 ${rate}%`;
   if (elFill) elFill.style.width = `${rate}%`;
+  if (elDenom && stats.semester_name) {
+    const sShort = stats.semester_name.replace(/（.*）/, "").trim();
+    elDenom.textContent = `/ 6 门 ${sShort}博雅素养达标要求`;
+    elDenom.title = `北航校历学期周期: ${stats.semester_start} 至 ${stats.semester_end}`;
+  }
 
   const pMoral = document.getElementById("pillMoral");
   const pLabor = document.getElementById("pillLabor");
@@ -931,23 +947,35 @@ async function boyaSign(id, signType) {
 }
 
 async function toggleBoyaAutoSelect(enabled) {
+  if (appState.activeUser) appState.activeUser.boya_auto_select = enabled;
+  if (appState.boyaStatus) appState.boyaStatus.boya_auto_select = enabled;
   try {
-    await fetch("/api/boya/toggle_auto", {
+    const res = await fetch("/api/boya/toggle_auto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ auto_select: enabled }),
     });
+    const d = await res.json();
+    if (d && d.status === "ok" && appState.activeUser) {
+      appState.activeUser.boya_auto_select = d.boya_auto_select;
+    }
     showToast(`博雅自动秒抢已${enabled ? "开启守护" : "关闭"}`, "info");
   } catch (e) {}
 }
 
 async function toggleBoyaAutoSign(enabled) {
+  if (appState.activeUser) appState.activeUser.boya_auto_sign = enabled;
+  if (appState.boyaStatus) appState.boyaStatus.boya_auto_sign = enabled;
   try {
-    await fetch("/api/boya/toggle_auto", {
+    const res = await fetch("/api/boya/toggle_auto", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ auto_sign: enabled }),
     });
+    const d = await res.json();
+    if (d && d.status === "ok" && appState.activeUser) {
+      appState.activeUser.boya_auto_sign = d.boya_auto_sign;
+    }
     showToast(`博雅微扰自动打卡已${enabled ? "开启守护" : "关闭"}`, "info");
   } catch (e) {}
 }

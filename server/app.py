@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
-from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius
+from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius, get_current_semester_range
 from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
 
 
@@ -1317,7 +1317,23 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
     art_count = 0
     sec_count = 0
 
-    # 1. 优先解析 SSO queryStatisticByUserId 官方多维度考核统计树
+    # 0. 提取学期期限（优先使用官方 semesterInfo，缺少时基于北航校历基准动态推算）
+    sem_info = (sso_stats or {}).get("semesterInfo") if isinstance(sso_stats, dict) else None
+    sem_start_dt = None
+    sem_end_dt = None
+    semester_name = ""
+    if isinstance(sem_info, dict):
+        semester_name = sem_info.get("semesterName") or ""
+        sem_start_dt = parse_dt(sem_info.get("semesterStartDate"))
+        sem_end_dt = parse_dt(sem_info.get("semesterEndDate"))
+
+    if not sem_start_dt or not sem_end_dt:
+        fb_start, fb_end, fb_name = get_current_semester_range()
+        sem_start_dt = sem_start_dt or fb_start
+        sem_end_dt = sem_end_dt or fb_end
+        semester_name = semester_name or fb_name
+
+    # 1. 优先解析 SSO queryStatisticByUserId 官方多维度考核统计树（官方本身即按当前学期统计）
     if sso_stats and isinstance(sso_stats, dict):
         statistical = sso_stats.get("statistical")
         if isinstance(statistical, dict):
@@ -1335,12 +1351,19 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
                         elif "安全" in cat_key or "健康" in cat_key:
                             sec_count = max(sec_count, comp)
 
-    # 2. 与已选课程列表核对（防止 SSO 统计树延迟更新或单门已结课通过）
+    # 2. 与已选课程列表核对（严格限定开课或结课时间落在当前学期范围内，严防跨学期污染）
     list_moral = 0
     list_labor = 0
     list_art = 0
     list_sec = 0
     for c in selected_list or []:
+        # 校验课程时间是否在当前学期范围内
+        c_date_str = c.get("courseStartDate") or c.get("courseEndDate") or c.get("selectDate")
+        c_dt = parse_dt(c_date_str)
+        if c_dt and sem_start_dt and sem_end_dt:
+            if not (sem_start_dt <= c_dt <= sem_end_dt):
+                continue  # 彻底排除历史学年的选课
+
         if c.get("final_passed") is True:
             kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
             if "德育" in kind:
@@ -1358,7 +1381,7 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
     sec_count = max(sec_count, list_sec)
 
     # 3. 兜底兼容直接传入的扁平统计字段
-    if sso_stats and isinstance(sso_stats, dict):
+    if sso_stats and isinstance(sso_stats, dict) and not sso_stats.get("statistical"):
         moral_count = max(moral_count, int(sso_stats.get("moral_courses_count") or sso_stats.get("moralCount") or 0))
         labor_count = max(labor_count, int(sso_stats.get("labor_courses_count") or sso_stats.get("laborCount") or 0))
         art_count = max(art_count, int(sso_stats.get("art_courses_count") or sso_stats.get("artCount") or 0))
@@ -1370,6 +1393,13 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
     eff_sec = min(sec_count, 1)
     total_passed = eff_moral + eff_labor + eff_art + eff_sec
     rate = round((total_passed / 6.0) * 100)
+
+    official_valid = None
+    if sso_stats and isinstance(sso_stats, dict) and sso_stats.get("validCount") is not None:
+        try:
+            official_valid = int(sso_stats["validCount"])
+        except Exception:
+            pass
 
     return {
         "moral_completed": moral_count,
@@ -1387,6 +1417,10 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
         "semester_passed_total": total_passed,
         "semester_required_total": 6,
         "semester_compliance_rate": rate,
+        "semester_name": semester_name,
+        "semester_start": sem_start_dt.strftime("%Y-%m-%d") if sem_start_dt else "",
+        "semester_end": sem_end_dt.strftime("%Y-%m-%d") if sem_end_dt else "",
+        "valid_count": official_valid if official_valid is not None else total_passed,
         "art_courses_count": art_count,
         "labor_courses_count": labor_count,
         "security_courses_count": sec_count,
@@ -1395,7 +1429,7 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
         "total_required": 6,
         "totalCredit": float(sso_stats.get("totalCredit") or sso_stats.get("total_credits") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
         "total_credits": float(sso_stats.get("total_credits") or sso_stats.get("totalCredit") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
-        "requiredCredit": 4.0,
+        "requiredCredit": float(sso_stats.get("requiredCredit") or 6.0) if sso_stats else 6.0,
     }
 
 
