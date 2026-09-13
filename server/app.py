@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
-from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
+from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
 from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius
 
 
@@ -445,7 +445,7 @@ async def connect_single_account(acc: AccountState) -> bool:
             res = await acc.client.login_sso(username=acc.username, password=acc.password)
             if res.get("status") == "success":
                 real_name = res.get("user", {}).get("name")
-                if real_name:
+                if real_name and real_name != acc.username:
                     acc.name = real_name
 
                 # 优先同步博雅系统授权与课程数据
@@ -458,6 +458,9 @@ async def connect_single_account(acc: AccountState) -> bool:
                         acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
                         acc.boya_statistics = acc.boya_client.query_statistics()
                         acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                        boya_name = extract_real_name_from_stats(acc.boya_statistics)
+                        if boya_name and boya_name != acc.username:
+                            acc.name = boya_name
                         add_log("success", f"学生 [{acc.name}] 博雅系统授权与排课同步成功！", username=acc.username, user_name=acc.name, category="boya")
                 except Exception as be:
                     logger.debug(f"Boya auto sync during connect: {be}")
@@ -465,6 +468,9 @@ async def connect_single_account(acc: AccountState) -> bool:
                 # 尝试接入常规课堂签到系统
                 iclass_ok = await acc.client.login_iclass()
                 if iclass_ok:
+                    iclass_name = acc.client.user_info.get("name")
+                    if iclass_name and iclass_name != acc.username:
+                        acc.name = iclass_name
                     add_log("success", f"学生 [{acc.name}] 登录及常规课堂系统接入成功！({ '校园网直连' if attempt_mode == 'direct' else 'WebVPN 外网' })", username=acc.username, user_name=acc.name)
                     try:
                         classes = await acc.client.get_today_classes()
@@ -664,21 +670,28 @@ async def login(req: LoginRequest):
                 acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
                 acc.boya_statistics = acc.boya_client.query_statistics()
                 acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                boya_name = extract_real_name_from_stats(acc.boya_statistics)
+                if boya_name and boya_name != acc.username:
+                    acc.name = boya_name
                 add_log("success", f"【{acc.name}】博雅系统授权与排课同步成功！", username=acc.username, user_name=acc.name, category="boya")
         except Exception as be:
             logger.debug(f"Boya auto sync during login: {be}")
+            add_log("warning", f"【{acc.name}】博雅系统授权同步异常: {be}", username=acc.username, user_name=acc.name, category="boya")
 
         # 接入 iclass 课堂签到系统
         add_log("info", f"正在接入 iclass 课堂签到系统 ({'校园网直连' if attempt_mode == 'direct' else 'WebVPN 外网'})...", username=acc.username, user_name=acc.name)
         iclass_ok = await acc.client.login_iclass()
         if iclass_ok:
+            iclass_name = acc.client.user_info.get("name")
+            if iclass_name and iclass_name != acc.username:
+                acc.name = iclass_name
             add_log("success", f"【{acc.name}】iclass 课堂考勤系统接入成功！", username=acc.username, user_name=acc.name)
             try:
                 classes = await acc.client.get_today_classes()
                 acc.last_classes = classes
                 acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
-            except Exception:
-                pass
+            except Exception as ce:
+                add_log("error", f"【{acc.name}】拉取今日课表失败: {ce}", username=acc.username, user_name=acc.name, category="regular")
         else:
             add_log("info", f"【{acc.name}】统一认证成功，常规考勤接口暂未响应 (可能非教学时段或维护中)，博雅套件已正常就绪。", username=acc.username, user_name=acc.name)
 
@@ -723,10 +736,13 @@ async def get_today_classes():
         curr.last_classes = classes
         curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
         if classes:
-            add_log("info", f"【{curr.name}】今日课表刷新完成，共 {len(classes)} 门课。", username=curr.username, user_name=curr.name)
+            add_log("info", f"【{curr.name}】今日课表刷新完成，共 {len(classes)} 门课。", username=curr.username, user_name=curr.name, category="regular")
+        else:
+            add_log("info", f"【{curr.name}】今日常规课程暂无排课或无需签到。", username=curr.username, user_name=curr.name, category="regular")
         return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
     except Exception as e:
         logger.debug(f"Fetch classes error: {e}")
+        add_log("error", f"【{curr.name}】获取常规课程课表失败: {e}", username=curr.username, user_name=curr.name, category="regular")
         return {"status": "success", "classes": curr.last_classes, "username": curr.username, "name": curr.name}
 
 
@@ -1194,14 +1210,37 @@ def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List
             c["courseStatus"] = "已结课"
 
         # 解析考勤状态 (attendance_status)
-        raw_att = c.get("attendanceStatus") or c.get("courseAttendanceStatus") or c.get("checkInStatus") or c.get("kaoqinStatus")
-        is_signed = (c.get("signStatus") == 1 or c.get("courseSignStatus") == 1 or c.get("signInStatus") == 1)
+        # 1. 优先读取官方 checkin 字段 (1=通过/已考勤, 0=未通过/缺勤)
+        raw_att = (
+            c.get("checkin")
+            if c.get("checkin") is not None
+            else (c.get("attendanceStatus") or c.get("courseAttendanceStatus") or c.get("checkInStatus") or c.get("kaoqinStatus"))
+        )
+
+        has_sign_info = False
+        sign_info = c.get("signInfo")
+        if isinstance(sign_info, str) and sign_info.strip():
+            try:
+                sign_dict = json.loads(sign_info)
+                if isinstance(sign_dict, dict):
+                    has_sign_info = bool(sign_dict.get("signIn") or sign_dict.get("signOut"))
+            except Exception:
+                has_sign_info = ("signIn" in sign_info or "signOut" in sign_info)
+        elif isinstance(sign_info, dict):
+            has_sign_info = bool(sign_info.get("signIn") or sign_info.get("signOut"))
+
+        is_signed = (c.get("signStatus") == 1 or c.get("courseSignStatus") == 1 or c.get("signInStatus") == 1 or has_sign_info)
         is_signed_out = (c.get("signOutStatus") == 1 or c.get("courseSignOutStatus") == 1)
 
         if raw_att in (1, "1", "合格", "通过", "正常"):
             c["attendance_status"] = {"passed": True, "text": "考勤通过", "badge": "badge-green"}
         elif raw_att in (0, "0", "缺勤", "未通过", "不合格"):
-            c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
+            if has_sign_info:
+                c["attendance_status"] = {"passed": True, "text": "考勤通过(已打卡)", "badge": "badge-green"}
+            else:
+                c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
+        elif has_sign_info:
+            c["attendance_status"] = {"passed": True, "text": "考勤通过(已打卡)", "badge": "badge-green"}
         elif is_signed and is_signed_out:
             c["attendance_status"] = {"passed": True, "text": "考勤通过(已双签)", "badge": "badge-green"}
         elif is_signed:
@@ -1215,7 +1254,12 @@ def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List
             c["attendance_status"] = {"passed": None, "text": "待考勤", "badge": "badge-blue"}
 
         # 解析考核状态 (exam_status)
-        raw_exam = c.get("examStatus") or c.get("checkStatus") or c.get("passStatus") or c.get("isPass") or c.get("kaoheStatus")
+        # 优先读取官方 pass 字段 (1=通过, 0=未通过)
+        raw_exam = (
+            c.get("pass")
+            if c.get("pass") is not None
+            else (c.get("examStatus") or c.get("checkStatus") or c.get("passStatus") or c.get("isPass") or c.get("kaoheStatus"))
+        )
         if raw_exam in (1, "1", "通过", "合格", "PASS"):
             c["exam_status"] = {"passed": True, "text": "考核通过", "badge": "badge-green"}
         elif raw_exam in (0, "0", "未通过", "不合格", "FAIL"):
@@ -1240,8 +1284,11 @@ def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List
         else:
             c["exam_status"] = {"passed": None, "text": "未开考", "badge": "badge-blue"}
 
-        # 最终考核：必须是考勤和考核都通过才算完成最终考核
-        c["final_passed"] = bool(c["attendance_status"].get("passed") is True and c["exam_status"].get("passed") is True)
+        # 最终考核：必须是考勤和考核都通过（或官方 pass==1 且考勤通过/已打卡）
+        c["final_passed"] = bool(
+            (c["attendance_status"].get("passed") is True and c["exam_status"].get("passed") is True)
+            or (c.get("pass") == 1 and (c.get("checkin") == 1 or c["attendance_status"].get("passed") is True))
+        )
         enriched.append(c)
 
     return enriched
@@ -1253,19 +1300,47 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
     art_count = 0
     sec_count = 0
 
+    # 1. 优先解析 SSO queryStatisticByUserId 官方多维度考核统计树
+    if sso_stats and isinstance(sso_stats, dict):
+        statistical = sso_stats.get("statistical")
+        if isinstance(statistical, dict):
+            boya_tree = statistical.get("60|博雅课程")
+            if isinstance(boya_tree, dict):
+                for cat_key, cat_val in boya_tree.items():
+                    if isinstance(cat_val, dict):
+                        comp = int(cat_val.get("completeAssessmentCount") or 0)
+                        if "德育" in cat_key:
+                            moral_count = max(moral_count, comp)
+                        elif "劳育" in cat_key or "劳动" in cat_key:
+                            labor_count = max(labor_count, comp)
+                        elif "美育" in cat_key or "艺术" in cat_key:
+                            art_count = max(art_count, comp)
+                        elif "安全" in cat_key or "健康" in cat_key:
+                            sec_count = max(sec_count, comp)
+
+    # 2. 与已选课程列表核对（防止 SSO 统计树延迟更新或单门已结课通过）
+    list_moral = 0
+    list_labor = 0
+    list_art = 0
+    list_sec = 0
     for c in selected_list or []:
         if c.get("final_passed") is True:
             kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
             if "德育" in kind:
-                moral_count += 1
+                list_moral += 1
             elif "劳育" in kind or "劳动" in kind:
-                labor_count += 1
+                list_labor += 1
             elif "美育" in kind or "艺术" in kind:
-                art_count += 1
+                list_art += 1
             elif "安全" in kind or "健康" in kind:
-                sec_count += 1
+                list_sec += 1
 
-    # 兜底：若已选课表中尚无结课记录但 SSO 统计有数字，兼容合并
+    moral_count = max(moral_count, list_moral)
+    labor_count = max(labor_count, list_labor)
+    art_count = max(art_count, list_art)
+    sec_count = max(sec_count, list_sec)
+
+    # 3. 兜底兼容直接传入的扁平统计字段
     if sso_stats and isinstance(sso_stats, dict):
         moral_count = max(moral_count, int(sso_stats.get("moral_courses_count") or sso_stats.get("moralCount") or 0))
         labor_count = max(labor_count, int(sso_stats.get("labor_courses_count") or sso_stats.get("laborCount") or 0))
@@ -1389,8 +1464,12 @@ async def get_boya_statistics(force: bool = False):
     if force or not curr.boya_statistics:
         try:
             curr.boya_statistics = curr.boya_client.query_statistics()
+            boya_name = extract_real_name_from_stats(curr.boya_statistics)
+            if boya_name and boya_name != curr.username and curr.name != boya_name:
+                curr.name = boya_name
+                sync_config()
         except Exception as e:
-            pass
+            add_log("error", f"【{curr.name}】获取博雅素养学分统计失败: {e}", username=curr.username, user_name=curr.name, category="boya")
 
     enriched = enrich_selected_courses(curr.boya_selected_courses or [], curr.boya_all_courses or [])
     stats = compute_semester_statistics(enriched, curr.boya_statistics)
