@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.2.0 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.2.2 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -314,7 +314,7 @@ function normalizeBoyaCategory(c) {
 
   if (raw.includes("美育") || raw.includes("艺术") || raw.includes("音乐") || raw.includes("书画") || raw.includes("审美")) return "美育";
   if (raw.includes("劳育") || raw.includes("劳动") || raw.includes("工程实践") || raw.includes("实训") || raw.includes("制造")) return "劳育";
-  if (raw.includes("安全") || raw.includes("国家安全") || raw.includes("国防") || raw.includes("保密") || raw.includes("网安")) return "国家安全";
+  if (raw.includes("安全") || raw.includes("健康") || raw.includes("国家安全") || raw.includes("国防") || raw.includes("保密") || raw.includes("网安")) return "安全健康";
   if (raw.includes("德育") || raw.includes("思政") || raw.includes("精神") || raw.includes("道德") || raw.includes("诚信") || raw.includes("报国")) return "德育";
   return "美育"; // 默认规范归类
 }
@@ -371,66 +371,242 @@ async function fetchBoyaData(isManual = false) {
   }
 }
 
+// 考勤状态解析
+function getCourseAttendanceInfo(c) {
+  if (c.attendance_status && typeof c.attendance_status === "object") {
+    return c.attendance_status;
+  }
+  const raw = c.attendanceStatus ?? c.courseAttendanceStatus ?? c.checkInStatus ?? c.kaoqinStatus;
+  const isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
+  const isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
+
+  if (raw === 1 || raw === "1" || raw === "合格" || raw === "通过" || raw === "正常") {
+    return { passed: true, text: "考勤通过", badge: "badge-green" };
+  }
+  if (raw === 0 || raw === "0" || raw === "缺勤" || raw === "未通过" || raw === "不合格") {
+    return { passed: false, text: "考勤缺勤", badge: "badge-red" };
+  }
+  if (isSigned && isSignedOut) {
+    return { passed: true, text: "考勤通过(已双签)", badge: "badge-green" };
+  }
+  if (isSigned) {
+    if (isCoursePast(c)) {
+      return { passed: true, text: "考勤通过(已签到)", badge: "badge-green" };
+    }
+    return { passed: null, text: "已签到", badge: "badge-green" };
+  }
+  if (isCoursePast(c)) {
+    return { passed: false, text: "考勤缺勤", badge: "badge-red" };
+  }
+  return { passed: null, text: "待考勤", badge: "badge-blue" };
+}
+
+// 考核状态解析
+function getCourseExamInfo(c) {
+  if (c.exam_status && typeof c.exam_status === "object") {
+    return c.exam_status;
+  }
+  const raw = c.examStatus ?? c.checkStatus ?? c.passStatus ?? c.isPass ?? c.kaoheStatus;
+  if (raw === 1 || raw === "1" || raw === "通过" || raw === "合格" || raw === "PASS") {
+    return { passed: true, text: "考核通过", badge: "badge-green" };
+  }
+  if (raw === 0 || raw === "0" || raw === "未通过" || raw === "不合格" || raw === "FAIL") {
+    return { passed: false, text: "考核未通过", badge: "badge-red" };
+  }
+  if (raw === -1 || raw === "-1" || raw === "待评定" || raw === "评定中" || raw === "待考核") {
+    return { passed: null, text: "考核待评定", badge: "badge-amber" };
+  }
+  if (isCoursePast(c)) {
+    if (c.score !== undefined && c.score !== null && c.score !== "") {
+      const s = Number(c.score);
+      if (!isNaN(s)) {
+        return s >= 60 ? { passed: true, text: `考核通过 (${s.toFixed(0)}分)`, badge: "badge-green" }
+                       : { passed: false, text: `考核未通过 (${s.toFixed(0)}分)`, badge: "badge-red" };
+      }
+    }
+    const att = getCourseAttendanceInfo(c);
+    if (att.passed === true) {
+      return { passed: true, text: "考核通过", badge: "badge-green" };
+    }
+    return { passed: null, text: "考核待评定", badge: "badge-amber" };
+  }
+  return { passed: null, text: "未开考", badge: "badge-blue" };
+}
+
+// 最终考核判定：考勤和考核都通过才算完成最终考核
+function isCourseFinalPassed(c) {
+  if (c.final_passed === true) return true;
+  const att = getCourseAttendanceInfo(c);
+  const exam = getCourseExamInfo(c);
+  return att.passed === true && exam.passed === true;
+}
+
 function renderBoyaStatistics(stats) {
-  const earned = stats.total_credits ?? stats.totalCredit ?? 0.0;
-  const target = stats.total_required ?? stats.requiredCredit ?? 4.0;
-  const rate = Math.min(100, Math.round((earned / target) * 100));
+  let moral = stats.moral_completed ?? stats.moral_courses_count ?? stats.moralCount ?? 0;
+  let labor = stats.labor_completed ?? stats.labor_courses_count ?? stats.laborCount ?? 0;
+  let art = stats.art_completed ?? stats.art_courses_count ?? stats.artCount ?? 0;
+  let sec = stats.security_health_completed ?? stats.security_courses_count ?? stats.securityCount ?? 0;
+
+  // 从当前已选课程列表中核算双通过门数
+  let listMoral = 0, listLabor = 0, listArt = 0, listSec = 0;
+  for (const c of appState.boyaSelected) {
+    if (isCourseFinalPassed(c)) {
+      const cat = normalizeBoyaCategory(c);
+      if (cat === "德育") listMoral++;
+      else if (cat === "劳育") listLabor++;
+      else if (cat === "美育") listArt++;
+      else if (cat === "安全健康") listSec++;
+    }
+  }
+
+  moral = Math.max(moral, listMoral);
+  labor = Math.max(labor, listLabor);
+  art = Math.max(art, listArt);
+  sec = Math.max(sec, listSec);
+
+  // 四大类学期达标基准：德育 2, 劳育 2, 美育 1, 安全健康 1 (总基准 6 门)
+  const reqMoral = 2;
+  const reqLabor = 2;
+  const reqArt = 1;
+  const reqSec = 1;
+  const totalReq = 6;
+
+  const effMoral = Math.min(moral, reqMoral);
+  const effLabor = Math.min(labor, reqLabor);
+  const effArt = Math.min(art, reqArt);
+  const effSec = Math.min(sec, reqSec);
+  const totalPassed = effMoral + effLabor + effArt + effSec;
+
+  const rate = Math.min(100, Math.round((totalPassed / totalReq) * 100));
 
   const elEarned = document.getElementById("boyaEarnedCredits");
   const elRate = document.getElementById("boyaCompletionRate");
   const elFill = document.getElementById("boyaProgressFill");
 
-  if (elEarned) elEarned.textContent = Number(earned).toFixed(1);
-  if (elRate) elRate.textContent = `达成度 ${rate}%`;
+  if (elEarned) elEarned.textContent = `${totalPassed}`;
+  if (elRate) elRate.textContent = `学期达标完成度 ${rate}%`;
   if (elFill) elFill.style.width = `${rate}%`;
 
-  // 从后端统计或已选课程中动态核算四大官方类别
-  let art = stats.art_courses_count ?? stats.artCount ?? 0;
-  let labor = stats.labor_courses_count ?? stats.laborCount ?? 0;
-  let sec = stats.security_courses_count ?? stats.securityCount ?? 0;
-  let moral = stats.moral_courses_count ?? stats.moralCount ?? 0;
-
-  for (const c of appState.boyaSelected) {
-    const cat = normalizeBoyaCategory(c);
-    if (cat === "美育") art = Math.max(art, 1);
-    else if (cat === "劳育") labor = Math.max(labor, 1);
-    else if (cat === "国家安全") sec = Math.max(sec, 1);
-    else if (cat === "德育") moral = Math.max(moral, 1);
-  }
-
-  const pArt = document.getElementById("pillArt");
-  const pLabor = document.getElementById("pillLabor");
-  const pSec = document.getElementById("pillSec");
   const pMoral = document.getElementById("pillMoral");
+  const pLabor = document.getElementById("pillLabor");
+  const pArt = document.getElementById("pillArt");
+  const pSec = document.getElementById("pillSec");
 
-  if (pArt) pArt.textContent = `${art} 门`;
-  if (pLabor) pLabor.textContent = `${labor} 门`;
-  if (pSec) pSec.textContent = `${sec} 门`;
-  if (pMoral) pMoral.textContent = `${moral} 门`;
+  if (pMoral) {
+    pMoral.textContent = `${moral} / ${reqMoral} 门`;
+    const wrap = document.getElementById("pillMoralWrap");
+    if (wrap) wrap.classList.toggle("status-done", moral >= reqMoral);
+  }
+  if (pLabor) {
+    pLabor.textContent = `${labor} / ${reqLabor} 门`;
+    const wrap = document.getElementById("pillLaborWrap");
+    if (wrap) wrap.classList.toggle("status-done", labor >= reqLabor);
+  }
+  if (pArt) {
+    pArt.textContent = `${art} / ${reqArt} 门`;
+    const wrap = document.getElementById("pillArtWrap");
+    if (wrap) wrap.classList.toggle("status-done", art >= reqArt);
+  }
+  if (pSec) {
+    pSec.textContent = `${sec} / ${reqSec} 门`;
+    const wrap = document.getElementById("pillSecWrap");
+    if (wrap) wrap.classList.toggle("status-done", sec >= reqSec);
+  }
 }
 
-
-// 时间范围解析判定 (未来及正在进行 vs 历史选课)
-function getCourseEndDateTime(c) {
-  const endDate = c.courseEndDate || c.courseStartDate;
-  const endTime = c.courseEndTime || c.courseStartTime || "23:59";
-  if (!endDate) return null;
-  const cleanDate = endDate.trim().slice(0, 10);
-  const cleanTime = endTime.trim().slice(0, 5);
-  const dt = new Date(`${cleanDate}T${cleanTime}:00`);
+function parseIsoOrSpaceDate(str) {
+  if (!str) return null;
+  const s = String(str).trim().replace("T", " ");
+  const parts = s.split(" ");
+  if (!parts[0]) return null;
+  const dParts = parts[0].split(/[-/]/);
+  if (dParts.length < 3) return null;
+  const year = parseInt(dParts[0], 10);
+  const month = parseInt(dParts[1], 10) - 1;
+  const day = parseInt(dParts[2], 10);
+  let hours = 0, minutes = 0, seconds = 0;
+  if (parts[1]) {
+    const tParts = parts[1].split(":");
+    hours = parseInt(tParts[0], 10) || 0;
+    minutes = parseInt(tParts[1], 10) || 0;
+    seconds = parseInt(tParts[2], 10) || 0;
+  }
+  const dt = new Date(year, month, day, hours, minutes, seconds);
   return isNaN(dt.getTime()) ? null : dt;
 }
 
-function isCourseOngoingOrUpcoming(c) {
+// 课程结束时间计算：绝不回退至 23:59
+function getCourseEndDateTime(c) {
+  const endDateStr = c.courseEndDate || c.courseStartDate;
+  if (!endDateStr) return null;
+
+  if (endDateStr.includes(" ") || endDateStr.includes("T")) {
+    const directDt = parseIsoOrSpaceDate(endDateStr);
+    if (!c.courseEndTime && directDt) {
+      return new Date(directDt.getTime() + 2.5 * 3600 * 1000);
+    }
+  }
+
+  const cleanDate = String(endDateStr).trim().slice(0, 10);
+
+  if (c.courseEndTime && String(c.courseEndTime).trim()) {
+    const cleanTime = String(c.courseEndTime).trim().slice(0, 5);
+    const dt = new Date(`${cleanDate}T${cleanTime}:00`);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+
+  if (c.courseStartTime && String(c.courseStartTime).trim()) {
+    const cleanStart = String(c.courseStartTime).trim().slice(0, 5);
+    const startDt = new Date(`${cleanDate}T${cleanStart}:00`);
+    if (!isNaN(startDt.getTime())) {
+      return new Date(startDt.getTime() + 2.5 * 3600 * 1000);
+    }
+  }
+
+  const dt = new Date(`${cleanDate}T22:00:00`);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function isCourseEnded(c) {
+  if (!c) return false;
+  if (c.is_ended === true) return true;
+
+  // 1. 显式状态判断
+  const statusStr = String(c.courseStatus || c.status || c.courseState || "");
+  if (statusStr.includes("结课") || statusStr.includes("结束")) {
+    return true;
+  }
+
+  // 2. 打卡截止时间配置 (courseSignConfig)
+  let cfg = c.courseSignConfig;
+  if (typeof cfg === "string") {
+    try { cfg = JSON.parse(cfg); } catch (e) { cfg = null; }
+  }
+  if (cfg && typeof cfg === "object") {
+    const signOutEnd = cfg.signOutEndDate || cfg.signEndDate;
+    if (signOutEnd) {
+      const dtSignOut = parseIsoOrSpaceDate(signOutEnd);
+      if (dtSignOut && new Date() > dtSignOut) {
+        return true;
+      }
+    }
+  }
+
+  // 3. 课程结束时间计算
   const endDt = getCourseEndDateTime(c);
-  if (!endDt) return true;
-  return new Date() <= endDt;
+  if (endDt && new Date() > endDt) {
+    return true;
+  }
+
+  return false;
+}
+
+function isCourseOngoingOrUpcoming(c) {
+  return !isCourseEnded(c);
 }
 
 function isCoursePast(c) {
-  const endDt = getCourseEndDateTime(c);
-  if (!endDt) return false;
-  return new Date() > endDt;
+  return isCourseEnded(c);
 }
 
 function filterSelectedTime(mode, btn) {
@@ -552,6 +728,11 @@ function renderBoyaFeed() {
     const current = c.courseCurrentCount ?? c.courseCurrentNum ?? 0;
     const isFull = capacity > 0 && current >= capacity;
     const isPast = isCoursePast(c);
+    const isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
+    const isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
+    const attInfo = getCourseAttendanceInfo(c);
+    const examInfo = getCourseExamInfo(c);
+    const finalPassed = isCourseFinalPassed(c);
 
     return `
       <div class="feed-card ${hasAutonomousSign ? 'status-boya-auto' : ''}">
@@ -586,15 +767,36 @@ function renderBoyaFeed() {
         <div class="feed-card-footer">
           ${isSelected ? (
             isPast ? `
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-                <span style="font-size:12px;color:var(--text-muted);">📜 该课程已结课</span>
-                <span class="feed-badge badge-green">已完成归档</span>
+              <div class="history-outcome-row" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:6px;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span class="feed-badge ${attInfo.badge}">${escapeHtml(attInfo.text)}</span>
+                  <span class="feed-badge ${examInfo.badge}">${escapeHtml(examInfo.text)}</span>
+                </div>
+                <div>
+                  <span class="feed-badge ${finalPassed ? 'badge-green' : 'badge-amber'}" style="font-weight:600;">
+                    ${finalPassed ? '🌟 最终考核达标' : '⏳ 考核待评定/未达标'}
+                  </span>
+                </div>
               </div>
             ` : `
-              <div style="display:flex;gap:8px;width:100%;justify-content:flex-end;">
-                <button class="origin-btn origin-btn-danger-ghost" onclick="dropBoyaCourse('${courseId}')">退选</button>
-                <button class="origin-btn origin-btn-secondary" onclick="boyaSign('${courseId}', 2)">定位签退</button>
-                <button class="origin-btn origin-btn-primary" onclick="boyaSign('${courseId}', 1)">定位签到</button>
+              <div style="display:flex;gap:8px;width:100%;justify-content:flex-end;align-items:center;">
+                ${isSigned ? `
+                  <button class="origin-btn origin-btn-danger-ghost" disabled style="opacity:0.35;cursor:not-allowed;" title="已签到课程不可退选">退选</button>
+                ` : `
+                  <button class="origin-btn origin-btn-danger-ghost" onclick="dropBoyaCourse('${courseId}')">退选</button>
+                `}
+
+                ${isSignedOut ? `
+                  <button class="origin-btn origin-btn-info-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签退">🏁 已签退</button>
+                ` : `
+                  <button class="origin-btn origin-btn-secondary" onclick="boyaSign('${courseId}', 2)">定位签退</button>
+                `}
+
+                ${isSigned ? `
+                  <button class="origin-btn origin-btn-success-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签到">✅ 已签到</button>
+                ` : `
+                  <button class="origin-btn origin-btn-primary" onclick="boyaSign('${courseId}', 1)">定位签到</button>
+                `}
               </div>
             `
           ) : `
