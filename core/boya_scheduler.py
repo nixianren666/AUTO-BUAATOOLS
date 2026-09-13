@@ -160,6 +160,18 @@ class BoyaScheduler:
                 logger.error(f"BoyaScheduler tick error: {e}", exc_info=True)
             self._stop_event.wait(self.interval_seconds)
 
+    def _renew_session(self, acc: Any) -> bool:
+        """尝试自动为账号静默续期博雅 Token"""
+        try:
+            acc.boya_client.sync_cookies_from(acc.client.client.cookies)
+            token = acc.boya_client.acquire_token()
+            if token:
+                self.add_log("info", f"【{acc.name}】博雅会话已自动静默续期成功！", username=acc.username, user_name=acc.name, category="boya")
+                return True
+        except Exception as e:
+            logger.debug(f"Auto renew boya token failed for {acc.username}: {e}")
+        return False
+
     def tick(self) -> None:
         now = datetime.now()
         accounts = self.get_accounts()
@@ -173,18 +185,36 @@ class BoyaScheduler:
             if not boya_client or not boya_client.is_authenticated():
                 continue
 
-            # 定期静默同步最新已选课程（每 5 分钟巡检一次）
+            # 首次运行或定期（每 5 分钟）静默同步最新已选课程
             # 确保无论课程是本软件自动抢到的，还是学生在微信小程序/学校官网自行选中的，都能被守护引擎自动捕获并无缝纳入自动签到/签退！
-            if username not in self.last_sync_times:
-                self.last_sync_times[username] = time.time()
-            elif time.time() - self.last_sync_times[username] > 300:
+            need_sync = False
+            last_sync = self.last_sync_times.get(username)
+            if last_sync is None:
+                if getattr(acc, "boya_selected_courses", None) is None:
+                    need_sync = True
+                else:
+                    self.last_sync_times[username] = time.time()
+            elif time.time() - last_sync > 300:
+                need_sync = True
+
+            if need_sync:
                 try:
                     synced = acc.boya_client.query_chosen_courses()
-                    if synced:
+                    if synced is not None:
                         acc.boya_selected_courses = synced
                     self.last_sync_times[username] = time.time()
+                except BoyaSessionExpired:
+                    if self._renew_session(acc):
+                        try:
+                            synced = acc.boya_client.query_chosen_courses()
+                            if synced is not None:
+                                acc.boya_selected_courses = synced
+                            self.last_sync_times[username] = time.time()
+                        except Exception:
+                            pass
                 except Exception as sync_e:
                     logger.debug(f"Auto sync chosen courses error for {username}: {sync_e}")
+                    self.last_sync_times[username] = time.time()
 
             # 1. 自动抢选课流程
             if getattr(acc, "boya_auto_select", False):
@@ -358,9 +388,22 @@ class BoyaScheduler:
             except (ValueError, TypeError):
                 continue
 
+            sign_info_obj = None
+            if course.get("signInfo"):
+                try:
+                    s_raw = course["signInfo"]
+                    sign_info_obj = json.loads(s_raw) if isinstance(s_raw, str) else s_raw
+                except Exception:
+                    pass
+
             # 1. 签到检查
             sign_key = f"{username}_sign_{cid_str}_{today_str}"
-            already_signed = (course.get("signStatus") == 1 or course.get("courseSignStatus") == 1 or course.get("signInStatus") == 1)
+            already_signed = bool(
+                course.get("signStatus") == 1
+                or course.get("courseSignStatus") == 1
+                or course.get("signInStatus") == 1
+                or (sign_info_obj and isinstance(sign_info_obj, dict) and sign_info_obj.get("signIn"))
+            )
             if already_signed:
                 self.done_records.add(sign_key)
 
@@ -413,7 +456,11 @@ class BoyaScheduler:
 
             # 2. 签退检查
             signout_key = f"{username}_signout_{cid_str}_{today_str}"
-            already_signed_out = (course.get("signOutStatus") == 1 or course.get("courseSignOutStatus") == 1)
+            already_signed_out = bool(
+                course.get("signOutStatus") == 1
+                or course.get("courseSignOutStatus") == 1
+                or (sign_info_obj and isinstance(sign_info_obj, dict) and sign_info_obj.get("signOut"))
+            )
             if already_signed_out:
                 self.done_records.add(signout_key)
 

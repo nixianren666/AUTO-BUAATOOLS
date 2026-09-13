@@ -40,9 +40,49 @@ document.addEventListener("DOMContentLoaded", () => {
   initGlassControls();
   checkDisclaimerStatus();
   initAutostartWidget();
+  initModalBackdrops();
   fetchInitialState();
   startLogsPolling();
 });
+
+// 模态弹窗蒙层点击与 ESC 快捷关闭
+function initModalBackdrops() {
+  const modalConfigs = [
+    { id: "accountCardsModal", closeFn: closeAccountCardsModal },
+    { id: "loginModal", closeFn: closeLoginModal },
+    { id: "manualSignModal", closeFn: closeManualSignModal },
+  ];
+  modalConfigs.forEach(({ id, closeFn }) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("click", (e) => {
+        if (e.target === el) {
+          closeFn();
+        }
+      });
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const manualModal = document.getElementById("manualSignModal");
+      if (manualModal && !manualModal.classList.contains("hidden")) {
+        closeManualSignModal();
+        return;
+      }
+      const loginModal = document.getElementById("loginModal");
+      if (loginModal && !loginModal.classList.contains("hidden")) {
+        closeLoginModal();
+        return;
+      }
+      const cardsModal = document.getElementById("accountCardsModal");
+      if (cardsModal && !cardsModal.classList.contains("hidden")) {
+        closeAccountCardsModal();
+        return;
+      }
+    }
+  });
+}
 
 // 精密等宽时钟
 function initClock() {
@@ -1073,12 +1113,22 @@ async function switchStudentAccount(username) {
 async function deleteAccount(username) {
   if (!confirm(`确定删除学号 ${username} 的账号配置吗？`)) return;
   try {
-    await fetch(`/api/accounts/${username}`, { method: "DELETE" });
+    const res = await fetch(`/api/accounts/${username}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
     appState.accounts = appState.accounts.filter(a => a.username !== username);
+    if (appState.activeUsername === username) {
+      appState.activeUsername = data.active_username || (appState.accounts.length > 0 ? appState.accounts[0].username : "");
+      appState.activeUser = appState.accounts.find(a => a.username === appState.activeUsername) || null;
+      fetchClasses();
+      fetchBoyaData();
+      fetchLogs();
+    }
     renderAccountsModal();
     updateUIElements();
     showToast("账号已移除", "info");
-  } catch (e) {}
+  } catch (e) {
+    showToast("删除账号失败: " + e.message, "error");
+  }
 }
 
 function openLoginModalFromCenter() {
