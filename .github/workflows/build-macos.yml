@@ -83,3 +83,23 @@ jobs:
           gh release view "$TAG" || gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG"
           gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
           gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
+
+  release-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload Windows Binaries to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
+          gh release view "$TAG" || gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG"
+          if [ -f "BUAA-Signin-Setup-v1.2.2.exe" ]; then
+            gh release upload "$TAG" "BUAA-Signin-Setup-v1.2.2.exe" --clobber || true
+          fi
+          if [ -f "BUAA-Signin-v1.2.2-portable.exe" ]; then
+            gh release upload "$TAG" "BUAA-Signin-v1.2.2-portable.exe" --clobber || true
+          fi
