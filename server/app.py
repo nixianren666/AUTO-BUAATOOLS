@@ -1333,7 +1333,8 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
         sem_end_dt = sem_end_dt or fb_end
         semester_name = semester_name or fb_name
 
-    # 1. 优先解析 SSO queryStatisticByUserId 官方多维度考核统计树（官方本身即按当前学期统计）
+    # 1. 提取大学全学程历史累计概况（仅供作为历史总修读数据备查，严禁污染当前学期达标数据）
+    all_time = {"moral": 0, "labor": 0, "art": 0, "security": 0, "total": 0}
     if sso_stats and isinstance(sso_stats, dict):
         statistical = sso_stats.get("statistical")
         if isinstance(statistical, dict):
@@ -1343,19 +1344,20 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
                     if isinstance(cat_val, dict):
                         comp = int(cat_val.get("completeAssessmentCount") or 0)
                         if "德育" in cat_key:
-                            moral_count = max(moral_count, comp)
+                            all_time["moral"] = comp
                         elif "劳育" in cat_key or "劳动" in cat_key:
-                            labor_count = max(labor_count, comp)
+                            all_time["labor"] = comp
                         elif "美育" in cat_key or "艺术" in cat_key:
-                            art_count = max(art_count, comp)
+                            all_time["art"] = comp
                         elif "安全" in cat_key or "健康" in cat_key:
-                            sec_count = max(sec_count, comp)
+                            all_time["security"] = comp
+                all_time["total"] = all_time["moral"] + all_time["labor"] + all_time["art"] + all_time["security"]
 
-    # 2. 与已选课程列表核对（严格限定开课或结课时间落在当前学期范围内，严防跨学期污染）
-    list_moral = 0
-    list_labor = 0
-    list_art = 0
-    list_sec = 0
+    # 2. 本学期达标统计：严格限定开课或结课时间落在当前校历学期范围内（严防跨学年历史课程污染）
+    moral_count = 0
+    labor_count = 0
+    art_count = 0
+    sec_count = 0
     for c in selected_list or []:
         # 校验课程时间是否在当前学期范围内
         c_date_str = c.get("courseStartDate") or c.get("courseEndDate") or c.get("selectDate")
@@ -1364,28 +1366,21 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
             if not (sem_start_dt <= c_dt <= sem_end_dt):
                 continue  # 彻底排除历史学年的选课
 
-        if c.get("final_passed") is True:
+        # 校验该课程是否已双通过（考勤与考核）
+        is_passed = (c.get("final_passed") is True)
+        if not is_passed:
+            if c.get("pass") == 1 and (c.get("checkin") == 1 or "signIn" in str(c.get("signInfo", ""))):
+                is_passed = True
+        if is_passed:
             kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
             if "德育" in kind:
-                list_moral += 1
+                moral_count += 1
             elif "劳育" in kind or "劳动" in kind:
-                list_labor += 1
+                labor_count += 1
             elif "美育" in kind or "艺术" in kind:
-                list_art += 1
+                art_count += 1
             elif "安全" in kind or "健康" in kind:
-                list_sec += 1
-
-    moral_count = max(moral_count, list_moral)
-    labor_count = max(labor_count, list_labor)
-    art_count = max(art_count, list_art)
-    sec_count = max(sec_count, list_sec)
-
-    # 3. 兜底兼容直接传入的扁平统计字段
-    if sso_stats and isinstance(sso_stats, dict) and not sso_stats.get("statistical"):
-        moral_count = max(moral_count, int(sso_stats.get("moral_courses_count") or sso_stats.get("moralCount") or 0))
-        labor_count = max(labor_count, int(sso_stats.get("labor_courses_count") or sso_stats.get("laborCount") or 0))
-        art_count = max(art_count, int(sso_stats.get("art_courses_count") or sso_stats.get("artCount") or 0))
-        sec_count = max(sec_count, int(sso_stats.get("security_courses_count") or sso_stats.get("securityCount") or 0))
+                sec_count += 1
 
     eff_moral = min(moral_count, 2)
     eff_labor = min(labor_count, 2)
@@ -1427,6 +1422,7 @@ def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: 
         "moral_courses_count": moral_count,
         "total_passed": total_passed,
         "total_required": 6,
+        "all_time_stats": all_time,
         "totalCredit": float(sso_stats.get("totalCredit") or sso_stats.get("total_credits") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
         "total_credits": float(sso_stats.get("total_credits") or sso_stats.get("totalCredit") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
         "requiredCredit": float(sso_stats.get("requiredCredit") or 6.0) if sso_stats else 6.0,

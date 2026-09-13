@@ -493,37 +493,36 @@ function isCourseFinalPassed(c) {
 }
 
 function renderBoyaStatistics(stats) {
-  let moral = stats.moral_completed ?? stats.moral_courses_count ?? stats.moralCount ?? 0;
-  let labor = stats.labor_completed ?? stats.labor_courses_count ?? stats.laborCount ?? 0;
-  let art = stats.art_completed ?? stats.art_courses_count ?? stats.artCount ?? 0;
-  let sec = stats.security_health_completed ?? stats.security_courses_count ?? stats.securityCount ?? 0;
-
   // 严格限定当前学期时间范围（彻底排除历史学年往期结课）
   const semStart = stats.semester_start ? parseIsoOrSpaceDate(stats.semester_start + " 00:00:00") : null;
   const semEnd = stats.semester_end ? parseIsoOrSpaceDate(stats.semester_end + " 23:59:59") : null;
 
-  // 从当前已选课程列表中核算双通过门数（仅核对落在本学期范围内的课程）
-  let listMoral = 0, listLabor = 0, listArt = 0, listSec = 0;
-  for (const c of appState.boyaSelected) {
-    if (semStart && semEnd) {
+  let moral = Number(stats.moral_completed || 0);
+  let labor = Number(stats.labor_completed || 0);
+  let art = Number(stats.art_completed || 0);
+  let sec = Number(stats.security_health_completed || 0);
+
+  // 如果前端已加载已选修课表，则以当前学期时间戳切片作为权威校准
+  if (appState.boyaSelected && appState.boyaSelected.length > 0 && semStart && semEnd) {
+    let listMoral = 0, listLabor = 0, listArt = 0, listSec = 0;
+    for (const c of appState.boyaSelected) {
       const cDate = parseIsoOrSpaceDate(c.courseStartDate || c.courseEndDate || c.selectDate);
       if (cDate && (cDate < semStart || cDate > semEnd)) {
-        continue; // 忽略非本学期的历史选课
+        continue; // 彻底排除非本学期的历史选课
+      }
+      if (isCourseFinalPassed(c)) {
+        const cat = normalizeBoyaCategory(c);
+        if (cat === "德育") listMoral++;
+        else if (cat === "劳育") listLabor++;
+        else if (cat === "美育") listArt++;
+        else if (cat === "安全健康") listSec++;
       }
     }
-    if (isCourseFinalPassed(c)) {
-      const cat = normalizeBoyaCategory(c);
-      if (cat === "德育") listMoral++;
-      else if (cat === "劳育") listLabor++;
-      else if (cat === "美育") listArt++;
-      else if (cat === "安全健康") listSec++;
-    }
+    moral = listMoral;
+    labor = listLabor;
+    art = listArt;
+    sec = listSec;
   }
-
-  moral = Math.max(moral, listMoral);
-  labor = Math.max(labor, listLabor);
-  art = Math.max(art, listArt);
-  sec = Math.max(sec, listSec);
 
   // 四大类学期达标基准：德育 2, 劳育 2, 美育 1, 安全健康 1 (总基准 6 门)
   const reqMoral = 2;
@@ -808,10 +807,10 @@ function renderBoyaFeed() {
             <h4 class="feed-title">${escapeHtml(name)}</h4>
             <div class="feed-meta-row">
               <span class="feed-badge ${hasAutonomousSign ? 'badge-green' : 'badge-amber'}">
-                ${hasAutonomousSign ? '🛰️ 线上自主打卡' : '⚠️ 线下人工核验 (不可自动选)'}
+                ${hasAutonomousSign ? '🛰️ 线上自主打卡' : '🏫 现场刷卡考勤'}
               </span>
               <span class="feed-badge badge-purple">${category}</span>
-              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current}/${capacity}</span>` : ''}
+              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current}/${capacity} (余${Math.max(0, capacity - current)})</span>` : ''}
             </div>
           </div>
         </div>
@@ -866,21 +865,40 @@ function renderBoyaFeed() {
                 `}
               </div>
             `
-          ) : `
-            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-              <span style="font-size:12px;color:var(--text-muted);">${isFull ? '⚠️ 名额已满' : '✅ 名额充裕'}</span>
-              ${hasAutonomousSign && !isFull ? `
-                <button class="origin-btn origin-btn-primary" onclick="selectBoyaCourse('${courseId}')">立即抢课</button>
-              ` : `
-                <button class="origin-btn origin-btn-ghost" disabled style="opacity:0.45;">
-                  ${!hasAutonomousSign ? '线下核验课不可选' : '名额已满'}
-                </button>
-              `}
-            </div>
-          `}
+          ) : (() => {
+            const isAlreadyChosen = appState.boyaSelected && appState.boyaSelected.some(sc => String(sc.id || sc.courseId) === String(courseId));
+            const remaining = Math.max(0, capacity - current);
+            const now = new Date();
+            const selStart = c.courseSelectStartDate ? parseIsoOrSpaceDate(c.courseSelectStartDate) : null;
+            const selEnd = c.courseSelectEndDate ? parseIsoOrSpaceDate(c.courseSelectEndDate) : null;
+            const isBeforeWindow = selStart && now < selStart;
+            const isAfterWindow = selEnd && now > selEnd;
+
+            let btnHtml = "";
+            if (isAlreadyChosen) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.6;cursor:default;">已选修此课</button>`;
+            } else if (isBeforeWindow) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;" title="选课开放时间: ${c.courseSelectStartDate}">⏳ 选课未开放</button>`;
+            } else if (isAfterWindow) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.4;cursor:not-allowed;">选课已截止</button>`;
+            } else if (isFull) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.45;">⚠️ 名额已满</button>`;
+            } else if (hasAutonomousSign) {
+              btnHtml = `<button class="origin-btn origin-btn-primary" onclick="selectBoyaCourse('${courseId}')">立即抢课</button>`;
+            } else {
+              btnHtml = `<button class="origin-btn origin-btn-secondary" onclick="selectBoyaCourse('${courseId}')" title="该课程支持线上选课，上课时赴现场刷卡考勤">选课 (现场考勤)</button>`;
+            }
+
+            return `
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                <span style="font-size:12px;color:var(--text-muted);">${isFull ? '⚠️ 名额已满' : `✅ 名额充裕 (余 ${remaining} 空位)`}</span>
+                ${btnHtml}
+              </div>
+            `;
+          })()}
         </div>
       </div>
-    `;
+    \`;
   }).join("");
 }
 

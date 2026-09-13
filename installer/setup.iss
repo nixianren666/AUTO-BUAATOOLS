@@ -54,7 +54,7 @@ Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "创建桌面快捷方式 (&D)"; GroupDescription: "附加快捷方式:"; Flags: checkedonce
 
 [Files]
-Source: "..\BUAA-Signin.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\BUAA-Signin.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [UninstallDelete]
