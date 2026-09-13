@@ -80,6 +80,10 @@ class SigninScheduler:
             except asyncio.CancelledError:
                 break
 
+    async def tick(self):
+        """单次巡检执行入口（供测试与即时触发）"""
+        await self._check_and_sign_all()
+
     async def _check_and_sign_all(self):
         accounts = self.get_active_accounts()
         if not accounts:
@@ -102,12 +106,14 @@ class SigninScheduler:
                 continue
 
             for clazz in classes:
-                course_id = str(clazz.get("courseId", ""))
+                sched_id = str(clazz.get("courseSchedId") or clazz.get("id") or clazz.get("courseId", ""))
+                if not sched_id:
+                    continue
                 course_name = str(clazz.get("courseName", "课堂课程"))
                 sign_status = clazz.get("signStatus", 0)
                 begin_str = str(clazz.get("classBeginTime", "")).strip()
 
-                key = (username, course_id)
+                key = (username, sched_id)
 
                 if sign_status == 1:
                     self.signed_courses.add(key)
@@ -174,7 +180,7 @@ class SigninScheduler:
                     )
 
                     try:
-                        success, msg = await client.perform_signin(course_id)
+                        success, msg = await client.perform_signin(sched_id)
                     except Exception as e:
                         success, msg = False, str(e)
 
@@ -219,11 +225,12 @@ class SigninScheduler:
         try:
             # 完整格式 YYYY-MM-DD HH:MM[:SS]
             if " " in begin_str:
-                time_part = begin_str.split(" ", 1)[1]
+                date_part, time_part = begin_str.strip().split(" ", 1)
+                d_parts = [int(p) for p in date_part.split("-")[:3]]
+                t_parts = [int(p) for p in time_part.split(":")[:2]]
+                return datetime.datetime(d_parts[0], d_parts[1], d_parts[2], t_parts[0], t_parts[1], 0)
             else:
-                time_part = begin_str
-
-            parts = [int(p) for p in time_part.split(":")[:2]]
-            return datetime.datetime(now.year, now.month, now.day, parts[0], parts[1], 0)
+                parts = [int(p) for p in begin_str.strip().split(":")[:2]]
+                return datetime.datetime(now.year, now.month, now.day, parts[0], parts[1], 0)
         except Exception:
             return None

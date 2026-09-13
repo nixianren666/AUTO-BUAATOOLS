@@ -77,3 +77,40 @@ class BykcCrypto:
     def _rsa_b64(self, data: bytes) -> str:
         encrypted = self.public_key.encrypt(data, asym_padding.PKCS1v15())
         return base64.b64encode(encrypted).decode("utf-8")
+
+
+# ==================== 本地机密数据安全保管箱 (AES-128-CBC) ====================
+
+LOCAL_VAULT_KEY = hashlib.sha256(b"BUAA_SIGNIN_SECURE_STORAGE_KEY_v122").digest()[:16]
+LOCAL_VAULT_IV = hashlib.md5(b"BUAA_SIGNIN_SECURE_IV_v122").digest()
+
+
+def encrypt_local_secret(plaintext: str) -> str:
+    """本地机密数据 AES-128-CBC 对称加密，输出带 enc: 前缀的 Base64 字符串"""
+    if not plaintext:
+        return ""
+    try:
+        data = plaintext.encode("utf-8")
+        padder = sym_padding.PKCS7(128).padder()
+        padded = padder.update(data) + padder.finalize()
+        encryptor = Cipher(algorithms.AES(LOCAL_VAULT_KEY), modes.CBC(LOCAL_VAULT_IV)).encryptor()
+        encrypted = encryptor.update(padded) + encryptor.finalize()
+        return "enc:" + base64.b64encode(encrypted).decode("utf-8")
+    except Exception:
+        return plaintext
+
+
+def decrypt_local_secret(ciphertext: str) -> str:
+    """本地机密数据 AES-128-CBC 对称解密，若非 enc: 开头则兼容返回原文"""
+    if not ciphertext or not str(ciphertext).startswith("enc:"):
+        return ciphertext or ""
+    try:
+        raw_b64 = ciphertext[4:]
+        encrypted = base64.b64decode(raw_b64)
+        decryptor = Cipher(algorithms.AES(LOCAL_VAULT_KEY), modes.CBC(LOCAL_VAULT_IV)).decryptor()
+        padded = decryptor.update(encrypted) + decryptor.finalize()
+        unpadder = sym_padding.PKCS7(128).unpadder()
+        data = unpadder.update(padded) + unpadder.finalize()
+        return data.decode("utf-8")
+    except Exception:
+        return ciphertext

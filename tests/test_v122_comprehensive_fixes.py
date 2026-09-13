@@ -109,6 +109,100 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         self.assertTrue(any("博雅秒抢守护正常" in l["message"] for l in boya_logs))
         self.assertFalse(any("常规课程刷新成功" in l["message"] for l in boya_logs))
 
+    def test_encrypt_local_secret_and_decrypt(self):
+        """测试本地密码机密 AES-128-CBC 加密存储与无损解密"""
+        from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
+
+        raw_pwd = "MySecretPassword_2026!@#"
+        enc = encrypt_local_secret(raw_pwd)
+        self.assertTrue(enc.startswith("enc:"))
+        self.assertNotEqual(enc, raw_pwd)
+
+        dec = decrypt_local_secret(enc)
+        self.assertEqual(dec, raw_pwd)
+
+        # 兼容未加密的旧明文
+        legacy_pwd = "PlaintextPassword123"
+        self.assertEqual(decrypt_local_secret(legacy_pwd), legacy_pwd)
+
+        # 空字符串处理
+        self.assertEqual(encrypt_local_secret(""), "")
+        self.assertEqual(decrypt_local_secret(""), "")
+
+    def test_empty_boya_selected_does_not_fallback_to_demo(self):
+        """测试真实学生已选课程为 0 门时，系统返回空列表而不是回退至 DEMO_BOYA_SELECTED"""
+        import asyncio
+        from server.app import get_boya_selected, accounts, AccountState
+
+        test_uname = "23379999"
+        acc = AccountState(username=test_uname, name="空课测试生")
+        acc.boya_client.token = "mock_valid_token_123"
+        acc.boya_selected_courses = []  # 真实已选 0 门
+        acc.boya_all_courses = []
+        accounts[test_uname] = acc
+
+        import server.app as app_mod
+        orig_active = app_mod.active_username
+        try:
+            app_mod.active_username = test_uname
+            res = asyncio.run(get_boya_selected(force=False))
+            self.assertEqual(res["status"], "success")
+            self.assertEqual(res["selected"], [])
+            self.assertFalse(res["is_demo"])
+        finally:
+            app_mod.active_username = orig_active
+            accounts.pop(test_uname, None)
+
+    def test_scheduler_uses_course_sched_id(self):
+        """测试 SigninScheduler 优先提取 courseSchedId/id 并正确传入 client.perform_signin"""
+        import asyncio
+        from datetime import datetime, timedelta
+        from core.scheduler import SigninScheduler
+
+        call_log = []
+        now = datetime.now()
+        class_time = (now + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+
+        class MockIclassClient:
+            def is_authenticated(self):
+                return True
+
+            async def get_today_classes(self):
+                return [{
+                    "id": "2479439",
+                    "courseSchedId": "2479439",
+                    "courseId": "96037",
+                    "courseName": "生物信息学",
+                    "classBeginTime": class_time,
+                    "signStatus": 0,
+                }]
+
+            async def perform_signin(self, course_sched_id):
+                call_log.append(course_sched_id)
+                return True, "签到成功"
+
+        client = MockIclassClient()
+        test_acc = {
+            "username": "23370002",
+            "name": "排课测试生",
+            "client": client,
+        }
+
+        scheduler = SigninScheduler(
+            get_active_accounts=lambda: [test_acc],
+            on_event_log=lambda *a, **k: None,
+        )
+
+        asyncio.run(scheduler.tick())
+        sched_key = ("23370002", "2479439")
+        if sched_key in scheduler.planned_targets:
+            scheduler.planned_targets[sched_key] = now - timedelta(seconds=10)
+        asyncio.run(scheduler.tick())
+
+        # 必须使用 courseSchedId (2479439) 而非 courseId (96037)
+        self.assertEqual(call_log, ["2479439"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

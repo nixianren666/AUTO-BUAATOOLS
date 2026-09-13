@@ -20,6 +20,7 @@ from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
 from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius
+from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
 
 
 def resolve_config_path() -> pathlib.Path:
@@ -118,10 +119,13 @@ def load_config() -> Dict[str, Any]:
                 if "accounts" not in data:
                     accounts_list = []
                     if data.get("username"):
+                        pwd = data.get("password", "")
+                        if pwd:
+                            pwd = decrypt_local_secret(pwd)
                         accounts_list.append({
                             "username": data.get("username", ""),
                             "name": data.get("username", ""),
-                            "password": data.get("password", ""),
+                            "password": pwd,
                             "remember": data.get("remember", False),
                             "mode": data.get("mode", "auto"),
                             "auto_checkin": data.get("auto_checkin", False),
@@ -132,6 +136,10 @@ def load_config() -> Dict[str, Any]:
                         "global_auto_checkin": data.get("auto_checkin", False),
                         "checkin_interval": data.get("checkin_interval", 20),
                     }
+                else:
+                    for acc in data.get("accounts", []):
+                        if acc.get("password"):
+                            acc["password"] = decrypt_local_secret(acc["password"])
                 return data
         except Exception:
             pass
@@ -248,9 +256,9 @@ class AccountState:
         self.boya_client = BoyaClient(mode=("webvpn" if mode == "webvpn" else "direct"))
         self.last_classes: List[Dict[str, Any]] = []
         self.last_refresh_time: Optional[str] = None
-        self.boya_all_courses: List[Dict[str, Any]] = []
-        self.boya_selected_courses: List[Dict[str, Any]] = []
-        self.boya_statistics: Dict[str, Any] = {}
+        self.boya_all_courses: Optional[List[Dict[str, Any]]] = None
+        self.boya_selected_courses: Optional[List[Dict[str, Any]]] = None
+        self.boya_statistics: Optional[Dict[str, Any]] = None
         self.boya_last_refresh_time: Optional[str] = None
 
     def to_dict(self, is_active: bool = False) -> Dict[str, Any]:
@@ -269,8 +277,8 @@ class AccountState:
             "course_count": len(self.last_classes),
             "signed_count": len([c for c in self.last_classes if c.get("signStatus") == 1]),
             "last_refresh_time": self.last_refresh_time,
-            "boya_course_count": len(self.boya_all_courses),
-            "boya_selected_count": len(self.boya_selected_courses),
+            "boya_course_count": len(self.boya_all_courses) if self.boya_all_courses is not None else 0,
+            "boya_selected_count": len(self.boya_selected_courses) if self.boya_selected_courses is not None else 0,
             "boya_last_refresh_time": self.boya_last_refresh_time,
         }
 
@@ -314,10 +322,11 @@ def sync_config():
         return
     accounts_data = []
     for acc in accounts.values():
+        stored_pwd = encrypt_local_secret(acc.password) if (acc.remember and acc.password) else ""
         accounts_data.append({
             "username": acc.username,
             "name": acc.name,
-            "password": acc.password if acc.remember else "",
+            "password": stored_pwd,
             "remember": acc.remember,
             "mode": acc.mode,
             "auto_checkin": acc.auto_checkin,
@@ -573,6 +582,10 @@ async def remove_account(req: RemoveAccountRequest):
 
     acc = accounts.pop(req.username)
     await acc.client.close()
+    try:
+        acc.boya_client.session.close()
+    except Exception:
+        pass
     add_log("info", f"学生账号 【{acc.name} ({acc.username})】 已退出并移除。", username=acc.username, user_name=acc.name)
 
     if active_username == req.username:
@@ -718,6 +731,10 @@ async def logout():
     acc = accounts.pop(username, None)
     if acc:
         await acc.client.close()
+        try:
+            acc.boya_client.session.close()
+        except Exception:
+            pass
         add_log("info", f"学生账号 【{acc.name}】 已退出登录。", username=acc.username, user_name=acc.name)
 
     active_username = next(iter(accounts.keys())) if accounts else None
@@ -800,9 +817,9 @@ async def get_boya_status():
         "boya_auto_sign": getattr(curr, "boya_auto_sign", False),
         "campus": getattr(curr, "campus", "北京"),
         "last_refresh_time": getattr(curr, "boya_last_refresh_time", ""),
-        "courses_count": len(getattr(curr, "boya_all_courses", [])),
-        "selected_count": len(getattr(curr, "boya_selected_courses", [])),
-        "statistics": getattr(curr, "boya_statistics", {}),
+        "courses_count": len(curr.boya_all_courses) if getattr(curr, "boya_all_courses", None) is not None else 0,
+        "selected_count": len(curr.boya_selected_courses) if getattr(curr, "boya_selected_courses", None) is not None else 0,
+        "statistics": curr.boya_statistics if getattr(curr, "boya_statistics", None) is not None else {},
     }
 
 
@@ -1396,33 +1413,33 @@ async def get_boya_courses(force: bool = False):
             logger.debug(f"Boya token acquire failed: {e}")
 
     if not curr.boya_client.is_authenticated():
-        courses = curr.boya_all_courses if curr.boya_all_courses else DEMO_BOYA_COURSES
+        courses = curr.boya_all_courses if curr.boya_all_courses is not None else DEMO_BOYA_COURSES
         return {
             "status": "success",
             "courses": courses,
             "username": curr.username,
             "name": curr.name,
-            "is_demo": not bool(curr.boya_all_courses),
+            "is_demo": (curr.boya_all_courses is None),
             "message": "离线预载模式，登录北航统一认证后自动同步实时选课池",
         }
 
-    if force or not curr.boya_all_courses:
+    if force or curr.boya_all_courses is None:
         try:
             curr.boya_all_courses = curr.boya_client.query_courses(max_pages=5)
             curr.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
             add_log("info", f"【{curr.name}】博雅全量课程刷新成功，共 {len(curr.boya_all_courses)} 门课程。", username=curr.username, user_name=curr.name, category="boya")
         except Exception as e:
             add_log("warning", f"【{curr.name}】获取博雅线上课程列表失败: {e}，启用预载课程池展示", username=curr.username, user_name=curr.name, category="boya")
-            courses = curr.boya_all_courses if curr.boya_all_courses else DEMO_BOYA_COURSES
-            return {"status": "success", "courses": courses, "is_demo": True, "message": str(e)}
+            courses = curr.boya_all_courses if curr.boya_all_courses is not None else DEMO_BOYA_COURSES
+            return {"status": "success", "courses": courses, "is_demo": (curr.boya_all_courses is None), "message": str(e)}
 
     return {
         "status": "success",
-        "courses": curr.boya_all_courses if curr.boya_all_courses else DEMO_BOYA_COURSES,
+        "courses": curr.boya_all_courses if curr.boya_all_courses is not None else [],
         "username": curr.username,
         "name": curr.name,
         "last_refresh_time": curr.boya_last_refresh_time,
-        "is_demo": not bool(curr.boya_all_courses),
+        "is_demo": False,
     }
 
 
@@ -1430,24 +1447,27 @@ async def get_boya_courses(force: bool = False):
 async def get_boya_selected(force: bool = False):
     curr = get_active_account()
     if not curr or not curr.boya_client.is_authenticated():
-        selected = getattr(curr, "boya_selected_courses", []) if curr else DEMO_BOYA_SELECTED
-        pool = getattr(curr, "boya_all_courses", []) if curr else DEMO_BOYA_COURSES
-        enriched = enrich_selected_courses(selected or DEMO_BOYA_SELECTED, pool)
-        return {"status": "success", "selected": enriched, "is_demo": not bool(getattr(curr, "boya_selected_courses", []))}
+        selected = getattr(curr, "boya_selected_courses", None) if curr else None
+        pool = getattr(curr, "boya_all_courses", None) if curr else None
+        is_demo = (selected is None)
+        enriched = enrich_selected_courses(selected if selected is not None else DEMO_BOYA_SELECTED, pool if pool is not None else DEMO_BOYA_COURSES)
+        return {"status": "success", "selected": enriched, "is_demo": is_demo}
 
-    if force or not curr.boya_selected_courses:
+    if force or curr.boya_selected_courses is None:
         try:
             curr.boya_selected_courses = curr.boya_client.query_chosen_courses()
         except Exception as e:
             add_log("warning", f"【{curr.name}】获取线上已选博雅课程失败: {e}，呈现本地已选数据", username=curr.username, user_name=curr.name, category="boya")
 
-    enriched = enrich_selected_courses(curr.boya_selected_courses or DEMO_BOYA_SELECTED, curr.boya_all_courses or DEMO_BOYA_COURSES)
+    selected_list = curr.boya_selected_courses if curr.boya_selected_courses is not None else []
+    all_pool = curr.boya_all_courses if curr.boya_all_courses is not None else []
+    enriched = enrich_selected_courses(selected_list, all_pool)
     return {
         "status": "success",
         "selected": enriched,
         "username": curr.username,
         "name": curr.name,
-        "is_demo": not bool(curr.boya_selected_courses),
+        "is_demo": False,
     }
 
 
@@ -1455,13 +1475,14 @@ async def get_boya_selected(force: bool = False):
 async def get_boya_statistics(force: bool = False):
     curr = get_active_account()
     if not curr or not curr.boya_client.is_authenticated():
-        selected = getattr(curr, "boya_selected_courses", []) if curr else DEMO_BOYA_SELECTED
-        pool = getattr(curr, "boya_all_courses", []) if curr else DEMO_BOYA_COURSES
-        enriched = enrich_selected_courses(selected or DEMO_BOYA_SELECTED, pool)
-        stats = compute_semester_statistics(enriched, DEMO_BOYA_STATISTICS)
-        return {"status": "success", "statistics": stats}
+        selected = getattr(curr, "boya_selected_courses", None) if curr else None
+        pool = getattr(curr, "boya_all_courses", None) if curr else None
+        stats = getattr(curr, "boya_statistics", None) if curr else None
+        enriched = enrich_selected_courses(selected if selected is not None else DEMO_BOYA_SELECTED, pool if pool is not None else DEMO_BOYA_COURSES)
+        computed_stats = compute_semester_statistics(enriched, stats if stats is not None else DEMO_BOYA_STATISTICS)
+        return {"status": "success", "statistics": computed_stats}
 
-    if force or not curr.boya_statistics:
+    if force or curr.boya_statistics is None:
         try:
             curr.boya_statistics = curr.boya_client.query_statistics()
             boya_name = extract_real_name_from_stats(curr.boya_statistics)
@@ -1471,8 +1492,10 @@ async def get_boya_statistics(force: bool = False):
         except Exception as e:
             add_log("error", f"【{curr.name}】获取博雅素养学分统计失败: {e}", username=curr.username, user_name=curr.name, category="boya")
 
-    enriched = enrich_selected_courses(curr.boya_selected_courses or [], curr.boya_all_courses or [])
-    stats = compute_semester_statistics(enriched, curr.boya_statistics)
+    selected_list = curr.boya_selected_courses if curr.boya_selected_courses is not None else []
+    all_pool = curr.boya_all_courses if curr.boya_all_courses is not None else []
+    enriched = enrich_selected_courses(selected_list, all_pool)
+    stats = compute_semester_statistics(enriched, curr.boya_statistics or {})
     return {
         "status": "success",
         "statistics": stats,
@@ -1808,6 +1831,10 @@ async def delete_account_rest(username: str):
 
     acc = accounts.pop(username)
     await acc.client.close()
+    try:
+        acc.boya_client.session.close()
+    except Exception:
+        pass
     add_log("info", f"学生账号 【{acc.name} ({acc.username})】 已通过 RESTful 接口移除。", username=acc.username, user_name=acc.name)
 
     if active_username == username:
