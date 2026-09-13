@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
-from core.boya_scheduler import BoyaScheduler, parse_sign_config, is_auto_select_candidate, random_point_in_radius
+from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius
 
 
 def resolve_config_path() -> pathlib.Path:
@@ -881,9 +881,9 @@ DEMO_BOYA_COURSES = [
         "id": 7005,
         "courseId": 7005,
         "courseName": "总体国家安全观与大国空天战略博弈",
-        "courseKind": "国家安全",
-        "kindName": "国家安全",
-        "courseType": "国家安全",
+        "courseKind": "安全健康",
+        "kindName": "安全健康",
+        "courseType": "安全健康",
         "speaker": "国防战略研究所教授",
         "teacherName": "国防战略研究所教授",
         "coursePosition": "学院路校区晨兴音乐厅",
@@ -902,9 +902,9 @@ DEMO_BOYA_COURSES = [
         "id": 7006,
         "courseId": 7006,
         "courseName": "关键信息基础设施网络空间安全防御",
-        "courseKind": "国家安全",
-        "kindName": "国家安全",
-        "courseType": "国家安全",
+        "courseKind": "安全健康",
+        "kindName": "安全健康",
+        "courseType": "安全健康",
         "speaker": "网络空间安全学院学术带头人",
         "teacherName": "网络空间安全学院学术带头人",
         "coursePosition": "沙河校区J3-205",
@@ -1024,7 +1024,55 @@ DEMO_BOYA_SELECTED = [
         "courseEndTime": "17:30",
         "selected": True,
         "status": "进行中",
+        "signStatus": 0,
+        "signOutStatus": 0,
         "courseSignConfig": '{"signPointList":[{"signLat":39.9835,"signLng":116.3470,"signRadius":50}]}',
+    },
+    {
+        "id": 7005,
+        "chosenCourseId": 9905,
+        "courseId": 7005,
+        "courseName": "心肺复苏CPR与AED急救技能实训",
+        "courseKind": "安全健康",
+        "kindName": "安全健康",
+        "courseType": "安全健康",
+        "speaker": "王海玉",
+        "teacherName": "王海玉",
+        "coursePosition": "沙河校区J3-410",
+        "courseAddress": "沙河校区J3-410",
+        "courseStartDate": "2026-09-16",
+        "courseStartTime": "10:40",
+        "courseEndDate": "2026-09-16",
+        "courseEndTime": "12:10",
+        "selected": True,
+        "status": "进行中",
+        "signStatus": 0,
+        "signOutStatus": 0,
+        "courseSignConfig": '{"signPointList":[{"signLat":39.9840,"signLng":116.3465,"signRadius":50}]}',
+    },
+    {
+        "id": 7008,
+        "chosenCourseId": 9908,
+        "courseId": 7008,
+        "courseName": "原创场景剧《北京一号》",
+        "courseKind": "美育",
+        "kindName": "美育",
+        "courseType": "美育",
+        "speaker": "李英",
+        "teacherName": "李英",
+        "coursePosition": "沙河咏曼剧场",
+        "courseAddress": "沙河咏曼剧场",
+        "courseStartDate": "2026-09-13",
+        "courseStartTime": "19:00",
+        "courseEndDate": "2026-09-13",
+        "courseEndTime": "21:00",
+        "selected": True,
+        "status": "已结课",
+        "signStatus": 1,
+        "signOutStatus": 1,
+        "attendanceStatus": "合格",
+        "examStatus": "通过",
+        "courseSignConfig": '{"signPointList":[{"signLat":39.9822,"signLng":116.3475,"signRadius":60}],"signOutEndDate":"2026-09-13 21:15:00"}',
     },
     {
         "id": 7001,
@@ -1044,22 +1092,220 @@ DEMO_BOYA_SELECTED = [
         "courseEndTime": "21:00",
         "selected": True,
         "status": "已结课",
+        "signStatus": 1,
+        "signOutStatus": 1,
+        "attendanceStatus": "合格",
+        "examStatus": "通过",
         "courseSignConfig": '{"signPointList":[{"signLat":39.9822,"signLng":116.3475,"signRadius":60}]}',
     }
 ]
 
 DEMO_BOYA_STATISTICS = {
-    "total_credits": 2.0,
-    "totalCredit": 2.0,
-    "total_required": 4.0,
+    "totalCredit": 3.0,
+    "total_credits": 3.0,
     "requiredCredit": 4.0,
+    "moral_completed": 0,
+    "moral_required": 2,
+    "moral_effective": 0,
+    "labor_completed": 0,
+    "labor_required": 2,
+    "labor_effective": 0,
+    "art_completed": 1,
+    "art_required": 1,
+    "art_effective": 1,
+    "security_health_completed": 0,
+    "security_health_required": 1,
+    "security_health_effective": 0,
+    "semester_passed_total": 1,
+    "semester_required_total": 6,
+    "semester_compliance_rate": 17,
     "art_courses_count": 1,
     "labor_courses_count": 0,
     "security_courses_count": 0,
-    "moral_courses_count": 1,
-    "total_courses_count": 2,
-    "totalCount": 2,
+    "moral_courses_count": 0,
+    "total_passed": 1,
+    "total_required": 6,
 }
+
+
+def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    enriched = []
+    pool_map = {}
+    for p in pool_list or []:
+        if p.get("id"):
+            pool_map[str(p["id"])] = p
+        if p.get("courseId"):
+            pool_map[str(p["courseId"])] = p
+        if p.get("courseName"):
+            pool_map[str(p["courseName"]).strip()] = p
+
+    now = datetime.datetime.now()
+
+    for item in selected_list or []:
+        c = dict(item)
+        cid_str = str(c.get("id") or c.get("courseId") or "")
+        cname = str(c.get("courseName") or c.get("name") or "").strip()
+
+        # 从全量课池补齐开课、结课时间与打卡配置
+        pool_match = pool_map.get(cid_str) or pool_map.get(cname)
+        if pool_match:
+            for field in (
+                "courseStartDate", "courseStartTime", "courseEndDate", "courseEndTime",
+                "coursePosition", "courseAddress", "courseTeacher", "speaker", "courseSignConfig"
+            ):
+                if not c.get(field) and pool_match.get(field):
+                    c[field] = pool_match.get(field)
+
+        # 规范化四大类别（旧名“国家安全”全面规范映射为“安全健康”）
+        kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
+        if isinstance(c.get("courseNewKind2"), dict):
+            kind = c["courseNewKind2"].get("kindName") or kind
+        if "安全" in kind or "健康" in kind:
+            c["courseKind"] = "安全健康"
+            c["kindName"] = "安全健康"
+            c["courseType"] = "安全健康"
+
+        # 判断课程是否已结课/已结束
+        status_str = str(c.get("courseStatus") or c.get("status") or "")
+        is_ended = ("结课" in status_str or "结束" in status_str)
+
+        # 检查打卡截止时间（SignOutEndDate）
+        cfg = parse_sign_config(c.get("courseSignConfig"))
+        sign_out_end = cfg.get("signOutEndDate") or cfg.get("signEndDate")
+        if sign_out_end:
+            dt_out_end = parse_dt(sign_out_end)
+            if dt_out_end and now > dt_out_end:
+                is_ended = True
+
+        # 解析课程结束时间
+        end_date = c.get("courseEndDate") or c.get("courseStartDate")
+        end_time = c.get("courseEndTime")
+        if end_date and end_time:
+            dt_end = parse_dt(f"{end_date} {end_time}")
+            if dt_end and now > dt_end:
+                is_ended = True
+        elif c.get("courseStartDate") and c.get("courseStartTime"):
+            dt_start = parse_dt(f"{c['courseStartDate']} {c['courseStartTime']}")
+            if dt_start and now > dt_start + datetime.timedelta(hours=2.5):
+                is_ended = True
+
+        c["is_ended"] = is_ended
+        if is_ended and not c.get("courseStatus"):
+            c["courseStatus"] = "已结课"
+
+        # 解析考勤状态 (attendance_status)
+        raw_att = c.get("attendanceStatus") or c.get("courseAttendanceStatus") or c.get("checkInStatus") or c.get("kaoqinStatus")
+        is_signed = (c.get("signStatus") == 1 or c.get("courseSignStatus") == 1 or c.get("signInStatus") == 1)
+        is_signed_out = (c.get("signOutStatus") == 1 or c.get("courseSignOutStatus") == 1)
+
+        if raw_att in (1, "1", "合格", "通过", "正常"):
+            c["attendance_status"] = {"passed": True, "text": "考勤通过", "badge": "badge-green"}
+        elif raw_att in (0, "0", "缺勤", "未通过", "不合格"):
+            c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
+        elif is_signed and is_signed_out:
+            c["attendance_status"] = {"passed": True, "text": "考勤通过(已双签)", "badge": "badge-green"}
+        elif is_signed:
+            if is_ended:
+                c["attendance_status"] = {"passed": True, "text": "考勤通过(已签到)", "badge": "badge-green"}
+            else:
+                c["attendance_status"] = {"passed": None, "text": "已签到", "badge": "badge-green"}
+        elif is_ended:
+            c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
+        else:
+            c["attendance_status"] = {"passed": None, "text": "待考勤", "badge": "badge-blue"}
+
+        # 解析考核状态 (exam_status)
+        raw_exam = c.get("examStatus") or c.get("checkStatus") or c.get("passStatus") or c.get("isPass") or c.get("kaoheStatus")
+        if raw_exam in (1, "1", "通过", "合格", "PASS"):
+            c["exam_status"] = {"passed": True, "text": "考核通过", "badge": "badge-green"}
+        elif raw_exam in (0, "0", "未通过", "不合格", "FAIL"):
+            c["exam_status"] = {"passed": False, "text": "考核未通过", "badge": "badge-red"}
+        elif raw_exam in (-1, "-1", "待评定", "评定中", "待考核"):
+            c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
+        elif is_ended:
+            if c.get("score") is not None:
+                try:
+                    s = float(c["score"])
+                    c["exam_status"] = {
+                        "passed": s >= 60,
+                        "text": f"考核通过 ({s:.0f}分)" if s >= 60 else f"考核未通过 ({s:.0f}分)",
+                        "badge": "badge-green" if s >= 60 else "badge-red"
+                    }
+                except Exception:
+                    c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
+            elif c["attendance_status"].get("passed") is True:
+                c["exam_status"] = {"passed": True, "text": "考核通过", "badge": "badge-green"}
+            else:
+                c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
+        else:
+            c["exam_status"] = {"passed": None, "text": "未开考", "badge": "badge-blue"}
+
+        # 最终考核：必须是考勤和考核都通过才算完成最终考核
+        c["final_passed"] = bool(c["attendance_status"].get("passed") is True and c["exam_status"].get("passed") is True)
+        enriched.append(c)
+
+    return enriched
+
+
+def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    moral_count = 0
+    labor_count = 0
+    art_count = 0
+    sec_count = 0
+
+    for c in selected_list or []:
+        if c.get("final_passed") is True:
+            kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
+            if "德育" in kind:
+                moral_count += 1
+            elif "劳育" in kind or "劳动" in kind:
+                labor_count += 1
+            elif "美育" in kind or "艺术" in kind:
+                art_count += 1
+            elif "安全" in kind or "健康" in kind:
+                sec_count += 1
+
+    # 兜底：若已选课表中尚无结课记录但 SSO 统计有数字，兼容合并
+    if sso_stats and isinstance(sso_stats, dict):
+        moral_count = max(moral_count, int(sso_stats.get("moral_courses_count") or sso_stats.get("moralCount") or 0))
+        labor_count = max(labor_count, int(sso_stats.get("labor_courses_count") or sso_stats.get("laborCount") or 0))
+        art_count = max(art_count, int(sso_stats.get("art_courses_count") or sso_stats.get("artCount") or 0))
+        sec_count = max(sec_count, int(sso_stats.get("security_courses_count") or sso_stats.get("securityCount") or 0))
+
+    eff_moral = min(moral_count, 2)
+    eff_labor = min(labor_count, 2)
+    eff_art = min(art_count, 1)
+    eff_sec = min(sec_count, 1)
+    total_passed = eff_moral + eff_labor + eff_art + eff_sec
+    rate = round((total_passed / 6.0) * 100)
+
+    return {
+        "moral_completed": moral_count,
+        "moral_required": 2,
+        "moral_effective": eff_moral,
+        "labor_completed": labor_count,
+        "labor_required": 2,
+        "labor_effective": eff_labor,
+        "art_completed": art_count,
+        "art_required": 1,
+        "art_effective": eff_art,
+        "security_health_completed": sec_count,
+        "security_health_required": 1,
+        "security_health_effective": eff_sec,
+        "semester_passed_total": total_passed,
+        "semester_required_total": 6,
+        "semester_compliance_rate": rate,
+        "art_courses_count": art_count,
+        "labor_courses_count": labor_count,
+        "security_courses_count": sec_count,
+        "moral_courses_count": moral_count,
+        "total_passed": total_passed,
+        "total_required": 6,
+        "totalCredit": float(sso_stats.get("totalCredit") or sso_stats.get("total_credits") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
+        "total_credits": float(sso_stats.get("total_credits") or sso_stats.get("totalCredit") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
+        "requiredCredit": 4.0,
+    }
+
 
 @app.get("/api/boya/courses")
 async def get_boya_courses(force: bool = False):
@@ -1110,7 +1356,9 @@ async def get_boya_selected(force: bool = False):
     curr = get_active_account()
     if not curr or not curr.boya_client.is_authenticated():
         selected = getattr(curr, "boya_selected_courses", []) if curr else DEMO_BOYA_SELECTED
-        return {"status": "success", "selected": selected or DEMO_BOYA_SELECTED, "is_demo": not bool(getattr(curr, "boya_selected_courses", []))}
+        pool = getattr(curr, "boya_all_courses", []) if curr else DEMO_BOYA_COURSES
+        enriched = enrich_selected_courses(selected or DEMO_BOYA_SELECTED, pool)
+        return {"status": "success", "selected": enriched, "is_demo": not bool(getattr(curr, "boya_selected_courses", []))}
 
     if force or not curr.boya_selected_courses:
         try:
@@ -1118,9 +1366,10 @@ async def get_boya_selected(force: bool = False):
         except Exception as e:
             add_log("warning", f"【{curr.name}】获取线上已选博雅课程失败: {e}，呈现本地已选数据", username=curr.username, user_name=curr.name, category="boya")
 
+    enriched = enrich_selected_courses(curr.boya_selected_courses or DEMO_BOYA_SELECTED, curr.boya_all_courses or DEMO_BOYA_COURSES)
     return {
         "status": "success",
-        "selected": curr.boya_selected_courses if curr.boya_selected_courses else DEMO_BOYA_SELECTED,
+        "selected": enriched,
         "username": curr.username,
         "name": curr.name,
         "is_demo": not bool(curr.boya_selected_courses),
@@ -1131,8 +1380,11 @@ async def get_boya_selected(force: bool = False):
 async def get_boya_statistics(force: bool = False):
     curr = get_active_account()
     if not curr or not curr.boya_client.is_authenticated():
-        stats = getattr(curr, "boya_statistics", {}) if curr else DEMO_BOYA_STATISTICS
-        return {"status": "success", "statistics": stats or DEMO_BOYA_STATISTICS}
+        selected = getattr(curr, "boya_selected_courses", []) if curr else DEMO_BOYA_SELECTED
+        pool = getattr(curr, "boya_all_courses", []) if curr else DEMO_BOYA_COURSES
+        enriched = enrich_selected_courses(selected or DEMO_BOYA_SELECTED, pool)
+        stats = compute_semester_statistics(enriched, DEMO_BOYA_STATISTICS)
+        return {"status": "success", "statistics": stats}
 
     if force or not curr.boya_statistics:
         try:
@@ -1140,9 +1392,11 @@ async def get_boya_statistics(force: bool = False):
         except Exception as e:
             pass
 
+    enriched = enrich_selected_courses(curr.boya_selected_courses or [], curr.boya_all_courses or [])
+    stats = compute_semester_statistics(enriched, curr.boya_statistics)
     return {
         "status": "success",
-        "statistics": curr.boya_statistics if curr.boya_statistics else DEMO_BOYA_STATISTICS,
+        "statistics": stats,
         "username": curr.username,
         "name": curr.name,
     }
@@ -1412,7 +1666,7 @@ async def get_disclaimer():
     return {
         "status": "ok",
         "accepted": bool(config.get("disclaimer_accepted", False)),
-        "version": "1.2.0",
+        "version": "1.2.2",
     }
 
 
@@ -1439,7 +1693,7 @@ async def show_window():
 async def health_check():
     return {
         "status": "ok",
-        "version": "1.2.0",
+        "version": "1.2.2",
         "active_username": active_username,
         "accounts_count": len(accounts),
     }

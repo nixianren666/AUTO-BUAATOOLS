@@ -1,4 +1,4 @@
-﻿# -*- mode: python ; coding: utf-8 -*-
+# -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
     ['run.py'],
@@ -72,8 +72,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleDisplayName': 'BUAA 课程独立签到助手',
         'CFBundleName': 'BUAA-Signin',
-        'CFBundleShortVersionString': '1.2.0',
-        'CFBundleVersion': '1.2.0',
+        'CFBundleShortVersionString': '1.2.2',
+        'CFBundleVersion': '1.2.2',
         'NSHighResolutionCapable': 'True',
         'LSUIElement': '0',
     },

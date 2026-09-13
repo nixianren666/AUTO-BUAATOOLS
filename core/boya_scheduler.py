@@ -63,8 +63,12 @@ def has_autonomous_sign(course: Dict[str, Any]) -> bool:
 def get_course_category(course: Dict[str, Any]) -> str:
     kind = course.get("courseNewKind2")
     if isinstance(kind, dict):
-        return kind.get("kindName") or ""
-    return course.get("courseKind") or course.get("kindName") or ""
+        val = kind.get("kindName") or ""
+    else:
+        val = course.get("courseKind") or course.get("kindName") or course.get("courseType") or ""
+    if "安全" in val or "健康" in val:
+        return "安全健康"
+    return val
 
 
 def course_matches_campus(course: Dict[str, Any], campus_preference: str = "北京") -> bool:

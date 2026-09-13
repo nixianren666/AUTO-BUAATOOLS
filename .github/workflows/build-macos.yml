@@ -1,4 +1,4 @@
-﻿name: Build and Release macOS App
+name: Build and Release macOS App
 
 on:
   workflow_dispatch:
@@ -78,5 +78,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v1.2.0 "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
-          gh release upload v1.2.0 "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
+          gh release view "$TAG" || gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG"
+          gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
+          gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true

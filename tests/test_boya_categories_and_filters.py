@@ -8,7 +8,7 @@ class TestBoyaCategoriesAndFilters(unittest.TestCase):
         accounts.clear()
 
     def test_demo_courses_strictly_have_four_categories(self):
-        valid_cats = {"美育", "劳育", "国家安全", "德育"}
+        valid_cats = {"美育", "劳育", "安全健康", "德育"}
         res = self.client.get("/api/boya/courses")
         self.assertEqual(res.status_code, 200)
         data = res.json()

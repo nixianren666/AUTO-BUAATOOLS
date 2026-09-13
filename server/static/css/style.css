@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ORIGIN FINANCIAL DESIGN SYSTEM (v1.2.0)
+   ORIGIN FINANCIAL DESIGN SYSTEM (v1.2.2)
    Enhanced with Emil Kowalski Motion Engineering (emil-design-eng / apple-design)
    & Gemini iPhone Floating Organic Particles with Adjustable Frosted Glass Veil
    ========================================================================== */
@@ -791,6 +791,18 @@ html, body {
   font-weight: 600;
   color: var(--text-primary);
 }
+.milestone-pill.status-done {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
+}
+.milestone-pill.status-done .m-label {
+  color: #34d399;
+  font-weight: 600;
+}
+.milestone-pill.status-done .m-val {
+  color: #ffffff;
+  font-weight: 700;
+}
 
 /* ==================== TOOLBARS & CONTROLS ==================== */
 .origin-toolbar {
@@ -1009,6 +1021,20 @@ html, body {
 .origin-btn-danger-ghost:hover {
   background: rgba(244, 63, 94, 0.12);
   color: var(--accent-rose);
+}
+.origin-btn-success-subtle {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+  font-weight: 600;
+  cursor: default !important;
+}
+.origin-btn-info-subtle {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  color: #38bdf8 !important;
+  font-weight: 600;
+  cursor: default !important;
 }
 
 /* ==================== TOGGLE SWITCH ==================== */

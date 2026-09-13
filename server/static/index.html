@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BUAA 课程签到 Pro - Origin v1.2.0</title>
+  <title>BUAA 课程签到 Pro - Origin v1.2.2</title>
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.2.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.2.2">
 </head>
 <body class="origin-theme">
   <!-- Gemini iOS 风格背景：底层流动光斑与星尘粒子 -->
@@ -28,7 +28,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.2.0</span>
+            <span class="origin-tag">v1.2.2</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -258,25 +258,25 @@
               </div>
             </div>
 
-            <!-- 学分毕业里程碑进度槽 -->
+            <!-- 学期博雅素养达标要求与进度槽 -->
             <div class="boya-progress-wrapper">
               <div class="boya-progress-header">
                 <div class="progress-title-col">
-                  <span class="progress-big-number" id="boyaEarnedCredits">0.0</span>
-                  <span class="progress-denominator">/ 4.0 毕业要求学分</span>
+                  <span class="progress-big-number" id="boyaEarnedCredits">0</span>
+                  <span class="progress-denominator">/ 6 门 本学期博雅素养达标要求</span>
                 </div>
-                <div class="progress-rate-tag" id="boyaCompletionRate">达成度 0%</div>
+                <div class="progress-rate-tag" id="boyaCompletionRate">学期达标完成度 0%</div>
               </div>
               <div class="origin-progress-bar">
                 <div class="origin-progress-fill" id="boyaProgressFill" style="width: 0%;"></div>
               </div>
               
-              <!-- 官方四大博雅课程类别微胶囊 -->
+              <!-- 官方四大博雅课程类别学期达标微胶囊 -->
               <div class="boya-milestone-pills" id="boyaCategoryMilestones">
-                <div class="milestone-pill"><span class="m-label">美育</span><span class="m-val" id="pillArt">0 门</span></div>
-                <div class="milestone-pill"><span class="m-label">劳育</span><span class="m-val" id="pillLabor">0 门</span></div>
-                <div class="milestone-pill"><span class="m-label">国家安全</span><span class="m-val" id="pillSec">0 门</span></div>
-                <div class="milestone-pill"><span class="m-label">德育</span><span class="m-val" id="pillMoral">0 门</span></div>
+                <div class="milestone-pill" id="pillMoralWrap"><span class="m-label">德育</span><span class="m-val" id="pillMoral">0 / 2 门</span></div>
+                <div class="milestone-pill" id="pillLaborWrap"><span class="m-label">劳育</span><span class="m-val" id="pillLabor">0 / 2 门</span></div>
+                <div class="milestone-pill" id="pillArtWrap"><span class="m-label">美育</span><span class="m-val" id="pillArt">0 / 1 门</span></div>
+                <div class="milestone-pill" id="pillSecWrap"><span class="m-label">安全健康</span><span class="m-val" id="pillSec">0 / 1 门</span></div>
               </div>
             </div>
           </div>
@@ -330,7 +330,7 @@
               <button class="filter-pill active" onclick="filterBoyaCategory('全部', this)">全部类别</button>
               <button class="filter-pill" onclick="filterBoyaCategory('美育', this)">🎨 美育</button>
               <button class="filter-pill" onclick="filterBoyaCategory('劳育', this)">🛠️ 劳育</button>
-              <button class="filter-pill" onclick="filterBoyaCategory('国家安全', this)">🛡️ 国家安全</button>
+              <button class="filter-pill" onclick="filterBoyaCategory('安全健康', this)">🛡️ 安全健康</button>
               <button class="filter-pill" onclick="filterBoyaCategory('德育', this)">📖 德育</button>
             </div>
             <div class="filter-feature-group">
@@ -469,7 +469,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.2.0</span>
+          <span class="origin-version">v1.2.2</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
@@ -512,6 +512,6 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/app.js?v=1.2.0"></script>
+  <script src="/static/js/app.js?v=1.2.2"></script>
 </body>
 </html>
