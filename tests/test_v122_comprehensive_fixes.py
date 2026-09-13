@@ -1,6 +1,8 @@
 import unittest
+from datetime import datetime
 from core.iclass import IclassClient
 from core.boya_client import extract_real_name_from_stats
+from core.boya_scheduler import get_current_semester_range
 from server.app import enrich_selected_courses, compute_semester_statistics, add_log, get_logs, accounts, AccountState
 from run import acquire_single_instance, APP_TITLE
 
@@ -202,6 +204,105 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
 
         # 必须使用 courseSchedId (2479439) 而非 courseId (96037)
         self.assertEqual(call_log, ["2479439"])
+
+    def test_academic_calendar_semester_range(self):
+        # 9月属于秋季学期
+        s, e, name = get_current_semester_range(datetime(2026, 9, 14))
+        self.assertIn("秋季", name)
+        self.assertEqual(s.month, 8)
+        self.assertEqual(s.day, 25)
+        self.assertEqual(e.month, 1)
+
+        # 4月属于春季学期
+        s, e, name = get_current_semester_range(datetime(2026, 4, 15))
+        self.assertIn("春季", name)
+        self.assertEqual(s.month, 2)
+        self.assertEqual(e.month, 7)
+
+    def test_semester_stats_excludes_past_years(self):
+        # 构造包含往届历史学年（2024、2025、2026春）与当前学年（2026秋）的已选课程
+        courses = [
+            # 2024 历史课 (通过)
+            {"id": 1, "courseName": "2024老课", "courseKind": "德育", "courseStartDate": "2024-10-10", "final_passed": True},
+            {"id": 2, "courseName": "2024老课2", "courseKind": "德育", "courseStartDate": "2024-10-12", "final_passed": True},
+            # 2025 历史课 (通过)
+            {"id": 3, "courseName": "2025老课", "courseKind": "劳育", "courseStartDate": "2025-06-10", "final_passed": True},
+            {"id": 4, "courseName": "2025老课2", "courseKind": "安全健康", "courseStartDate": "2025-06-12", "final_passed": True},
+            # 2026 春季课 (通过)
+            {"id": 5, "courseName": "2026春课", "courseKind": "劳育", "courseStartDate": "2026-06-15", "final_passed": True},
+            # 2026 秋季本学期课 (通过)
+            {"id": 6, "courseName": "北京一号", "courseKind": "美育", "courseStartDate": "2026-09-13 19:00:00", "final_passed": True},
+        ]
+        sso_stats = {
+            "semesterInfo": {
+                "semesterName": "2026-2027学年第一学期（秋季）",
+                "semesterStartDate": "2026-08-31 00:00:00",
+                "semesterEndDate": "2027-01-03 00:00:00",
+            },
+            "validCount": 1,
+            "statistical": {
+                "60|博雅课程": {
+                    "55|德育": {"completeAssessmentCount": 0},
+                    "56|美育": {"completeAssessmentCount": 1},
+                    "57|劳育": {"completeAssessmentCount": 0},
+                    "58|安全健康": {"completeAssessmentCount": 0},
+                }
+            }
+        }
+        res = compute_semester_statistics(courses, sso_stats)
+        # 严格限定本学期：只有《北京一号》1 门美育通过，历史学年课程严禁计入！
+        self.assertEqual(res["art_completed"], 1)
+        self.assertEqual(res["moral_completed"], 0)
+        self.assertEqual(res["labor_completed"], 0)
+        self.assertEqual(res["security_health_completed"], 0)
+        self.assertEqual(res["total_passed"], 1)
+        self.assertEqual(res["semester_compliance_rate"], 17)
+        self.assertEqual(res["semester_name"], "2026-2027学年第一学期（秋季）")
+
+    def test_auto_select_candidate_and_pool_sync(self):
+        from core.boya_scheduler import is_auto_select_candidate, BoyaScheduler
+        now = datetime(2026, 9, 14, 10, 0, 0)
+
+        # 1. 线下卡刷课程（无 GPS 配置）在 require_auto_sign=False 时仍可作为抢课候选锁定名额
+        offline_course = {
+            "id": 10015,
+            "courseName": "数智驱动讲座",
+            "coursePosition": "学院路校区",
+            "courseSelectStartDate": "2026-09-12 00:00:00",
+            "courseSelectEndDate": "2026-09-16 00:00:00",
+            "courseCurrentCount": 450,
+            "courseMaxCount": 750,
+            "courseSignConfig": None,
+        }
+        self.assertTrue(is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False))
+        self.assertFalse(is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=True))
+
+        # 2. 测试 BoyaScheduler 在自动选课开启时拉取全量课池并输出日志
+        logs = []
+        def log_cb(level, msg, **kwargs):
+            logs.append((level, msg))
+
+        acc = AccountState(
+            username="test_user",
+            name="李四",
+            password="",
+            mode="direct",
+            auto_checkin=True,
+            boya_auto_select=True,
+            boya_auto_sign=True,
+            campus="北京",
+        )
+        acc.boya_client.token = "mock_token"
+        acc.boya_client.query_courses = lambda max_pages=3: [offline_course]
+        acc.boya_client.query_chosen_courses = lambda: []
+
+        sched = BoyaScheduler(lambda: [acc], log_cb)
+        sched.tick()
+
+        # 验证课池成功同步并输出透明度巡检日志
+        self.assertIsNotNone(acc.boya_all_courses)
+        self.assertEqual(len(acc.boya_all_courses), 1)
+        self.assertTrue(any("博雅抢课守护中" in m[1] for m in logs))
 
 
 if __name__ == "__main__":
