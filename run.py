@@ -52,16 +52,18 @@ window = None
 tray_icon = None
 is_exiting = False
 _single_instance_mutex = None
+_open_lock_files = []
 
 
 def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
     """
     确保全系统绝对单实例运行：
     1. Windows 采用 Win32 Named Mutex (内核级互斥体)
-    2. 其他平台/备用采用本地专用互斥端口占用检测
+    2. Unix (macOS / Linux) 采用专属文件锁 (fcntl.flock)
+    3. 备用检查采用本地专用互斥端口占用检测
     若已有实例在运行，则恢复并置顶已有主窗口，并返回 False（应立即退出）
     """
-    global _single_instance_mutex
+    global _single_instance_mutex, _open_lock_files
 
     already_running = False
 
@@ -73,6 +75,18 @@ def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
             last_err = ctypes.windll.kernel32.GetLastError()
             if last_err == 183:  # ERROR_ALREADY_EXISTS
                 already_running = True
+        except Exception:
+            pass
+    else:
+        try:
+            import fcntl
+            import pathlib
+            lock_path = pathlib.Path.home() / ".buaa_signin_v122.lock"
+            f = open(lock_path, "a+")
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _open_lock_files.append(f)
+        except (IOError, OSError):
+            already_running = True
         except Exception:
             pass
 

@@ -1200,7 +1200,7 @@ def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List
 
         # 判断课程是否已结课/已结束
         status_str = str(c.get("courseStatus") or c.get("status") or "")
-        is_ended = ("结课" in status_str or "结束" in status_str)
+        is_ended = bool(c.get("is_ended")) or ("结课" in status_str or "结束" in status_str)
 
         # 检查打卡截止时间（SignOutEndDate）
         cfg = parse_sign_config(c.get("courseSignConfig"))
