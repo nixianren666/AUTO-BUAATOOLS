@@ -95,8 +95,19 @@ def get_course_category(course: Dict[str, Any]) -> str:
         val = kind.get("kindName") or ""
     else:
         val = course.get("courseKind") or course.get("kindName") or course.get("courseType") or ""
+    val = str(val).strip()
     if "安全" in val or "健康" in val:
         return "安全健康"
+    if "德育" in val or "思政" in val:
+        return "德育"
+    if "劳育" in val or "劳动" in val:
+        return "劳育"
+    if "美育" in val or "艺术" in val:
+        return "美育"
+    if "智育" in val or "科技" in val:
+        return "智育"
+    if "体育" in val:
+        return "体育"
     return val
 
 
@@ -107,8 +118,10 @@ def course_matches_campus(course: Dict[str, Any], campus_preference: str = "北�
         str(course.get("name") or ""),
         str(course.get("coursePosition") or ""),
         str(course.get("courseCampusList") or ""),
+        str(course.get("coursePositionName") or ""),
+        str(course.get("campusName") or ""),
     ])
-    is_hangzhou = "杭州" in combined
+    is_hangzhou = any(kw in combined for kw in ("杭州", "国新院", "杭州极弱磁"))
     if campus_preference == "杭州":
         return is_hangzhou
     return not is_hangzhou
@@ -123,6 +136,117 @@ def random_point_in_radius(lat: float, lng: float, radius_m: float = 10.0) -> Tu
     return round(lat + dlat, 6), round(lng + dlng, 6)
 
 
+def parse_course_time_range(course: Dict[str, Any]) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """
+    解析博雅课程上课起止时间：
+    优先从 courseStartDate / courseStartTime / courseEndDate / courseEndTime 组合解析；
+    兼顾 courseTime 或 timeRange 文本字符串。
+    """
+    start_d = course.get("courseStartDate") or course.get("startDate")
+    start_t = course.get("courseStartTime") or course.get("startTime")
+    end_d = course.get("courseEndDate") or course.get("endDate")
+    end_t = course.get("courseEndTime") or course.get("endTime")
+
+    start_dt = None
+    end_dt = None
+
+    if start_d and start_t:
+        start_dt = parse_dt(f"{start_d} {start_t}")
+    elif start_d:
+        start_dt = parse_dt(str(start_d))
+
+    if end_d and end_t:
+        end_dt = parse_dt(f"{end_d} {end_t}")
+    elif end_d:
+        end_dt = parse_dt(str(end_d))
+
+    if (not start_dt or not end_dt) and course.get("courseTime"):
+        ctime = str(course["courseTime"]).replace("至", "-").replace("~", "-")
+        if "-" in ctime:
+            parts = ctime.split("-", 1)
+            p1 = parse_dt(parts[0].strip())
+            p2 = parse_dt(parts[1].strip())
+            if p1 and p2:
+                start_dt = p1
+                end_dt = p2
+
+    return start_dt, end_dt
+
+
+def courses_time_overlap(c1: Dict[str, Any], c2: Dict[str, Any]) -> bool:
+    """
+    判断两门课程的上课时间是否存在冲突（重叠）：
+    两门课程均有明确起止时间且为正常时间段时：
+    max(start1, start2) < min(end1, end2) 为区间交集。
+    """
+    s1, e1 = parse_course_time_range(c1)
+    s2, e2 = parse_course_time_range(c2)
+    if not s1 or not e1 or not s2 or not e2:
+        return False
+    if e1 <= s1 or e2 <= s2:
+        return False
+    return max(s1, s2) < min(e1, e2)
+
+
+def get_user_category_demands(
+    selected_courses: List[Dict[str, Any]],
+    sem_start: Optional[datetime] = None,
+    sem_end: Optional[datetime] = None
+) -> Dict[str, Dict[str, int]]:
+    """
+    分析学生本学期已选/已修各板块课程数与达标缺口：
+    基准要求：德育: 2, 劳育: 2, 美育: 1, 安全健康: 1
+    返回各板块达标需求与剩余缺口
+    """
+    standards = {
+        "德育": 2,
+        "劳育": 2,
+        "美育": 1,
+        "安全健康": 1,
+    }
+    counts = {"德育": 0, "劳育": 0, "美育": 0, "安全健康": 0}
+    for c in selected_courses or []:
+        if sem_start and sem_end:
+            c_date_str = c.get("courseStartDate") or c.get("courseEndDate") or c.get("selectDate")
+            c_dt = parse_dt(c_date_str)
+            if c_dt and not (sem_start <= c_dt <= sem_end):
+                continue
+        cat = get_course_category(c)
+        if cat in counts:
+            counts[cat] += 1
+
+    demands = {}
+    for k, req in standards.items():
+        cnt = counts.get(k, 0)
+        demands[k] = {
+            "required": req,
+            "count": cnt,
+            "remaining": max(0, req - cnt),
+        }
+    return demands
+
+
+def calculate_candidate_priority(course: Dict[str, Any], demands: Dict[str, Dict[str, int]]) -> int:
+    """
+    计算课程抢选优先级权重：
+    - 缺口最大的板块优先级最高 (权重: 100 + remaining * 10)；
+    - 缺口已满足 (saturated, remaining == 0) 的板块优先级低 (权重: 10)；
+    - 其他可选板块 (权重: 20)；
+    - 支持线上定位签到的课程优先加权 (+5)。
+    """
+    cat = get_course_category(course)
+    score = 20
+    if cat in demands:
+        rem = demands[cat].get("remaining", 0)
+        if rem > 0:
+            score = 100 + rem * 10
+        else:
+            score = 10
+    if has_autonomous_sign(course):
+        score += 5
+    return score
+
+
 def is_auto_select_candidate(
     course: Dict[str, Any],
     now: datetime,
@@ -135,19 +259,36 @@ def is_auto_select_candidate(
         return False
     if require_auto_sign and not has_autonomous_sign(course):
         return False
-    # 检查选课时间
-    if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now):
+
+    # 检查课程是否停开/取消/已结束
+    status_str = str(course.get("courseStatus") or course.get("status") or "")
+    if any(kw in status_str for kw in ("已停开", "已取消", "未发布", "已结课", "已结束", "关闭")):
         return False
+
+    # 检查上课时间：已过上课时间的课程坚决不选
+    s_dt, e_dt = parse_course_time_range(course)
+    if e_dt and e_dt <= now:
+        return False
+
+    # 检查选课时间窗口（如果差 <= 5 秒允许放行做高精度临近等待）
+    if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now):
+        sel_start = parse_dt(course.get("courseSelectStartDate"))
+        if sel_start and 0 < (sel_start - now).total_seconds() <= 5:
+            pass
+        else:
+            return False
+
     # 检查容量
     cur = course.get("courseCurrentCount") if course.get("courseCurrentCount") is not None else (course.get("courseCurrentNum") if course.get("courseCurrentNum") is not None else course.get("currentCount"))
     max_c = course.get("courseMaxCount") if course.get("courseMaxCount") is not None else (course.get("courseMaxNum") if course.get("courseMaxNum") is not None else course.get("maxCount"))
     if cur is not None and max_c is not None:
         try:
-            if int(cur) >= int(max_c):
+            if int(max_c) <= 0 or int(cur) >= int(max_c):
                 return False
         except Exception:
             pass
     return True
+
 
 
 class BoyaScheduler:
@@ -196,7 +337,12 @@ class BoyaScheduler:
                 self.tick()
             except Exception as e:
                 logger.error(f"BoyaScheduler tick error: {e}", exc_info=True)
-            self._stop_event.wait(self.interval_seconds)
+
+            # 智能夜间免打扰策略：23:30 ~ 07:00 校园服务休眠期，自动降频等待 180 秒，杜绝无意义的网络频繁唤醒
+            now = datetime.now()
+            is_deep_night = (now.hour == 23 and now.minute >= 30) or (0 <= now.hour < 7)
+            wait_sec = 180 if is_deep_night else self.interval_seconds
+            self._stop_event.wait(wait_sec)
 
     def _renew_session(self, acc: Any) -> bool:
         """尝试自动为账号静默续期博雅 Token"""
@@ -212,6 +358,9 @@ class BoyaScheduler:
 
     def tick(self) -> None:
         now = datetime.now()
+        is_deep_night = (now.hour == 23 and now.minute >= 30) or (0 <= now.hour < 7)
+        pool_sync_interval = 1800 if is_deep_night else 60
+        chosen_sync_interval = 1800 if is_deep_night else 300
         accounts = self.get_accounts()
 
         for acc in accounts:
@@ -223,7 +372,7 @@ class BoyaScheduler:
             if not boya_client or not boya_client.is_authenticated():
                 continue
 
-            # 首次运行或定期（每 5 分钟）静默同步最新已选课程
+            # 首次运行或定期静默同步最新已选课程
             # 确保无论课程是本软件自动抢到的，还是学生在微信小程序/学校官网自行选中的，都能被守护引擎自动捕获并无缝纳入自动签到/签退！
             need_sync = False
             last_sync = self.last_sync_times.get(username)
@@ -232,7 +381,7 @@ class BoyaScheduler:
                     need_sync = True
                 else:
                     self.last_sync_times[username] = time.time()
-            elif time.time() - last_sync > 300:
+            elif time.time() - last_sync > chosen_sync_interval:
                 need_sync = True
 
             if need_sync:
@@ -254,10 +403,10 @@ class BoyaScheduler:
                     logger.debug(f"Auto sync chosen courses error for {username}: {sync_e}")
                     self.last_sync_times[username] = time.time()
 
-            # 1.1 若开启自动抢课，定期（每 60 秒）静默同步全量课池，实时捕捉新放号与退选名额
+            # 1.1 若开启自动抢课，定期静默同步全量课池，实时捕捉新放号与退选名额
             if getattr(acc, "boya_auto_select", False):
                 last_p_sync = self.last_pool_sync_times.get(username, 0)
-                if getattr(acc, "boya_all_courses", None) is None or (time.time() - last_p_sync > 60):
+                if getattr(acc, "boya_all_courses", None) is None or (time.time() - last_p_sync > pool_sync_interval):
                     try:
                         synced_pool = acc.boya_client.query_courses(max_pages=3)
                         if synced_pool is not None:
@@ -284,6 +433,7 @@ class BoyaScheduler:
             if getattr(acc, "boya_auto_sign", False):
                 self._check_auto_sign(acc, now)
 
+
     def _check_auto_select(self, acc: Any, now: datetime) -> None:
         username = acc.username
         user_name = acc.name
@@ -293,7 +443,8 @@ class BoyaScheduler:
         # 建立当前已选课程的完备索引（提取所有可能的 ID 形式与课程名）
         selected_ids: Set[str] = set()
         selected_names: Set[str] = set()
-        for c in getattr(acc, "boya_selected_courses", []):
+        enrolled_courses = getattr(acc, "boya_selected_courses", []) or []
+        for c in enrolled_courses:
             for k in ("id", "courseId", "course_id", "chosenCourseId"):
                 v = c.get(k)
                 if v is not None:
@@ -306,6 +457,7 @@ class BoyaScheduler:
         upcoming_count = 0
         chosen_count = 0
         past_count = 0
+        conflict_count = 0
         candidates = []
 
         for course in cached_courses:
@@ -337,8 +489,11 @@ class BoyaScheduler:
             parsed_s = parse_dt(s_start)
             parsed_e = parse_dt(s_end)
             if parsed_s and now < parsed_s:
-                upcoming_count += 1
-                continue
+                diff = (parsed_s - now).total_seconds()
+                # 只有大于5秒的才算作未开始，<=5秒放行进行毫秒级倒计时抢选
+                if diff > 5:
+                    upcoming_count += 1
+                    continue
             if parsed_e and now > parsed_e:
                 past_count += 1
                 continue
@@ -347,15 +502,30 @@ class BoyaScheduler:
             max_c = course.get("courseMaxCount")
             if cur is not None and max_c is not None:
                 try:
-                    if int(cur) >= int(max_c):
+                    if int(max_c) <= 0 or int(cur) >= int(max_c):
                         full_count += 1
                         continue
                 except Exception:
                     pass
 
-            # 检查候选条件（校区、分类、选课时间窗口、容量）
+            # 防选错检查：上课时间冲突检测（与学生本学期已选的任一门博雅课程上课时间重叠则坚决不选）
+            conflict_course = None
+            for enrolled in enrolled_courses:
+                if courses_time_overlap(course, enrolled):
+                    conflict_course = enrolled
+                    break
+            if conflict_course:
+                conflict_count += 1
+                continue
+
+            # 检查候选条件（校区、分类、选课时间窗口、容量、已过上课时间排除）
             if is_auto_select_candidate(course, now, campus=campus):
                 candidates.append(course)
+
+        # 智能优先级排序：计算当前学期达标缺口，缺口越大的板块优先排序，已达标板块沉底
+        sem_start, sem_end, _ = get_current_semester_range(now)
+        demands = get_user_category_demands(enrolled_courses, sem_start, sem_end)
+        candidates.sort(key=lambda c: calculate_candidate_priority(c, demands), reverse=True)
 
         # 周期性（每 10 分钟或初次启动时）向个人日志输出守护态势心跳
         last_log = self.last_inspect_log_times.get(username, 0)
@@ -363,7 +533,7 @@ class BoyaScheduler:
             self.last_inspect_log_times[username] = time.time()
             self.add_log(
                 "info",
-                f"【{user_name}】博雅抢课守护中：全校课池共 {len(cached_courses)} 门（{full_count}门满额，{upcoming_count}门待开放，{chosen_count}门已选），保持毫秒级巡检捡漏与定点抢选...",
+                f"【{user_name}】博雅抢课守护中：全校课池共 {len(cached_courses)} 门（{full_count}门满额，{upcoming_count}门待开放，{chosen_count}门已选，{conflict_count}门时冲跳过），保持毫秒级巡检捡漏与定点抢选...",
                 username=username,
                 user_name=user_name,
                 category="boya",
@@ -375,6 +545,17 @@ class BoyaScheduler:
             cname = (course.get("courseName") or course.get("name") or cid_str).strip()
             fail_key = (username, cid)
             fail_key_str = (username, cid_str)
+
+            # 选课开始时间临界点高精度等待（若在 0 < diff <= 5 秒内，高精度倒计时对齐开抢时刻）
+            s_start = course.get("courseSelectStartDate")
+            parsed_s = parse_dt(s_start)
+            if parsed_s and now < parsed_s:
+                diff = (parsed_s - now).total_seconds()
+                if 0 < diff <= 5:
+                    time.sleep(diff)
+
+            # 防封号与频控保护：请求抖动随机延时 0.5s ~ 1.2s，模拟真人操作
+            time.sleep(random.uniform(0.5, 1.2))
 
             self.add_log(
                 "info",
@@ -452,6 +633,7 @@ class BoyaScheduler:
                     user_name=user_name,
                     category="boya",
                 )
+
 
     def _check_auto_sign(self, acc: Any, now: datetime) -> None:
         username = acc.username
@@ -531,6 +713,8 @@ class BoyaScheduler:
                             in_sign_window = True
 
                 if in_sign_window:
+                    # 请求抖动与防频控保护
+                    time.sleep(random.uniform(0.5, 1.0))
                     lat, lng = random_point_in_radius(base_lat, base_lng, radius)
                     self.add_log(
                         "info",
@@ -588,6 +772,8 @@ class BoyaScheduler:
                             in_signout_window = True
 
                 if in_signout_window:
+                    # 请求抖动与防频控保护
+                    time.sleep(random.uniform(0.5, 1.0))
                     lat, lng = random_point_in_radius(base_lat, base_lng, radius)
                     self.add_log(
                         "info",
