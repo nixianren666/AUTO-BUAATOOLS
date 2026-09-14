@@ -898,7 +898,7 @@ function renderBoyaFeed() {
           })()}
         </div>
       </div>
-    \`;
+    `;
   }).join("");
 }
 
@@ -1137,6 +1137,22 @@ function renderAccountsModal() {
 
 async function switchStudentAccount(username) {
   try {
+    appState.activeUsername = username;
+    appState.activeUser = appState.accounts.find(a => a.username === username);
+    updateUIElements();
+    closeAccountCardsModal();
+
+    // 立即向用户展示切换中视觉反馈，杜绝旧数据残留或误显“今天没有课”
+    const container = document.getElementById("classesFeed");
+    if (container) {
+      container.innerHTML = `
+        <div class="origin-empty-state" style="padding:40px;text-align:center;">
+          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">🔄 正在切换并载入【${escapeHtml(appState.activeUser ? appState.activeUser.name : username)}】今日课表...</div>
+          <div style="font-size:12px;color:var(--text-muted);">自动同步北航课堂系统与博雅数据中</div>
+        </div>
+      `;
+    }
+
     const res = await fetch("/api/accounts/switch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1144,16 +1160,27 @@ async function switchStudentAccount(username) {
     });
     const d = await res.json();
     if (d.status === "ok") {
-      appState.activeUsername = username;
-      appState.activeUser = appState.accounts.find(a => a.username === username);
-      updateUIElements();
-      closeAccountCardsModal();
-      fetchClasses();
-      fetchBoyaData();
-      fetchLogs();
-      showToast(`已切换至学生: ${appState.activeUser ? appState.activeUser.name : username}`, "success");
+      if (d.classes && d.classes.length > 0) {
+        appState.classes = d.classes;
+        renderClassesList(d.classes);
+      }
+      if (d.boya_courses) appState.boyaCourses = d.boya_courses;
+      if (d.boya_selected) appState.boyaSelected = d.boya_selected;
+      if (d.boya_statistics) {
+        appState.boyaStatistics = d.boya_statistics;
+        renderBoyaStatistics(appState.boyaStatistics);
+      }
+
+      await Promise.all([
+        fetchClasses(),
+        fetchBoyaData(false),
+        fetchLogs(),
+      ]);
+      showToast(`已成功切换至学生: ${appState.activeUser ? (appState.activeUser.name || username) : username}`, "success");
     }
-  } catch (e) {}
+  } catch (e) {
+    showToast("切换学生账号失败", "error");
+  }
 }
 
 async function deleteAccount(username) {

@@ -9,7 +9,15 @@ from server.app import app
 
 class TestApiServer(unittest.TestCase):
     def setUp(self):
+        from server.app import accounts
+        self._orig_accounts = dict(accounts)
+        accounts.clear()
         self.client = TestClient(app)
+
+    def tearDown(self):
+        from server.app import accounts
+        accounts.clear()
+        accounts.update(self._orig_accounts)
 
     def test_status_endpoint(self):
         resp = self.client.get("/api/status")
