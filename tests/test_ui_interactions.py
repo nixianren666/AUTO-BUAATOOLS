@@ -178,9 +178,25 @@ class TestUIInteractions(unittest.TestCase):
                 else:
                     h = bytearray([0x81, 0x80 | 126, (len(payload) >> 8) & 0xFF, len(payload) & 0xFF]) + mask
                 ws_sock.sendall(h + masked)
-                time.sleep(0.4)
-                raw = ws_sock.recv(65536)
-                for part in raw.split(b'{"id":'):
+                ws_sock.settimeout(0.5)
+                buffer = b""
+                target_token = f'{{"id":{curr_id}'.encode()
+                deadline = time.time() + 3.0
+                while time.time() < deadline:
+                    try:
+                        chunk = ws_sock.recv(65536)
+                        if chunk:
+                            buffer += chunk
+                        if target_token in buffer:
+                            break
+                    except (socket.timeout, BlockingIOError):
+                        if target_token in buffer:
+                            break
+                        continue
+                    except Exception:
+                        break
+
+                for part in buffer.split(b'{"id":'):
                     if part.startswith(str(curr_id).encode()):
                         res_str = b'{"id":' + part.split(b"\x81")[0]
                         try:
@@ -189,6 +205,15 @@ class TestUIInteractions(unittest.TestCase):
                         except Exception:
                             pass
                 return None
+
+            # 0. 等待前端 JS (app.js) 完全载入与初始化
+            js_loaded = False
+            for _ in range(30):
+                if eval_js("typeof switchMainView === 'function' && typeof appState !== 'undefined'"):
+                    js_loaded = True
+                    break
+                time.sleep(0.2)
+            self.assertTrue(js_loaded, "前端脚本与全局状态必须成功完成初始化！")
 
             # 1. 验证免责声明弹窗是否初始可见（等待异步 checkDisclaimerStatus 完成）
             step1 = False
@@ -213,10 +238,11 @@ class TestUIInteractions(unittest.TestCase):
             step2_hidden = eval_js("document.getElementById('disclaimerModal').classList.contains('hidden')")
             self.assertTrue(step2_hidden, "点击同意后免责声明必须隐藏！")
 
-            # 3. 验证导航切换（常规课堂 -> 博雅套件 -> 终端监控）
             eval_js("switchMainView('boya')")
-            view_boya_active = eval_js("!document.getElementById('viewBoya').classList.contains('hidden') && document.getElementById('viewRegular').classList.contains('hidden')")
-            self.assertTrue(view_boya_active, "必须成功切换至博雅视图！")
+            time.sleep(0.3)
+            v_boya = eval_js("!document.getElementById('viewBoya')?.classList.contains('hidden')")
+            v_reg = eval_js("document.getElementById('viewRegular')?.classList.contains('hidden')")
+            self.assertTrue(v_boya and v_reg, "必须成功切换至博雅视图！")
 
             eval_js("switchMainView('logs')")
             view_logs_active = eval_js("!document.getElementById('viewLogs').classList.contains('hidden') && document.getElementById('viewBoya').classList.contains('hidden')")

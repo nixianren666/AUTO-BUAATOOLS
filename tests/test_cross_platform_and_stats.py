@@ -135,9 +135,9 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         can_auto_sign = is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=True)
         self.assertFalse(can_auto_sign, "限制线上打卡时应正确判定为非定位签到课程")
 
-        # 仅在用户手动选课或用户高级设置明确 allow_offline 时，底座才允许放行
+        # 铁律：自动秒抢完全去除线下课开关，严禁代抢非线上自主打卡课程
         can_select = is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False)
-        self.assertTrue(can_select, "用户明确允许线下课程时底座放行")
+        self.assertFalse(can_select, "无论参数如何，底座均坚决拦截非线上自主打卡课程，彻底消除旷课风险")
 
     def test_course_capacity_fields_compatibility(self):
         """测试北航接口中 courseCurrentCount / courseCurrentNum / currentCount 等多种名额字段兼容"""

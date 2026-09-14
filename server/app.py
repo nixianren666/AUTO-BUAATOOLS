@@ -1653,13 +1653,22 @@ async def drop_boya_course(req: BoyaActionRequest):
         raise HTTPException(status_code=401, detail="博雅未登录鉴权")
 
     try:
-        chosen_id = req.course_id
-        for c in getattr(acc, "boya_selected_courses", []):
-            if (c.get("id") == req.course_id or c.get("courseId") == req.course_id) and c.get("chosenCourseId"):
-                chosen_id = c["chosenCourseId"]
-                break
-        res = acc.boya_client.drop_course(chosen_id)
-        add_log("info", f"【{acc.name}】博雅课程 [选课ID:{chosen_id}] 已退选成功。", username=acc.username, user_name=acc.name, category="boya")
+        # 北航博雅官方 delChosenCourse 接口期望接收的是 courseId（如 10018、10015、10014）
+        # 先以 req.course_id 直接退选；若失败再尝试以 chosenCourseId 作为兜底退选
+        try:
+            res = acc.boya_client.drop_course(req.course_id)
+        except BoyaApiError as be:
+            chosen_reg_id = None
+            for c in getattr(acc, "boya_selected_courses", []):
+                if str(c.get("id")) == str(req.course_id) or str(c.get("courseId")) == str(req.course_id):
+                    chosen_reg_id = c.get("chosenCourseId")
+                    break
+            if chosen_reg_id and chosen_reg_id != req.course_id:
+                res = acc.boya_client.drop_course(chosen_reg_id)
+            else:
+                raise be
+
+        add_log("info", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 已退选成功。", username=acc.username, user_name=acc.name, category="boya")
         try:
             acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
         except Exception:
@@ -1721,10 +1730,9 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         acc.boya_auto_sign = req.auto_sign
     if req.campus is not None:
         acc.campus = req.campus
-    if req.require_auto_sign is not None:
-        acc.boya_require_auto_sign = req.require_auto_sign
-    if req.allow_offline is not None:
-        acc.boya_allow_offline = req.allow_offline
+    # 铁律：自动秒抢永久仅抢支持线上自主打卡课程，彻底消除线下考勤风险
+    acc.boya_require_auto_sign = True
+    acc.boya_allow_offline = False
 
     sync_config()
 
@@ -1736,7 +1744,7 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
 
     add_log(
         "info",
-        f"学生 【{acc.name}】 博雅自动化配置已更新: 自动抢课={ '开' if acc.boya_auto_select else '关' }, 自动签到={ '开' if acc.boya_auto_sign else '关' }, 仅限线上打卡={ '开' if getattr(acc, 'boya_require_auto_sign', True) else '关' }, 期望校区={acc.campus}",
+        f"学生 【{acc.name}】 博雅自动化配置已更新: 自动秒抢={ '开' if acc.boya_auto_select else '关' }, 自动打卡={ '开' if acc.boya_auto_sign else '关' }, 期望校区={acc.campus}",
         username=acc.username,
         user_name=acc.name,
         category="boya",
@@ -1747,8 +1755,6 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         "username": acc.username,
         "boya_auto_select": acc.boya_auto_select,
         "boya_auto_sign": acc.boya_auto_sign,
-        "boya_require_auto_sign": getattr(acc, "boya_require_auto_sign", True),
-        "boya_allow_offline": getattr(acc, "boya_allow_offline", False),
         "campus": acc.campus,
         "scheduler_running": boya_scheduler.running,
     }

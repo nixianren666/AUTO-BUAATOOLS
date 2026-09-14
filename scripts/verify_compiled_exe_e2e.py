@@ -150,9 +150,12 @@ def run_compiled_exe_verification():
         print(f"[E2E] Boya view active: {boya_active}")
         assert boya_active is True
 
-        has_auto_sign_toggle = eval_js("document.getElementById('boyaRequireAutoSignToggle') !== null")
-        print(f"[E2E] boyaRequireAutoSignToggle element exists: {has_auto_sign_toggle}")
-        assert has_auto_sign_toggle is True
+        has_auto_select = eval_js("document.getElementById('boyaAutoSelectToggle') !== null")
+        has_auto_sign = eval_js("document.getElementById('boyaAutoSignToggle') !== null")
+        has_redundant_toggle = eval_js("document.getElementById('boyaRequireAutoSignToggle') !== null")
+        print(f"[E2E] boyaAutoSelectToggle: {has_auto_select}, boyaAutoSignToggle: {has_auto_sign}, redundantToggleRemoved: {not has_redundant_toggle}")
+        assert has_auto_select is True and has_auto_sign is True
+        assert has_redundant_toggle is False
 
         eval_js("switchMainView('logs')")
         logs_active = eval_js("!document.getElementById('viewLogs')?.classList.contains('hidden')")
