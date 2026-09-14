@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.2.2 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.2.5 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -28,6 +28,8 @@ let appState = {
   boyaStatus: {
     boya_auto_select: false,
     boya_auto_sign: false,
+    boya_require_auto_sign: true,
+    boya_allow_offline: false,
     campus: "北京",
     scheduler_running: false,
   },
@@ -396,9 +398,11 @@ async function fetchBoyaData(isManual = false) {
       appState.boyaStatus = statusRes;
       const selToggle = document.getElementById("boyaAutoSelectToggle");
       const signToggle = document.getElementById("boyaAutoSignToggle");
+      const reqSignToggle = document.getElementById("boyaRequireAutoSignToggle");
       const campusSelect = document.getElementById("boyaCampusSelect");
       if (selToggle && statusRes.boya_auto_select !== undefined) selToggle.checked = !!statusRes.boya_auto_select;
       if (signToggle && statusRes.boya_auto_sign !== undefined) signToggle.checked = !!statusRes.boya_auto_sign;
+      if (reqSignToggle && statusRes.boya_require_auto_sign !== undefined) reqSignToggle.checked = !!statusRes.boya_require_auto_sign;
       if (campusSelect && statusRes.campus) campusSelect.value = statusRes.campus;
     }
 
@@ -996,6 +1000,42 @@ async function toggleBoyaAutoSign(enabled) {
     }
     showToast(`博雅微扰自动打卡已${enabled ? "开启守护" : "关闭"}`, "info");
   } catch (e) {}
+}
+
+async function toggleBoyaRequireAutoSign(enabled) {
+  if (!enabled) {
+    const ok = confirm("⚠️ 安全风险严正警示：\n\n关闭【仅限线上打卡】后，系统可能会自动抢选需要主办方现场刷卡/线下核验考勤的课程！\n此类课程软件无法线上自动打卡签到，若您未亲临现场刷卡，将直接导致博雅旷课违约被学校记过扣分！\n\n是否仍然确认关闭该安全护栏？");
+    if (!ok) {
+      const toggleEl = document.getElementById("boyaRequireAutoSignToggle");
+      if (toggleEl) toggleEl.checked = true;
+      if (appState.activeUser) appState.activeUser.boya_require_auto_sign = true;
+      if (appState.boyaStatus) appState.boyaStatus.boya_require_auto_sign = true;
+      return;
+    }
+  }
+
+  if (appState.activeUser) {
+    appState.activeUser.boya_require_auto_sign = enabled;
+    appState.activeUser.boya_allow_offline = !enabled;
+  }
+  if (appState.boyaStatus) {
+    appState.boyaStatus.boya_require_auto_sign = enabled;
+    appState.boyaStatus.boya_allow_offline = !enabled;
+  }
+  try {
+    const res = await fetch("/api/boya/toggle_auto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ require_auto_sign: enabled, allow_offline: !enabled }),
+    });
+    const d = await res.json();
+    if (d && d.status === "ok" && appState.activeUser) {
+      appState.activeUser.boya_require_auto_sign = d.boya_require_auto_sign;
+    }
+    showToast(enabled ? "🛡️ 已开启【仅限线上打卡】安全护栏（严防旷课）" : "⚠️ 已允许抢选现场刷卡考勤课程，请务必准时赴现场打卡", enabled ? "success" : "warning");
+  } catch (e) {
+    showToast("安全配置通信异常", "error");
+  }
 }
 
 async function changeBoyaCampus(campus) {

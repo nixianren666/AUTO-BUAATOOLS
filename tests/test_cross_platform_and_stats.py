@@ -113,7 +113,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         self.assertIn("学年", name)
 
     def test_offline_checkin_course_can_be_selected(self):
-        """站在用户角度验证：现场刷卡考勤的沙龙/讲座，只要有名额且在选课窗口内，必须允许学生抢选"""
+        """严格安全性原则验证：默认严禁自动抢选现场刷卡考勤课程，防止因无法自动线上打卡导致旷课记过"""
         now = datetime.datetime(2026, 9, 14, 10, 0, 0)
         offline_course = {
             "id": 2001,
@@ -127,13 +127,17 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
             "signConfig": None,  # 无 GPS 线上定位打卡点，属于现场刷卡课
         }
 
-        # 当不限制线上自主打卡时（用户手动选课或抢课开启）
-        can_select = is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False)
-        self.assertTrue(can_select, "现场刷卡考勤课程必须支持学生在线自主选课")
+        # 默认调用必须开启严格安全护栏（require_auto_sign 默认为 True），严禁代抢现场考勤课！
+        can_default = is_auto_select_candidate(offline_course, now, campus="北京")
+        self.assertFalse(can_default, "默认参数必须严正拦截现场刷卡考勤课，防止学生旷课违约")
 
-        # 当限制必须线上自主打卡时
+        # 当明确限制线上自主打卡时
         can_auto_sign = is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=True)
         self.assertFalse(can_auto_sign, "限制线上打卡时应正确判定为非定位签到课程")
+
+        # 仅在用户手动选课或用户高级设置明确 allow_offline 时，底座才允许放行
+        can_select = is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False)
+        self.assertTrue(can_select, "用户明确允许线下课程时底座放行")
 
     def test_course_capacity_fields_compatibility(self):
         """测试北航接口中 courseCurrentCount / courseCurrentNum / currentCount 等多种名额字段兼容"""
@@ -144,6 +148,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
             "courseSelectEndDate": "2026-09-20 18:00:00",
             "courseCurrentNum": 50,
             "courseMaxNum": 50,
+            "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
         }
         self.assertFalse(is_auto_select_candidate(c1, now, campus="北京"), "满额课程不可选")
 
@@ -153,6 +158,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
             "courseSelectEndDate": "2026-09-20 18:00:00",
             "currentCount": 10,
             "maxCount": 50,
+            "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
         }
         self.assertTrue(is_auto_select_candidate(c2, now, campus="北京"), "有名额课程可选")
 

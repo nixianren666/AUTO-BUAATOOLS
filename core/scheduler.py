@@ -126,6 +126,11 @@ class SigninScheduler:
                     logger.warning(f"Failed to fetch classes for {username}: {e}")
                     continue
 
+            acc_obj = acc.get("account")
+            if acc_obj and classes is not None:
+                acc_obj.last_classes = classes
+                acc_obj.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+
             for clazz in classes:
                 sched_id = str(clazz.get("courseSchedId") or clazz.get("id") or clazz.get("courseId", ""))
                 if not sched_id:

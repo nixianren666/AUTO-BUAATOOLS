@@ -53,7 +53,7 @@ except Exception:
 
 from PIL import Image, ImageDraw
 
-APP_TITLE = "BUAA 课程签到 Pro v1.2.2"
+APP_TITLE = "BUAA 课程签到 Pro v1.2.5"
 DEFAULT_PORT = 18346
 
 window = None

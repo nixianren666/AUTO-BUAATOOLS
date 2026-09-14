@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BUAA 课程签到 Pro - Origin v1.2.2</title>
+  <title>BUAA 课程签到 Pro - Origin v1.2.5</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.2.3">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.2.5">
 </head>
 <body class="origin-theme">
   <!-- Gemini iOS 风格背景：底层流动光斑与星尘粒子 -->
@@ -29,7 +29,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.2.2</span>
+            <span class="origin-tag">v1.2.5</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -243,15 +243,23 @@
 
                 <div class="boya-ctrl-item">
                   <span class="ctrl-caption">自动秒抢</span>
-                  <label class="origin-toggle">
+                  <label class="origin-toggle" title="开启后自动轮询抢选符合策略的博雅课程">
                     <input type="checkbox" id="boyaAutoSelectToggle" onchange="toggleBoyaAutoSelect(this.checked)">
                     <span class="origin-slider"></span>
                   </label>
                 </div>
 
                 <div class="boya-ctrl-item">
+                  <span class="ctrl-caption" title="安全防旷课护栏：严禁自动秒抢现场刷卡考勤课程，防止因无法自动线上打卡导致旷课记过扣分">🛡️ 仅限线上打卡</span>
+                  <label class="origin-toggle" title="安全护栏（默认开启）：严禁自动秒抢现场刷卡考勤课程，杜绝因无法自动线上打卡导致的违约旷课">
+                    <input type="checkbox" id="boyaRequireAutoSignToggle" checked onchange="toggleBoyaRequireAutoSign(this.checked)">
+                    <span class="origin-slider"></span>
+                  </label>
+                </div>
+
+                <div class="boya-ctrl-item">
                   <span class="ctrl-caption">微扰打卡</span>
-                  <label class="origin-toggle">
+                  <label class="origin-toggle" title="开启后在开课与结课窗口自动微扰提交签到与签退">
                     <input type="checkbox" id="boyaAutoSignToggle" onchange="toggleBoyaAutoSign(this.checked)">
                     <span class="origin-slider"></span>
                   </label>
@@ -470,7 +478,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.2.2</span>
+          <span class="origin-version">v1.2.5</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">

@@ -65,10 +65,10 @@ class TestApiServer(unittest.TestCase):
         self.assertIn("style.css", resp.text)
         self.assertIn("app.js", resp.text)
 
-    def test_health_v122(self):
+    def test_health_v125(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.2.2")
+        self.assertEqual(resp.json()["version"], "1.2.5")
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")

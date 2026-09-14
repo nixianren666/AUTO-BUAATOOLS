@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 function print_banner() {
     echo -e "${CYAN}================================================================${NC}"
     echo -e "${CYAN}  🚀 AUTO-BUAA 课程独立签到助手 - Linux 24小时后台服务管理器  ${NC}"
-    echo -e "${CYAN}  版本: v1.2.2 | 目录: ${PROJECT_DIR}${NC}"
+    echo -e "${CYAN}  版本: v1.2.5 | 目录: ${PROJECT_DIR}${NC}"
     echo -e "${CYAN}================================================================${NC}"
 }
 

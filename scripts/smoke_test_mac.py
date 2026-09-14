@@ -45,7 +45,7 @@ try:
                     data = json.loads(resp.read().decode())
                     print(f"4. /api/health returned: {data}")
                     assert data.get("status") == "ok"
-                    assert data.get("version") == "1.2.2"
+                    assert data.get("version") == "1.2.5"
                     ready = True
                     break
         except Exception:

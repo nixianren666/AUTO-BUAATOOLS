@@ -244,6 +244,8 @@ class AccountState:
         auto_checkin: bool = True,
         boya_auto_select: bool = False,
         boya_auto_sign: bool = False,
+        boya_require_auto_sign: bool = True,
+        boya_allow_offline: bool = False,
         campus: str = "北京",
     ):
         self.username = username
@@ -254,6 +256,8 @@ class AccountState:
         self.auto_checkin = auto_checkin
         self.boya_auto_select = boya_auto_select
         self.boya_auto_sign = boya_auto_sign
+        self.boya_require_auto_sign = boya_require_auto_sign
+        self.boya_allow_offline = boya_allow_offline
         self.campus = campus or "北京"
         self.client = IclassClient(mode=("webvpn" if mode == "webvpn" else "direct"))
         self.boya_client = BoyaClient(mode=("webvpn" if mode == "webvpn" else "direct"))
@@ -263,6 +267,7 @@ class AccountState:
         self.boya_selected_courses: Optional[List[Dict[str, Any]]] = None
         self.boya_statistics: Optional[Dict[str, Any]] = None
         self.boya_last_refresh_time: Optional[str] = None
+        self._is_connecting: bool = False
 
     def to_dict(self, is_active: bool = False) -> Dict[str, Any]:
         return {
@@ -273,6 +278,9 @@ class AccountState:
             "auto_checkin": self.auto_checkin,
             "boya_auto_select": self.boya_auto_select,
             "boya_auto_sign": self.boya_auto_sign,
+            "boya_require_auto_sign": getattr(self, "boya_require_auto_sign", True),
+            "boya_allow_offline": getattr(self, "boya_allow_offline", False),
+            "campus": getattr(self, "campus", "北京"),
             "authenticated": self.client.is_authenticated() or self.boya_client.is_authenticated(),
             "iclass_authenticated": bool(self.client.user_id and self.client.session_id),
             "boya_authenticated": self.boya_client.is_authenticated(),
@@ -340,6 +348,8 @@ def sync_config():
             "auto_checkin": acc.auto_checkin,
             "boya_auto_select": getattr(acc, "boya_auto_select", False),
             "boya_auto_sign": getattr(acc, "boya_auto_sign", False),
+            "boya_require_auto_sign": getattr(acc, "boya_require_auto_sign", True),
+            "boya_allow_offline": getattr(acc, "boya_allow_offline", False),
             "campus": getattr(acc, "campus", "北京"),
         })
     config["active_username"] = active_username or ""
@@ -404,6 +414,8 @@ class BoyaToggleAutoRequest(BaseModel):
     auto_sign: Optional[bool] = None
     campus: Optional[str] = None
     username: Optional[str] = None
+    require_auto_sign: Optional[bool] = None
+    allow_offline: Optional[bool] = None
 
 
 @app.on_event("startup")
@@ -424,6 +436,8 @@ async def on_startup():
             auto_checkin=item.get("auto_checkin", True),
             boya_auto_select=item.get("boya_auto_select", False),
             boya_auto_sign=item.get("boya_auto_sign", False),
+            boya_require_auto_sign=item.get("boya_require_auto_sign", True),
+            boya_allow_offline=item.get("boya_allow_offline", False),
             campus=item.get("campus", "北京"),
         )
         accounts[uname] = acc
@@ -858,6 +872,8 @@ async def get_boya_status():
         "scheduler_running": boya_scheduler.running,
         "boya_auto_select": getattr(curr, "boya_auto_select", False),
         "boya_auto_sign": getattr(curr, "boya_auto_sign", False),
+        "boya_require_auto_sign": getattr(curr, "boya_require_auto_sign", True),
+        "boya_allow_offline": getattr(curr, "boya_allow_offline", False),
         "campus": getattr(curr, "campus", "北京"),
         "last_refresh_time": getattr(curr, "boya_last_refresh_time", ""),
         "courses_count": len(curr.boya_all_courses) if getattr(curr, "boya_all_courses", None) is not None else 0,
@@ -1705,6 +1721,10 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         acc.boya_auto_sign = req.auto_sign
     if req.campus is not None:
         acc.campus = req.campus
+    if req.require_auto_sign is not None:
+        acc.boya_require_auto_sign = req.require_auto_sign
+    if req.allow_offline is not None:
+        acc.boya_allow_offline = req.allow_offline
 
     sync_config()
 
@@ -1716,7 +1736,7 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
 
     add_log(
         "info",
-        f"学生 【{acc.name}】 博雅自动化配置已更新: 自动抢课={ '开' if acc.boya_auto_select else '关' }, 自动签到={ '开' if acc.boya_auto_sign else '关' }, 期望校区={acc.campus}",
+        f"学生 【{acc.name}】 博雅自动化配置已更新: 自动抢课={ '开' if acc.boya_auto_select else '关' }, 自动签到={ '开' if acc.boya_auto_sign else '关' }, 仅限线上打卡={ '开' if getattr(acc, 'boya_require_auto_sign', True) else '关' }, 期望校区={acc.campus}",
         username=acc.username,
         user_name=acc.name,
         category="boya",
@@ -1727,6 +1747,8 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         "username": acc.username,
         "boya_auto_select": acc.boya_auto_select,
         "boya_auto_sign": acc.boya_auto_sign,
+        "boya_require_auto_sign": getattr(acc, "boya_require_auto_sign", True),
+        "boya_allow_offline": getattr(acc, "boya_allow_offline", False),
         "campus": acc.campus,
         "scheduler_running": boya_scheduler.running,
     }
@@ -1868,7 +1890,7 @@ async def show_window():
 async def health_check():
     return {
         "status": "ok",
-        "version": "1.2.2",
+        "version": "1.2.5",
         "active_username": active_username,
         "accounts_count": len(accounts),
     }
