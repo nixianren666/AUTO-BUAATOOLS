@@ -120,7 +120,13 @@ def run_compiled_exe_verification():
                         pass
             return None
 
-        time.sleep(2.0)
+        # 等待页面与前端 app.js 加载就绪（兼容冷启动延迟）
+        ready = False
+        for _ in range(30):
+            if eval_js("typeof appState !== 'undefined' && typeof switchMainView === 'function'"):
+                ready = True
+                break
+            time.sleep(0.3)
 
         # 检查控制台是否有未捕获异常
         err = eval_js("window.__lastError || null")
