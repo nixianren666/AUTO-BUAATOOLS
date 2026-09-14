@@ -291,12 +291,10 @@ class TestBoyaScheduler(unittest.TestCase):
         heartbeat_logs = [l for l in logs if "博雅抢课守护中" in l]
         self.assertTrue(any("非线上打卡安全排除" in l for l in heartbeat_logs), "守护日志必须透明汇报非线上打卡课程安全排除态势")
 
-    def test_offline_course_opt_in_guard(self):
-        """验证高级模式显式允许线下课程时的回退路径"""
+    def test_offline_course_always_excluded(self):
+        """验证无论何种配置，现场刷卡考勤课程一律被安全引擎硬性排除，绝不代抢"""
         acc = DummyBoyaAccount()
         acc.boya_auto_select = True
-        acc.boya_require_auto_sign = False
-        acc.boya_allow_offline = True
 
         now = datetime.now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
@@ -319,7 +317,7 @@ class TestBoyaScheduler(unittest.TestCase):
         scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
         scheduler.tick()
 
-        self.assertIn(10018, acc.boya_client.selected_ids, "用户显式开启线下选课时方允许代抢")
+        self.assertNotIn(10018, acc.boya_client.selected_ids, "现场考勤课程必须无条件硬性排除")
 
 if __name__ == "__main__":
     unittest.main()

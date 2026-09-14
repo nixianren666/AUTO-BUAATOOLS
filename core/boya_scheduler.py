@@ -259,8 +259,8 @@ def is_auto_select_candidate(
         return False
     if get_course_category(course) == "其他方面":
         return False
-    # 安全性铁律：必须支持线上自主打卡（现场刷卡考勤课程因无法线上打卡，绝不可自动代抢）
-    if require_auto_sign and not has_autonomous_sign(course):
+    # 安全性铁律：全自动秒抢仅抢选支持线上自主打卡的课程（现场刷卡/核验考勤课程严禁抢选，杜绝旷课违约）
+    if not has_autonomous_sign(course):
         return False
 
     # 检查课程是否停开/取消/已结束
@@ -468,9 +468,8 @@ class BoyaScheduler:
         campus = getattr(acc, "campus", "北京")
         cached_courses: List[Dict[str, Any]] = getattr(acc, "boya_all_courses", [])
         
-        # 安全防线：默认严格要求支持线上自主打卡（严禁自动抢选需要现场刷卡/核验考勤的课程，防止旷课违约被记过扣分）
-        allow_offline = getattr(acc, "boya_allow_offline", False)
-        require_auto_sign = getattr(acc, "boya_require_auto_sign", True) and not allow_offline
+        # 安全铁律：全自动秒抢严格仅限支持线上自主打卡课程（严禁抢选现场刷卡考勤课程，从源头杜绝旷课违约）
+        require_auto_sign = True
 
         # 建立当前已选课程的完备索引（提取所有可能的 ID 形式与课程名）
         selected_ids: Set[str] = set()

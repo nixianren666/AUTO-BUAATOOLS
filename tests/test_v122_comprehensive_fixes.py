@@ -268,7 +268,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         from core.boya_scheduler import is_auto_select_candidate, BoyaScheduler
         now = datetime(2026, 9, 14, 10, 0, 0)
 
-        # 1. 线下卡刷课程（无 GPS 配置）在 require_auto_sign=False 时仍可作为抢课候选锁定名额
+        # 1. 线下卡刷课程（无 GPS 配置）即使 require_auto_sign=False 也坚决不可作为抢课候选
         offline_course = {
             "id": 10015,
             "courseName": "数智驱动讲座",
@@ -279,7 +279,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
             "courseMaxCount": 750,
             "courseSignConfig": None,
         }
-        self.assertTrue(is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False))
+        self.assertFalse(is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=False))
         self.assertFalse(is_auto_select_candidate(offline_course, now, campus="北京", require_auto_sign=True))
 
         # 2. 测试 BoyaScheduler 在自动选课开启时拉取全量课池并输出日志
