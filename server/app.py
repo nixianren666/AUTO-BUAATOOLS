@@ -5,10 +5,13 @@ BUAA 课程独立签到软件 - FastAPI 后端控制器 (支持多学生账号�
 import asyncio
 import datetime
 import json
+import logging
 import os
 import pathlib
 import sys
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger("buaa_signin_server")
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -300,19 +303,24 @@ def get_active_account() -> Optional[AccountState]:
 
 
 def get_scheduler_accounts() -> List[Dict[str, Any]]:
-    """返回所有启用了自动打卡且已鉴权的学生账号供后台定时巡检"""
+    """返回所有启用了自动打卡的学生账号供后台定时巡检（多学生并行后台守护，不受前台切换影响）"""
     result = []
     for acc in accounts.values():
-        if acc.auto_checkin and acc.client.is_authenticated():
+        if acc.auto_checkin:
             result.append({
                 "username": acc.username,
                 "name": acc.name,
                 "client": acc.client,
+                "account": acc,
             })
     return result
 
 
-scheduler = SigninScheduler(get_active_accounts=get_scheduler_accounts, on_event_log=add_log)
+scheduler = SigninScheduler(
+    get_active_accounts=get_scheduler_accounts,
+    on_event_log=add_log,
+    reconnect_account=lambda acc: connect_single_account(acc),
+)
 boya_scheduler = BoyaScheduler(get_accounts_func=lambda: list(accounts.values()), add_log_func=add_log)
 
 
@@ -550,10 +558,17 @@ async def switch_account(req: SwitchAccountRequest):
     sync_config()
     target_acc = accounts[active_username]
     add_log("info", f"当前操作视图已切换至学生: 【{target_acc.name} ({target_acc.username})】", username=target_acc.username, user_name=target_acc.name)
+    # 若目标账号尚未完成鉴权且保存了密码，在切换时立即触发自动后台连接
+    if (not target_acc.client.is_authenticated() or not target_acc.boya_client.is_authenticated()) and target_acc.password:
+        asyncio.create_task(connect_single_account(target_acc))
 
     return {
         "status": "ok",
         "active_account": target_acc.to_dict(is_active=True),
+        "classes": target_acc.last_classes or [],
+        "boya_selected": target_acc.boya_selected_courses or [],
+        "boya_courses": target_acc.boya_all_courses or [],
+        "boya_statistics": target_acc.boya_statistics or {},
     }
 
 
@@ -748,6 +763,23 @@ async def get_today_classes():
     if not curr:
         return {"status": "unauthenticated", "classes": []}
 
+    # 若尚未完成鉴权且存有密码，在获取前尝试自动建立连接
+    if (not curr.client.is_authenticated() or not curr.client.session_id) and curr.password:
+        try:
+            await connect_single_account(curr)
+        except Exception as conn_err:
+            logger.debug(f"Auto connect before get_today_classes failed: {conn_err}")
+
+    # 若此时仍未鉴权（如离线或测试模式），坚决返回既有课表缓存，杜绝误显假空态
+    if not curr.client.is_authenticated() or not curr.client.session_id:
+        return {
+            "status": "success",
+            "classes": curr.last_classes or [],
+            "username": curr.username,
+            "name": curr.name,
+            "offline": True,
+        }
+
     try:
         classes = await curr.client.get_today_classes()
         curr.last_classes = classes
@@ -759,8 +791,19 @@ async def get_today_classes():
         return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
     except Exception as e:
         logger.debug(f"Fetch classes error: {e}")
+        # 如果是因为会话失效且存有密码，自动重新连接并重试一次
+        if curr.password:
+            try:
+                ok = await connect_single_account(curr)
+                if ok and curr.client.is_authenticated():
+                    classes = await curr.client.get_today_classes()
+                    curr.last_classes = classes
+                    curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                    return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
+            except Exception:
+                pass
         add_log("error", f"【{curr.name}】获取常规课程课表失败: {e}", username=curr.username, user_name=curr.name, category="regular")
-        return {"status": "success", "classes": curr.last_classes, "username": curr.username, "name": curr.name}
+        return {"status": "success", "classes": curr.last_classes or [], "username": curr.username, "name": curr.name}
 
 
 

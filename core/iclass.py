@@ -396,7 +396,7 @@ class IclassClient:
         对应 UBAA LocalSigninApiBackend.getTodayClasses
         """
         if not await self.ensure_iclass_session():
-            return []
+            raise RuntimeError(self.last_error or "未登录课堂考勤系统或登录会话已失效")
 
         now = datetime.datetime.now()
         date_str = now.strftime("%Y%m%d")

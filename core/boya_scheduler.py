@@ -345,7 +345,7 @@ class BoyaScheduler:
             self._stop_event.wait(wait_sec)
 
     def _renew_session(self, acc: Any) -> bool:
-        """尝试自动为账号静默续期博雅 Token"""
+        """尝试自动为账号静默续期博雅 Token（支持从 Cookies 换取或通过凭据全自动重新登录）"""
         try:
             acc.boya_client.sync_cookies_from(acc.client.client.cookies)
             token = acc.boya_client.acquire_token()
@@ -353,7 +353,19 @@ class BoyaScheduler:
                 self.add_log("info", f"【{acc.name}】博雅会话已自动静默续期成功！", username=acc.username, user_name=acc.name, category="boya")
                 return True
         except Exception as e:
-            logger.debug(f"Auto renew boya token failed for {acc.username}: {e}")
+            logger.debug(f"Auto renew boya token via cookies failed for {acc.username}: {e}")
+
+        # 若从已有 cookies 换取失败，且该账号保存了登录密码，使用 credentials 全自动重新登录
+        pwd = getattr(acc, "password", None)
+        if pwd:
+            try:
+                token = acc.boya_client.login_with_credentials(acc.username, pwd)
+                if token:
+                    self.add_log("success", f"【{acc.name}】博雅凭据已自动重新登录认证成功，守护服务无缝恢复！", username=acc.username, user_name=acc.name, category="boya")
+                    return True
+            except Exception as login_err:
+                logger.debug(f"Auto renew boya token via credentials failed for {acc.username}: {login_err}")
+
         return False
 
     def tick(self) -> None:
@@ -370,7 +382,8 @@ class BoyaScheduler:
             user_name = acc.name
             boya_client: BoyaClient = getattr(acc, "boya_client", None)
             if not boya_client or not boya_client.is_authenticated():
-                continue
+                if not self._renew_session(acc):
+                    continue
 
             # 首次运行或定期静默同步最新已选课程
             # 确保无论课程是本软件自动抢到的，还是学生在微信小程序/学校官网自行选中的，都能被守护引擎自动捕获并无缝纳入自动签到/签退！

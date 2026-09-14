@@ -18,14 +18,17 @@ class SigninScheduler:
         self,
         get_active_accounts: Callable[[], List[Dict[str, Any]]],
         on_event_log: Optional[Callable[[str, str, Optional[str], Optional[str]], None]] = None,
+        reconnect_account: Optional[Callable[[Any], Any]] = None,
     ):
         """
         get_active_accounts: 回调函数，返回所有启用了自动签到的账号字典列表:
             [{"username": "...", "name": "...", "client": IclassClient, ...}]
         on_event_log: 日志回调 (level, message, username, user_name)
+        reconnect_account: 异步账号重连回调
         """
         self.get_active_accounts = get_active_accounts
         self.on_event_log = on_event_log or (lambda level, msg, uname, rname: None)
+        self.reconnect_account = reconnect_account
         self.enabled = False
         self._task: Optional[asyncio.Task] = None
         self.interval_seconds = 20  # 巡检轮询频率（默认20秒检查一次）
@@ -97,13 +100,31 @@ class SigninScheduler:
             client = acc.get("client")
 
             if not client or not client.is_authenticated():
-                continue
+                acc_obj = acc.get("account")
+                if acc_obj and getattr(acc_obj, "password", None) and self.reconnect_account:
+                    try:
+                        await self.reconnect_account(acc_obj)
+                    except Exception:
+                        pass
+                if not client or not client.is_authenticated():
+                    continue
 
             try:
                 classes = await client.get_today_classes()
             except Exception as e:
-                logger.warning(f"Failed to fetch classes for {username}: {e}")
-                continue
+                acc_obj = acc.get("account")
+                if acc_obj and getattr(acc_obj, "password", None) and self.reconnect_account:
+                    try:
+                        ok = await self.reconnect_account(acc_obj)
+                        if ok:
+                            classes = await client.get_today_classes()
+                        else:
+                            continue
+                    except Exception:
+                        continue
+                else:
+                    logger.warning(f"Failed to fetch classes for {username}: {e}")
+                    continue
 
             for clazz in classes:
                 sched_id = str(clazz.get("courseSchedId") or clazz.get("id") or clazz.get("courseId", ""))
