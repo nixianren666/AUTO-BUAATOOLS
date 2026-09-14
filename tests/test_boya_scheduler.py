@@ -242,5 +242,84 @@ class TestBoyaScheduler(unittest.TestCase):
         self.assertIn(5555, signed_cids)
         self.assertEqual(acc.boya_client.signed_courses[0][3], 1)  # sign_type = 1 签到
 
+    def test_strict_offline_course_auto_select_guard(self):
+        """核心安全性铁律验证：严禁抢选不支持线上自主打卡的线下刷卡/核验考勤课程"""
+        logs = []
+        acc = DummyBoyaAccount()
+        acc.boya_auto_select = True
+        acc.boya_require_auto_sign = True
+        acc.boya_allow_offline = False
+
+        now = datetime.now()
+        start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
+
+        # 课池中包含一门现场考勤沙龙和一门支持线上打卡的德育课
+        acc.boya_all_courses = [
+            {
+                "id": 10018,
+                "courseName": "正念沙龙——正念融入生活",
+                "coursePosition": "学院路知行北楼313",
+                "courseKind": "安全健康",
+                "courseCurrentCount": 0,
+                "courseMaxCount": 20,
+                "courseSelectStartDate": start,
+                "courseSelectEndDate": end,
+                "courseSignConfig": '{"signPointList":[]}',  # 现场刷卡考勤
+            },
+            {
+                "id": 10020,
+                "courseName": "大国重器与空天精神",
+                "coursePosition": "沙河J1-101",
+                "courseKind": "德育",
+                "courseCurrentCount": 0,
+                "courseMaxCount": 100,
+                "courseSelectStartDate": start,
+                "courseSelectEndDate": end,
+                "courseSignConfig": '{"signPointList":[{"lat":39.98,"lng":116.34}]}',  # 线上自主打卡
+            }
+        ]
+
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda level, msg, **k: logs.append(msg))
+        scheduler.tick()
+
+        # 严正断言：必须仅抢选支持线上打卡的 10020，绝不抢选 10018！
+        self.assertIn(10020, acc.boya_client.selected_ids, "支持线上自主打卡的课程必须成功抢选")
+        self.assertNotIn(10018, acc.boya_client.selected_ids, "现场刷卡考勤课程绝不可被自动代抢，防止旷课违约！")
+        
+        # 验证心跳日志明确指出安全排除了非线上打卡课程
+        heartbeat_logs = [l for l in logs if "博雅抢课守护中" in l]
+        self.assertTrue(any("非线上打卡安全排除" in l for l in heartbeat_logs), "守护日志必须透明汇报非线上打卡课程安全排除态势")
+
+    def test_offline_course_opt_in_guard(self):
+        """验证高级模式显式允许线下课程时的回退路径"""
+        acc = DummyBoyaAccount()
+        acc.boya_auto_select = True
+        acc.boya_require_auto_sign = False
+        acc.boya_allow_offline = True
+
+        now = datetime.now()
+        start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
+
+        acc.boya_all_courses = [
+            {
+                "id": 10018,
+                "courseName": "正念沙龙——正念融入生活",
+                "coursePosition": "学院路知行北楼313",
+                "courseKind": "安全健康",
+                "courseCurrentCount": 0,
+                "courseMaxCount": 20,
+                "courseSelectStartDate": start,
+                "courseSelectEndDate": end,
+                "courseSignConfig": "",  # 现场刷卡考勤
+            }
+        ]
+
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
+        scheduler.tick()
+
+        self.assertIn(10018, acc.boya_client.selected_ids, "用户显式开启线下选课时方允许代抢")
+
 if __name__ == "__main__":
     unittest.main()

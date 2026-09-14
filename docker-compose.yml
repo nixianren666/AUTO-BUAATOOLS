@@ -3,7 +3,7 @@ version: '3.8'
 services:
   auto-buaa:
     build: .
-    image: auto-buaa:v1.2.2
+    image: auto-buaa:v1.2.5
     container_name: auto-buaa
     restart: unless-stopped
     ports:

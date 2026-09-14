@@ -84,7 +84,7 @@ def parse_sign_config(raw: Any) -> Dict[str, Any]:
 
 
 def has_autonomous_sign(course: Dict[str, Any]) -> bool:
-    cfg = parse_sign_config(course.get("courseSignConfig"))
+    cfg = parse_sign_config(course.get("courseSignConfig") or course.get("signConfig"))
     points = cfg.get("signPointList")
     return isinstance(points, list) and len(points) > 0
 
@@ -232,7 +232,7 @@ def calculate_candidate_priority(course: Dict[str, Any], demands: Dict[str, Dict
     - 缺口最大的板块优先级最高 (权重: 100 + remaining * 10)；
     - 缺口已满足 (saturated, remaining == 0) 的板块优先级低 (权重: 10)；
     - 其他可选板块 (权重: 20)；
-    - 支持线上定位签到的课程优先加权 (+5)。
+    - 支持线上定位签到的课程优先加权 (+50)；不支持自主打卡的课大幅惩罚 (-100)。
     """
     cat = get_course_category(course)
     score = 20
@@ -243,7 +243,9 @@ def calculate_candidate_priority(course: Dict[str, Any], demands: Dict[str, Dict
         else:
             score = 10
     if has_autonomous_sign(course):
-        score += 5
+        score += 50
+    else:
+        score -= 100
     return score
 
 
@@ -251,12 +253,13 @@ def is_auto_select_candidate(
     course: Dict[str, Any],
     now: datetime,
     campus: str = "北京",
-    require_auto_sign: bool = False
+    require_auto_sign: bool = True
 ) -> bool:
     if not course_matches_campus(course, campus):
         return False
     if get_course_category(course) == "其他方面":
         return False
+    # 安全性铁律：必须支持线上自主打卡（现场刷卡考勤课程因无法线上打卡，绝不可自动代抢）
     if require_auto_sign and not has_autonomous_sign(course):
         return False
 
@@ -402,6 +405,12 @@ class BoyaScheduler:
                     synced = acc.boya_client.query_chosen_courses()
                     if synced is not None:
                         acc.boya_selected_courses = synced
+                    try:
+                        stats = acc.boya_client.query_statistics()
+                        if stats:
+                            acc.boya_statistics = stats
+                    except Exception:
+                        pass
                     self.last_sync_times[username] = time.time()
                 except BoyaSessionExpired:
                     if self._renew_session(acc):
@@ -409,6 +418,12 @@ class BoyaScheduler:
                             synced = acc.boya_client.query_chosen_courses()
                             if synced is not None:
                                 acc.boya_selected_courses = synced
+                            try:
+                                stats = acc.boya_client.query_statistics()
+                                if stats:
+                                    acc.boya_statistics = stats
+                            except Exception:
+                                pass
                             self.last_sync_times[username] = time.time()
                         except Exception:
                             pass
@@ -453,6 +468,10 @@ class BoyaScheduler:
         campus = getattr(acc, "campus", "北京")
         cached_courses: List[Dict[str, Any]] = getattr(acc, "boya_all_courses", [])
         
+        # 安全防线：默认严格要求支持线上自主打卡（严禁自动抢选需要现场刷卡/核验考勤的课程，防止旷课违约被记过扣分）
+        allow_offline = getattr(acc, "boya_allow_offline", False)
+        require_auto_sign = getattr(acc, "boya_require_auto_sign", True) and not allow_offline
+
         # 建立当前已选课程的完备索引（提取所有可能的 ID 形式与课程名）
         selected_ids: Set[str] = set()
         selected_names: Set[str] = set()
@@ -471,6 +490,7 @@ class BoyaScheduler:
         chosen_count = 0
         past_count = 0
         conflict_count = 0
+        offline_count = 0
         candidates = []
 
         for course in cached_courses:
@@ -494,6 +514,12 @@ class BoyaScheduler:
             fail_key = (username, cid)
             fail_key_str = (username, cid_str)
             if self.fail_counters.get(fail_key, 0) >= 3 or self.fail_counters.get(fail_key_str, 0) >= 3:
+                continue
+
+            # 致命安全性防线：严格排除不支持线上自动打卡的现场刷卡/线下核验考勤课程
+            # 既然软件无法为其线上自动打卡，抢下后学生如果未亲临现场刷卡，将直接导致旷课违约记过扣分！
+            if require_auto_sign and not has_autonomous_sign(course):
+                offline_count += 1
                 continue
 
             # 统计各课程时间与容量状态
@@ -531,8 +557,8 @@ class BoyaScheduler:
                 conflict_count += 1
                 continue
 
-            # 检查候选条件（校区、分类、选课时间窗口、容量、已过上课时间排除）
-            if is_auto_select_candidate(course, now, campus=campus):
+            # 检查候选条件（校区、分类、选课时间窗口、容量、已过上课时间排除、线上自主打卡校验）
+            if is_auto_select_candidate(course, now, campus=campus, require_auto_sign=require_auto_sign):
                 candidates.append(course)
 
         # 智能优先级排序：计算当前学期达标缺口，缺口越大的板块优先排序，已达标板块沉底
@@ -544,9 +570,10 @@ class BoyaScheduler:
         last_log = self.last_inspect_log_times.get(username, 0)
         if time.time() - last_log > 600 or last_log == 0:
             self.last_inspect_log_times[username] = time.time()
+            guard_note = f"，{offline_count}门非线上打卡安全排除" if offline_count > 0 or require_auto_sign else ""
             self.add_log(
                 "info",
-                f"【{user_name}】博雅抢课守护中：全校课池共 {len(cached_courses)} 门（{full_count}门满额，{upcoming_count}门待开放，{chosen_count}门已选，{conflict_count}门时冲跳过），保持毫秒级巡检捡漏与定点抢选...",
+                f"【{user_name}】博雅抢课守护中：全校课池共 {len(cached_courses)} 门（{full_count}门满额{guard_note}，{upcoming_count}门待开放，{chosen_count}门已选，{conflict_count}门时冲跳过），保持毫秒级巡检捡漏与定点抢选...",
                 username=username,
                 user_name=user_name,
                 category="boya",
@@ -585,7 +612,7 @@ class BoyaScheduler:
                 self.fail_counters.pop(fail_key, None)
                 self.fail_counters.pop(fail_key_str, None)
                 has_sign = has_autonomous_sign(course)
-                sign_hint = "支持线上定位打卡，开课时将自动微扰打卡" if has_sign else "主办方线下刷卡/核验考勤，已为您锁定名额"
+                sign_hint = "支持线上自主打卡，开课时将自动微扰打卡" if has_sign else "⚠️ 严正提醒：该课程需主办方现场刷卡/线下核验考勤，请务必亲临现场刷卡！"
                 self.add_log(
                     "success",
                     f"🎉 成功抢中博雅课程 [{cname}]！{sign_hint}",

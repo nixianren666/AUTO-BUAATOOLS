@@ -1,4 +1,4 @@
-# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.2.2)
+# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.2.5)
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 **北航师生专属的轻量化、多账号并发守护、博雅抢课打卡、Origin 极简质感全平台客户端**
 
-[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
+[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
@@ -61,6 +61,16 @@
 - **北航校历精准锁定**：自动对齐北航官方教务校历元数据（`semesterStartDate` 与 `semesterEndDate`），所有历史学期选课完全隔离，绝不跨学期误计入当前进度。
 - **动态达标缺口计算**：实时扫描当前学期“德育（缺2）、劳育（缺2）、美育（缺1）、安全健康（缺1）”的完成情况。已修满的板块课程自动降权沉底（权重10），尚未达标的板块赋予最高优先级（`100 + 缺口*10`），将宝贵的网络与算力集中用于帮助同学补齐尚未达标的素养门类。
 - **状态与校区全维度熔断**：课程状态若含“已停开”、“已取消”、“未发布”、“已结课”或容量为 0，坚决不选；严格隔离北京校区与杭州国际校区，绝不跨校区错选。
+
+### 6. 🚨 防旷课记过铁律：严格线上自主打卡与线下刷卡考勤隔离护栏（对齐 AutoBoya 机制）
+- **致命安全性痛点分析**：
+  北航博雅课程中存在大量讲座与沙龙（如各类线下非遗实操工坊、正念心理沙龙等）采用**主办方线下刷卡/纸质核验考勤**，此类课程在官方教务接口中**不配置任何经纬度打卡定位点（`signPointList` 为空）**。如果自动抢课程序盲目将其抢中，软件由于接口客观限制**根本无法为其执行线上自动打卡签到签退**。若学生因未察觉或未亲临现场刷卡，将直接导致博雅旷课违约被学校按《处分办法》记过扣分！
+- **对齐 AutoBoya 与核心机制重构**：
+  全面重构与吸收 `DeNeRATe-cool/AutoBoya` 的核心设计机制：
+  1. **自主签到智能识别（`has_autonomous_sign`）**：严格解析并提取 `courseSignConfig` / `signConfig` 中的 `signPointList` 坐标点集，仅在确认存在有效 GPS 定位点时才判定为线上自主打卡课；
+  2. **强制安全防线（`require_auto_sign=True` 默认开启）**：在 `core/boya_scheduler.py` 候选课程筛选中建立强制安全护栏，默认全面拦截所有无位置配置的线下人工/刷卡考勤课，绝不将其加入自动代抢候选；
+  3. **透明态势审计心跳**：守护引擎每 10 分钟在个人审计日志中汇报`【全校课池共 X 门（... X门非线上打卡安全排除 ...）】`，杜绝任何暗箱代抢；
+  4. **全链路容错回显**：UI 前端清晰标识`[⚡ 线上自主打卡]`与`[🔥 现场刷卡考勤]`，并提供`🛡️ 仅限线上打卡`防误触开关与二次风险警示确认弹窗。
 
 ---
 
@@ -123,12 +133,12 @@
 ## 🚀 使用方法
 
 ### 方案 1：Windows 标准安装向导（推荐 ⭐⭐⭐）
-1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载安装包：`BUAA-Signin-Setup-v1.2.2.exe`；
+1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载安装包：`BUAA-Signin-Setup-v1.2.5.exe`；
 2. 双击打开安装向导，按照提示选择安装路径；
 3. 安装程序会自动在桌面与开始菜单创建快捷方式，并支持在 Windows“应用和功能”中一键干净卸载。
 
 ### 方案 2：Windows 绿色便携版（免安装 ⭐⭐⭐）
-1. 下载可执行文件：`BUAA-Signin.exe` 或 `BUAA-Signin-v1.2.2-portable.exe`；
+1. 下载可执行文件：`BUAA-Signin.exe` 或 `BUAA-Signin-v1.2.5-portable.exe`；
 2. 将程序放置在任意目录（例如桌面或个人工具箱），双击即可直接运行；
 3. 绿色便携版将配置文件保存在同级目录下，即插即用，随拷随走。
 
@@ -208,13 +218,13 @@ bash scripts/install_macos_service.sh uninstall  # 卸载后台守护
 docker compose up -d
 
 # 方式 B：Docker 原生构建运行
-docker build -t auto-buaa:v1.2.2 .
+docker build -t auto-buaa:v1.2.5 .
 docker run -d \
   --name auto-buaa \
   --restart unless-stopped \
   -p 18346:18346 \
   -v $(pwd)/config.json:/app/config.json \
-  auto-buaa:v1.2.2
+  auto-buaa:v1.2.5
 ```
 
 ---
@@ -241,9 +251,13 @@ docker run -d \
 ## 🧪 测试阶段说明与问题反馈
 
 > [!IMPORTANT]
-> **当前版本：v1.2.2（稳定增强版）**
+> **当前版本：v1.2.5（安全防护与博雅护栏重大增强版）**
 > 
-> 本版本重点修复了博雅课程全生命周期时序判定、结课后自动流转、实时真实签到签退状态反馈、历史选课考核全维度指标透出、本学期博雅素养 6 门达标统计以及 24/7 后台无人值守守护服务。
+> 本版本重点进行了核心安全性重构：
+> 1. **博雅自动抢课安全护栏（对齐 AutoBoya 机制）**：自动抢课引擎默认开启 `🛡️ 仅限线上打卡`（`require_auto_sign=True`），严格排除现场刷卡考勤课程，坚决杜绝因无法自动线上打卡而导致旷课记过扣分；
+> 2. **态势感知与心跳审计透明化**：个人审计日志每 10 分钟汇报全校课池态势及安全排除门数，消除一切暗箱代抢顾虑；
+> 3. **常规课程签到机制对齐 UBAA**：强化会话过期自动刷新与请求重试容错；
+> 4. **全套自动化测试 100% 通过**：包含 77 项全链路测试与 Headless Edge 端到端真实运行验证。
 > 
 > 我们非常重视每一位同学与老师的实际使用体验！
 > 如果您在日常使用过程中遇到任何问题或有改进建议：
@@ -256,8 +270,8 @@ docker run -d \
 
 ```
 AUTO-BUAATOOLS/
-├── BUAA-Signin-Setup-v1.2.2.exe     # Windows 官方安装向导程序
-├── BUAA-Signin-v1.2.2-portable.exe  # Windows v1.2.2 绿色免安装便携版
+├── BUAA-Signin-Setup-v1.2.5.exe     # Windows 官方安装向导程序
+├── BUAA-Signin-v1.2.5-portable.exe  # Windows v1.2.5 绿色免安装便携版
 ├── BUAA-Signin.exe                  # Windows 单文件绿色版主程序
 ├── BUAA-Signin.spec                 # Windows PyInstaller 一键打包规格
 ├── BUAA-Signin-mac.spec             # macOS PyInstaller 独立 App 打包规格
@@ -276,16 +290,16 @@ AUTO-BUAATOOLS/
 │   ├── autostart.py                 # 跨平台自启动管理 (Windows / macOS / Linux)
 │   ├── boya_client.py               # 博雅选课池拉取、抢课提交与打卡签退
 │   ├── boya_crypto.py               # 博雅平台 AES-128-ECB 动态解密
-│   ├── boya_scheduler.py            # 博雅自动化巡检、抢课与签到调度器（支持自主选课守护）
+│   ├── boya_scheduler.py            # 博雅自动化巡检、抢课与签到调度器（支持自主选课守护与防旷课护栏）
 │   ├── cas.py                       # 北航统一认证 SSO CAS 登录与凭据提取
 │   ├── iclass.py                    # 课堂签到接口鉴权、排课同步与打卡提交
 │   ├── scheduler.py                 # 常规课堂课前10分钟随机规划调度器
 │   └── webvpn.py                    # WebVPN 动态加解密与内外网通道适配
 ├── server/                          # 服务与前端渲染层
-│   ├── app.py                       # FastAPI 状态控制中心与多维数据聚合 (v1.2.2)
+│   ├── app.py                       # FastAPI 状态控制中心与多维数据聚合 (v1.2.5)
 │   └── static/                      # 前端界面资产 (Origin 极简 + Emil Kowalski 微动效)
 │       ├── buaa_logo.svg            # 北航高清矢量校徽
-│       ├── index.html               # 交互界面结构 (v1.2.2 学期达标统计 + 实时状态)
+│       ├── index.html               # 交互界面结构 (v1.2.5 学期达标统计 + 实时状态 + 防旷课护栏)
 │       ├── css/style.css            # 极简质感拟态与流体动效样式
 │       └── js/app.js                # 响应式前端状态管理与时序流转逻辑
 ├── systemd/                         # Linux 守护进程配置模版
@@ -295,18 +309,18 @@ AUTO-BUAATOOLS/
 │   ├── install_macos_service.sh     # macOS 24/7 LaunchAgent 服务全生命周期管理
 │   ├── fix_macos_gatekeeper.sh      # macOS Gatekeeper 免拦截一键修复工具
 │   └── smoke_test_mac.py            # macOS 自动化冒烟测试脚本
-├── tests/                           # 自动化单元测试与回归套件 (47 个测试 100% 通过)
+├── tests/                           # 自动化单元测试与回归套件 (77 个测试 100% 通过)
 │   ├── test_core.py                 # WebVPN、CAS 协议与加解密测试
 │   ├── test_api.py                  # API 端点与静态路由集成测试
 │   ├── test_autostart.py            # 跨平台自启动逻辑模拟测试 (Win/Mac/Linux)
 │   ├── test_multi_account.py        # 多账号并发与调度测试
 │   ├── test_boya_crypto.py          # 博雅解密算法测试
 │   ├── test_boya_api.py             # 博雅 API 路由测试
-│   ├── test_boya_scheduler.py       # 博雅调度器测试
+│   ├── test_boya_scheduler.py       # 博雅调度器与防旷课护栏测试
 │   ├── test_boya_categories_and_filters.py # 安全健康四大模块筛选测试
 │   └── test_boya_lifecycle.py       # 博雅生命周期流转、考核与学期达标统计测试
 └── installer/                       # Inno Setup Windows 安装包制作配置
-    └── setup.iss                    # 安装包编译向导脚本 (v1.2.2)
+    └── setup.iss                    # 安装包编译向导脚本 (v1.2.5)
 ```
 
 ---
