@@ -283,13 +283,25 @@ class TestUIInteractions(unittest.TestCase):
 
             ws_sock.close()
         finally:
-            proc.terminate()
             try:
-                proc.wait(timeout=2)
+                if sys.platform == "win32":
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+                    try:
+                        proc.wait(timeout=1)
+                    except Exception:
+                        pass
+                else:
+                    proc.terminate()
+                    proc.wait(timeout=1)
             except Exception:
-                proc.kill()
+                try:
+                    proc.kill()
+                    proc.wait(timeout=1)
+                except Exception:
+                    pass
             server.should_exit = True
-            server_thread.join(timeout=2)
+            server.force_exit = True
+            server_thread.join(timeout=1)
             accounts.clear()
             accounts.update(orig_accounts)
             config["disclaimer_accepted"] = orig_disclaimer
