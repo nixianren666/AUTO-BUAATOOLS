@@ -8,12 +8,14 @@ BUAA 课程独立签到助手 v1.2.2 - 原生独立应用入口
 - 开机自启静默入托 (--autostart)
 """
 
+import atexit
 import io
 import os
 import socket
 import sys
 import threading
 import time
+from typing import Any, Optional, Union, List, Dict
 import webbrowser
 
 # 针对 Windows GUI / PyInstaller --windowed 无控制台模式，防止 uvicorn / isatty 报错
@@ -42,7 +44,13 @@ elif hasattr(sys.stderr, "reconfigure"):
         pass
 
 import uvicorn
-import pystray
+
+# 延迟/按需安全导入 pystray（杜绝在无 GUI / Docker / Linux 服务器环境下因缺少 Xlib/gi 导致启动即崩）
+try:
+    import pystray
+except Exception:
+    pystray = None
+
 from PIL import Image, ImageDraw
 
 APP_TITLE = "BUAA 课程签到 Pro v1.2.2"
@@ -55,7 +63,7 @@ _single_instance_mutex = None
 _open_lock_files = []
 
 
-def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
+def acquire_single_instance(port_or_name: Any = DEFAULT_PORT) -> bool:
     """
     确保全系统绝对单实例运行：
     1. Windows 采用 Win32 Named Mutex (内核级互斥体)
@@ -67,21 +75,36 @@ def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
 
     already_running = False
 
+    if isinstance(port_or_name, int):
+        port = port_or_name
+        mutex_tag = f"PORT_{port}"
+    elif isinstance(port_or_name, str) and port_or_name.isdigit():
+        port = int(port_or_name)
+        mutex_tag = f"PORT_{port}"
+    else:
+        port = DEFAULT_PORT
+        mutex_tag = str(port_or_name).replace("\\", "_")
+
     if sys.platform == "win32":
         try:
             import ctypes
-            MUTEX_NAME = "Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122"
-            _single_instance_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
+            MUTEX_NAME = f"Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122_{mutex_tag}" if mutex_tag != f"PORT_{DEFAULT_PORT}" else "Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122"
+            h_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
             last_err = ctypes.windll.kernel32.GetLastError()
             if last_err == 183:  # ERROR_ALREADY_EXISTS
                 already_running = True
+                if h_mutex:
+                    ctypes.windll.kernel32.CloseHandle(h_mutex)
+            else:
+                _single_instance_mutex = h_mutex
         except Exception:
             pass
     else:
         try:
             import fcntl
             import pathlib
-            lock_path = pathlib.Path.home() / ".buaa_signin_v122.lock"
+            lock_name = f".buaa_signin_v122_{mutex_tag}.lock" if mutex_tag != f"PORT_{DEFAULT_PORT}" else ".buaa_signin_v122.lock"
+            lock_path = pathlib.Path.home() / lock_name
             f = open(lock_path, "a+")
             fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             _open_lock_files.append(f)
@@ -90,8 +113,8 @@ def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
         except Exception:
             pass
 
-    # 备用检查：测试本地端口是否已被前一个实例占用
-    if not already_running:
+    # 备用检查：测试本地端口是否已被前一个实例占用（仅针对有效网络端口）
+    if not already_running and isinstance(port, int) and port > 0:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_sock:
                 test_sock.settimeout(0.3)
@@ -122,13 +145,14 @@ def acquire_single_instance(port: int = DEFAULT_PORT) -> bool:
 def release_single_instance(lock: Any = None) -> None:
     """释放单实例互斥锁与文件句柄"""
     global _single_instance_mutex, _open_lock_files
-    if sys.platform == "win32" and _single_instance_mutex:
-        try:
-            import ctypes
-            ctypes.windll.kernel32.CloseHandle(_single_instance_mutex)
-        except Exception:
-            pass
-        _single_instance_mutex = None
+    if sys.platform == "win32":
+        if _single_instance_mutex:
+            try:
+                import ctypes
+                ctypes.windll.kernel32.CloseHandle(_single_instance_mutex)
+            except Exception:
+                pass
+            _single_instance_mutex = None
     for f in _open_lock_files:
         try:
             import fcntl
@@ -137,6 +161,24 @@ def release_single_instance(lock: Any = None) -> None:
         except Exception:
             pass
     _open_lock_files = []
+    if lock is not None:
+        if hasattr(lock, "fileno"):
+            try:
+                import fcntl
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+                lock.close()
+            except Exception:
+                pass
+        elif sys.platform == "win32" and isinstance(lock, int):
+            try:
+                import ctypes
+                ctypes.windll.kernel32.CloseHandle(lock)
+            except Exception:
+                pass
+
+
+# 注册退出时的互斥锁自动清理
+atexit.register(release_single_instance)
 
 
 def check_and_wake_existing(port: int = DEFAULT_PORT) -> bool:
@@ -252,10 +294,54 @@ def exit_all():
     os._exit(0)
 
 
-class CustomTrayIcon(pystray.Icon):
-    """自定义托盘图标，重写左键单击/双击事件直接呼出主窗口"""
-    def __call__(self):
-        restore_window()
+if pystray is not None:
+    class CustomTrayIcon(pystray.Icon):
+        """自定义托盘图标，重写左键单击/双击事件直接呼出主窗口"""
+        def __call__(self):
+            restore_window()
+else:
+    class CustomTrayIcon:
+        """无 GUI / 缺少托盘后端时的 Dummy Tray 占位类"""
+        def __init__(self, *args, **kwargs):
+            pass
+        def run_detached(self):
+            pass
+        def stop(self):
+            pass
+
+
+def setup_tray() -> Optional[Any]:
+    """
+    初始化系统托盘：
+    - Windows: 支持左键单击唤醒与右键菜单
+    - macOS: 绑定 NSMenu 拦截时显式提供【显示主界面】(加粗默认项) 与【退出应用】，杜绝隐藏后无法唤醒的死锁
+    - Headless / 缺失 GUI 驱动: 优雅降级返回 None / Dummy，绝不崩塌
+    """
+    global pystray
+    if pystray is None:
+        try:
+            import pystray as _pystray
+            pystray = _pystray
+        except Exception as e:
+            return None
+
+    try:
+        tray_img = get_tray_image()
+        tray_menu = pystray.Menu(
+            pystray.MenuItem("显示主界面", lambda icon, item: restore_window(), default=True),
+            pystray.MenuItem("退出应用", lambda icon, item: exit_all()),
+        )
+        icon = CustomTrayIcon(
+            name="BUAA-Signin",
+            icon=tray_img,
+            title="BUAA 课程独立签到助手 v1.2.2 (后台运行中)",
+            menu=tray_menu,
+        )
+        icon.run_detached()
+        return icon
+    except Exception as te:
+        print(f"系统托盘创建跳过: {te}")
+        return None
 
 
 def on_window_closing():
@@ -312,7 +398,15 @@ def main():
     is_headless = args.headless or env_headless or is_docker or (is_linux and not has_display)
     port = args.port
 
-    # 1. 如果是无头服务模式（Linux 服务器 / Docker / 终端守护），直接启动主线程 Web 服务
+    # 1. 核心单实例互斥检查（提升至所有服务与窗口启动前执行，确保全平台与无头服务器/Docker 防多开）
+    if not acquire_single_instance(port):
+        if is_headless:
+            print(f"[提示] BUAA 课程签到助手后台服务已在运行中 (监听端口: {port})，无需重复启动。")
+        else:
+            print("BUAA 课程签到助手实例已在运行中，已成功唤醒主窗口。")
+        sys.exit(0)
+
+    # 2. 如果是无头服务模式（Linux 服务器 / Docker / 终端守护），直接启动主线程 Web 服务
     if is_headless:
         host = args.host or "0.0.0.0"
         print("=" * 66)
@@ -335,38 +429,20 @@ def main():
         )
         return
 
-    # 2. 桌面模式：单实例互斥检查（如果已有实例在运行，直接唤醒前台窗口并退出本进程）
-    if not acquire_single_instance(port):
-        print("BUAA 课程签到助手实例已在运行中，已成功唤醒主窗口。")
-        sys.exit(0)
-
-    # 判断是否为开机自启模式
+    # 3. 桌面模式：判断是否为开机自启模式
     start_hidden = args.autostart or args.minimized
 
-    # 3. 启动后台 FastAPI 服务线程
+    # 4. 启动后台 FastAPI 服务线程
     server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
     server_thread.start()
 
     # 等待服务端口就绪
     wait_for_server(port, timeout=3.5)
 
-    # 4. 创建桌面任务栏系统托盘（右键菜单仅保留一个按钮——“退出应用”）
-    try:
-        tray_img = get_tray_image()
-        tray_menu = pystray.Menu(
-            pystray.MenuItem("退出应用", lambda icon, item: exit_all())
-        )
-        tray_icon = CustomTrayIcon(
-            name="BUAA-Signin",
-            icon=tray_img,
-            title="BUAA 课程独立签到助手 v1.2.2 (后台运行中)",
-            menu=tray_menu,
-        )
-        tray_icon.run_detached()
-    except Exception as te:
-        print(f"系统托盘创建跳过: {te}")
+    # 5. 创建桌面任务栏系统托盘（包含“显示主界面”与“退出应用”，彻底消除 macOS 死锁与无头报错）
+    tray_icon = setup_tray()
 
-    # 5. 启动原生桌面窗体 (pywebview)
+    # 6. 启动原生桌面窗体 (pywebview)
     try:
         import webview
         url = f"http://127.0.0.1:{port}"

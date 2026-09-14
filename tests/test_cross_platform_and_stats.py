@@ -21,7 +21,7 @@ if BASE_DIR not in sys.path:
 
 from server.app import compute_semester_statistics, get_current_semester_range
 from core.boya_scheduler import is_auto_select_candidate, course_matches_campus
-from run import acquire_single_instance, release_single_instance
+from run import acquire_single_instance, release_single_instance, setup_tray
 
 
 class TestCrossPlatformAndSemesterStats(unittest.TestCase):
@@ -161,6 +161,29 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         lock = acquire_single_instance("BUAA_Signin_Test_Mutex")
         self.assertIsNotNone(lock, "首次获取单实例锁必须成功")
         release_single_instance(lock)
+
+    def test_single_instance_mutual_exclusion(self):
+        """测试单实例互斥机制：重复获取被拦截并能安全释放重用"""
+        tag = "BUAA_Signin_Mutual_Exclusion_Test"
+        first = acquire_single_instance(tag)
+        self.assertTrue(first, "首次获取锁必须成功")
+        second = acquire_single_instance(tag)
+        self.assertFalse(second, "重复获取必须被互斥锁拦截")
+        release_single_instance()
+        third = acquire_single_instance(tag)
+        self.assertTrue(third, "释放后重新获取必须成功")
+        release_single_instance()
+
+    def test_tray_menu_structure_has_restore_and_exit(self):
+        """测试托盘菜单配置：必须包含【显示主界面】与【退出应用】，杜绝 macOS 死锁"""
+        import run
+        if run.pystray is not None:
+            tray = run.setup_tray()
+            if tray and hasattr(tray, "menu") and tray.menu is not None:
+                item_texts = [str(item.text) for item in tray.menu.items]
+                self.assertIn("显示主界面", item_texts, "托盘必须包含恢复窗口菜单项")
+                self.assertIn("退出应用", item_texts, "托盘必须包含退出应用菜单项")
+                tray.stop()
 
     def test_macos_spec_and_scripts_integrity(self):
         """跨平台检查：macOS 打包 spec 与 Gatekeeper 修复脚本语法与完整性"""

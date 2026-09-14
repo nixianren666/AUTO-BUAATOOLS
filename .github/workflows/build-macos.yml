@@ -48,6 +48,8 @@ jobs:
       - name: Build macOS .app with PyInstaller
         run: |
           pyinstaller --noconfirm BUAA-Signin-mac.spec
+          # Ad-hoc codesign to avoid Gatekeeper "damaged app" false positives
+          codesign --force --deep -s - dist/BUAA-Signin.app || true
 
       - name: Execute live smoke test
         run: |
@@ -55,10 +57,14 @@ jobs:
 
       - name: Create DMG Disk Image and Zip Archive
         run: |
-          # 1. Create elegant DMG with Applications symlink
+          # 1. Create elegant DMG with Applications symlink and Gatekeeper fix helper
           mkdir -p dist/dmg_root
           cp -R dist/BUAA-Signin.app dist/dmg_root/
           ln -s /Applications dist/dmg_root/Applications
+          if [ -f "scripts/fix_macos_gatekeeper.sh" ]; then
+            cp scripts/fix_macos_gatekeeper.sh dist/dmg_root/
+            chmod +x dist/dmg_root/fix_macos_gatekeeper.sh
+          fi
           hdiutil create -volname "BUAA-Signin" -srcfolder dist/dmg_root -ov -format UDZO "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg"
 
           # 2. Also package zip for direct portability
@@ -80,7 +86,11 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
-          gh release view "$TAG" || gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG"
+          for i in {1..5}; do
+            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
+            gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG" || true
+            sleep 2
+          done
           gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
           gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
 
@@ -96,7 +106,11 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
-          gh release view "$TAG" || gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG"
+          for i in {1..5}; do
+            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
+            gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG" || true
+            sleep 2
+          done
           if [ -f "BUAA-Signin-Setup-v1.2.2.exe" ]; then
             gh release upload "$TAG" "BUAA-Signin-Setup-v1.2.2.exe" --clobber || true
           fi

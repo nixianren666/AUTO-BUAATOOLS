@@ -9,8 +9,29 @@ import os
 import sys
 import logging
 import pathlib
+import subprocess
+from typing import List, Optional
 
 logger = logging.getLogger("buaa.autostart")
+
+
+def _run_systemctl(args: List[str]) -> bool:
+    """在 Linux 下安全执行 systemctl --user 命令并记录日志"""
+    try:
+        res = subprocess.run(
+            ["systemctl", "--user"] + args,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if res.returncode == 0:
+            return True
+        else:
+            logger.debug(f"systemctl --user {' '.join(args)} 返回码非0: {res.stderr.strip() if res.stderr else res.stdout.strip()}")
+            return False
+    except Exception as e:
+        logger.debug(f"调用 systemctl 异常: {e}")
+        return False
 
 REG_RUN_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 REG_APP_KEY = "BUAA-Signin"
@@ -65,6 +86,19 @@ def get_autostart_status() -> bool:
     elif sys.platform.startswith("linux"):
         if os.path.exists("/.dockerenv") or bool(os.environ.get("DOCKER_CONTAINER")):
             return False
+        # 优先通过 systemctl --user 判定服务是否真正启用
+        try:
+            res = subprocess.run(
+                ["systemctl", "--user", "is-enabled", "buaa-signin.service"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+            )
+            if res.returncode == 0 and "enabled" in res.stdout.strip().lower():
+                return True
+        except Exception:
+            pass
+        # 回退检查服务文件是否存在且有效
         try:
             service_file = get_linux_service_path()
             return service_file.exists() and service_file.stat().st_size > 0
@@ -153,11 +187,15 @@ RestartSec=5
 WantedBy=default.target
 """
                 service_file.write_text(service_content, encoding="utf-8")
-                logger.info(f"已成功写入 Linux systemd 用户级自启动服务: {service_file}")
+                _run_systemctl(["daemon-reload"])
+                _run_systemctl(["enable", "buaa-signin.service"])
+                logger.info(f"已成功写入并启用 Linux systemd 用户级自启动服务: {service_file}")
             else:
+                _run_systemctl(["disable", "buaa-signin.service"])
                 if service_file.exists():
                     service_file.unlink()
-                    logger.info(f"已移除 Linux systemd 用户级自启动服务: {service_file}")
+                _run_systemctl(["daemon-reload"])
+                logger.info(f"已成功禁用并移除 Linux systemd 用户级自启动服务: {service_file}")
             return True
         except Exception as e:
             logger.warning(f"设置 Linux 自启服务失败: {e}")
