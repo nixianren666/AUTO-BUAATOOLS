@@ -4,18 +4,23 @@ from core.iclass import IclassClient
 from core.boya_client import extract_real_name_from_stats
 from core.boya_scheduler import get_current_semester_range
 from server.app import enrich_selected_courses, compute_semester_statistics, add_log, get_logs, accounts, AccountState
-from run import acquire_single_instance, APP_TITLE
+from run import acquire_single_instance, release_single_instance, APP_TITLE
 
 
 class TestV122ComprehensiveFixes(unittest.TestCase):
     def test_single_instance_mutex(self):
         """测试单实例互斥检测在当前系统正常工作"""
-        first = acquire_single_instance(18346)
-        # 首次获取互斥体成功
-        self.assertTrue(first)
-        # 再次获取（模拟另一个进程运行）应检测到已存在
-        second = acquire_single_instance(18346)
-        self.assertFalse(second)
+        test_port = 19999
+        release_single_instance()
+        try:
+            first = acquire_single_instance(test_port)
+            # 首次获取互斥体成功
+            self.assertTrue(first)
+            # 再次获取（模拟另一个进程运行）应检测到已存在
+            second = acquire_single_instance(test_port)
+            self.assertFalse(second)
+        finally:
+            release_single_instance()
 
     def test_extract_real_name_from_stats(self):
         stats = {
