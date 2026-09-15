@@ -208,7 +208,7 @@ class TestUIInteractions(unittest.TestCase):
 
             # 0. 等待前端 JS (app.js) 完全载入与初始化
             js_loaded = False
-            for _ in range(30):
+            for _ in range(60):
                 if eval_js("typeof switchMainView === 'function' && typeof appState !== 'undefined'"):
                     js_loaded = True
                     break

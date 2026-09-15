@@ -57,6 +57,7 @@ class WeChatClawBot:
         to_user_id: Optional[str] = None,
         from_user_id: Optional[str] = None,
         get_updates_buf: Optional[str] = None,
+        base_url: Optional[str] = None,
         enabled: bool = True,
         on_status_change: Optional[Callable[[], None]] = None,
         on_event_log: Optional[Callable[[str, str, Optional[str], Optional[str], str], None]] = None,
@@ -70,6 +71,7 @@ class WeChatClawBot:
         self.to_user_id = to_user_id or ""
         self.from_user_id = from_user_id or ""
         self.get_updates_buf = get_updates_buf or ""
+        self.base_url = (base_url or ILINK_BASE_URL).rstrip("/")
         self.enabled = enabled
         self.on_status_change = on_status_change
         self.on_event_log = on_event_log
@@ -96,8 +98,9 @@ class WeChatClawBot:
         self._stop_event = threading.Event()
         self._reconnecting = False
 
-        # 若初始已存在 token，启动长轮询维持会话生命期
+        # 若初始已存在 token，通知服务端上线并启动长轮询维持会话生命期
         if self.bot_token and not self.mock_mode:
+            self._notify_start()
             self.start_background_worker()
 
     def _get_headers(self) -> Dict[str, str]:
@@ -141,7 +144,7 @@ class WeChatClawBot:
         """通知腾讯官方 iLink 服务端通道客户端启动 (notifystart)"""
         if self.mock_mode or not self.bot_token:
             return
-        url = f"{ILINK_BASE_URL}/ilink/bot/msg/notifystart"
+        url = f"{self.base_url}/ilink/bot/msg/notifystart"
         try:
             with httpx.Client(timeout=10.0) as client:
                 res = client.post(
@@ -152,6 +155,22 @@ class WeChatClawBot:
                 logger.debug(f"notifystart status={res.status_code}")
         except Exception as e:
             logger.debug(f"notifystart ignored error: {e}")
+
+    def _notify_stop(self):
+        """通知腾讯官方 iLink 服务端通道客户端停止 (notifystop)"""
+        if self.mock_mode or not self.bot_token:
+            return
+        url = f"{self.base_url}/ilink/bot/msg/notifystop"
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                res = client.post(
+                    url,
+                    headers=self._get_headers(),
+                    json={"base_info": self._get_base_info()},
+                )
+                logger.debug(f"notifystop status={res.status_code}")
+        except Exception as e:
+            logger.debug(f"notifystop ignored error: {e}")
 
     def get_binding_qrcode(self) -> Dict[str, Any]:
         """
@@ -188,7 +207,7 @@ class WeChatClawBot:
                 "qrcode_img_base64": data_uri,
             }
 
-        url = f"{ILINK_BASE_URL}/ilink/bot/get_bot_qrcode?bot_type=3"
+        url = f"{self.base_url}/ilink/bot/get_bot_qrcode?bot_type=3"
         try:
             with httpx.Client(timeout=15.0) as client:
                 res = client.get(url, headers=self._get_headers())
@@ -250,7 +269,7 @@ class WeChatClawBot:
     def poll_qrcode_status(self, qrcode_key: str) -> Dict[str, Any]:
         """
         轮询扫码确认状态
-        完整提取 ilink_user_id, ilink_bot_id, bot_token, context_token
+        完整提取 ilink_user_id, ilink_bot_id, bot_token, context_token, baseurl
         """
         if self.mock_mode or qrcode_key.startswith("mock_qr_") or os.environ.get("MOCK_WECHAT_BOT") == "1":
             self.bot_token = f"mock_token_{self.username}_{int(time.time())}"
@@ -270,7 +289,7 @@ class WeChatClawBot:
                 "to_user_id": self.to_user_id,
             }
 
-        url = f"{ILINK_BASE_URL}/ilink/bot/get_qrcode_status?qrcode={urllib.parse.quote(qrcode_key)}"
+        url = f"{self.base_url}/ilink/bot/get_qrcode_status?qrcode={urllib.parse.quote(qrcode_key)}"
         try:
             with httpx.Client(timeout=35.0) as client:
                 res = client.get(url, headers=self._get_headers())
@@ -283,14 +302,17 @@ class WeChatClawBot:
                         self.context_token = data.get("context_token") or data.get("context") or ""
                         self.to_user_id = data.get("ilink_user_id") or data.get("to_user_id") or data.get("user_id") or ""
                         self.from_user_id = data.get("ilink_bot_id") or data.get("from_user_id") or data.get("bot_id") or ""
-                        
+                        server_base_url = data.get("baseurl") or data.get("baseUrl") or data.get("base_url")
+                        if server_base_url:
+                            self.base_url = server_base_url.rstrip("/")
+
                         user_info = data.get("user_info") or {}
                         self.wechat_nickname = user_info.get("nickname") or data.get("nickname") or data.get("wechat_nickname") or "微信用户"
-                        
+
                         with self._lock:
                             self.status = "connected"
                             self.last_active_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        
+
                         # 握手告知服务端启动
                         self._notify_start()
                         self.start_background_worker()
@@ -333,6 +355,7 @@ class WeChatClawBot:
 
     def unbind(self):
         """解除当前学生账号的微信绑定并清空会话凭据"""
+        self._notify_stop()
         self.stop_background_worker()
         with self._lock:
             self.bot_token = ""
@@ -341,6 +364,7 @@ class WeChatClawBot:
             self.to_user_id = ""
             self.from_user_id = ""
             self.get_updates_buf = ""
+            self.base_url = ILINK_BASE_URL
             self.status = "unbound"
             self.disconnected_queue.clear()
             self.last_error = None
@@ -466,7 +490,7 @@ class WeChatClawBot:
             self.last_error = "未配置 bot_token"
             return False
 
-        url = f"{ILINK_BASE_URL}/ilink/bot/sendmessage"
+        url = f"{self.base_url}/ilink/bot/sendmessage"
         headers = self._get_headers()
         client_id = f"ubaa_{uuid.uuid4().hex[:16]}"
 
@@ -507,9 +531,9 @@ class WeChatClawBot:
                     logger.warning(f"sendmessage api failed: ret={ret}, errmsg={errmsg}")
                     self.last_error = f"微信接口返回失败: {errmsg} (ret={ret})"
 
-                    # 若 ret == -2 (会话过期)，尝试通过 probe getupdates 刷新一次并重试
+                    # 若 ret == -2 (会话未激活或过期)，尝试通过 probe getupdates 刷新一次并重试
                     if ret == -2:
-                        logger.info("context_token expired (ret=-2), probing getupdates for renewal...")
+                        logger.info("context_token expired or inactive (ret=-2), probing getupdates for renewal...")
                         if self._probe_refresh_context():
                             if self.context_token:
                                 msg_payload["context_token"] = self.context_token
@@ -517,6 +541,7 @@ class WeChatClawBot:
                             if res_retry.status_code == 200 and res_retry.json().get("ret", 0) == 0:
                                 self.last_error = None
                                 return True
+                        self.last_error = "微信会话未激活或已过期 (ret=-2)：微信官方机制要求在手机微信中向该机器人发送任意消息（如'你好'或'1'）以激活首次双向通道！"
                     return False
                 else:
                     self.last_error = f"微信网关 HTTP {res.status_code}"
@@ -531,7 +556,7 @@ class WeChatClawBot:
         """轻量探针，调用一次 getupdates 尝试拉取最新的 context_token"""
         if not self.bot_token or self.mock_mode:
             return False
-        url = f"{ILINK_BASE_URL}/ilink/bot/getupdates"
+        url = f"{self.base_url}/ilink/bot/getupdates"
         body = {
             "get_updates_buf": self.get_updates_buf or "",
             "base_info": self._get_base_info(),
@@ -595,7 +620,7 @@ class WeChatClawBot:
         if not self.bot_token:
             return False
 
-        url = f"{ILINK_BASE_URL}/ilink/bot/getupdates"
+        url = f"{self.base_url}/ilink/bot/getupdates"
         body = {
             "get_updates_buf": self.get_updates_buf or "",
             "base_info": self._get_base_info(),
@@ -696,7 +721,7 @@ class WeChatClawBot:
                 time.sleep(5.0)
                 continue
 
-            url = f"{ILINK_BASE_URL}/ilink/bot/getupdates"
+            url = f"{self.base_url}/ilink/bot/getupdates"
             headers = self._get_headers()
             body = {
                 "get_updates_buf": self.get_updates_buf or "",
@@ -717,6 +742,7 @@ class WeChatClawBot:
                                 self.get_updates_buf = new_buf
 
                             msgs = res_json.get("msgs") or []
+                            had_context = bool(self.context_token)
                             for msg in msgs:
                                 if msg.get("context_token"):
                                     self.context_token = msg["context_token"]
@@ -737,6 +763,9 @@ class WeChatClawBot:
                                 if self.status in ("disconnected", "reconnecting"):
                                     self.status = "connected"
                                     self.last_error = None
+                                    self._flush_replay_buffer()
+                                elif not had_context and self.context_token and self.disconnected_queue:
+                                    # 首次微信双向激活完成，立即自动补发之前排队的积压日志
                                     self._flush_replay_buffer()
 
                             if msgs:
@@ -804,6 +833,7 @@ class WeChatClawBot:
             "wechat_nickname": self.wechat_nickname or "未绑定",
             "to_user_id": masked_user_id,
             "has_context": bool(self.context_token),
+            "base_url": self.base_url,
             "masked_token": masked_token,
             "push_count": self.push_count,
             "replayed_count": self.replayed_count,

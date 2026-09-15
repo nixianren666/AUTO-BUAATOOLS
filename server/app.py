@@ -271,6 +271,7 @@ class AccountState:
         wechat_to_user_id: str = "",
         wechat_from_user_id: str = "",
         wechat_get_updates_buf: str = "",
+        wechat_base_url: str = "",
     ):
         self.username = username
         self.name = name or username
@@ -303,6 +304,7 @@ class AccountState:
             to_user_id=wechat_to_user_id,
             from_user_id=wechat_from_user_id,
             get_updates_buf=wechat_get_updates_buf,
+            base_url=wechat_base_url,
             enabled=wechat_enabled,
             on_status_change=lambda: sync_config(),
             on_event_log=lambda lvl, msg, u, n, c: add_log(lvl, msg, u, n, c),
@@ -387,6 +389,7 @@ def sync_config():
         wechat_to = ""
         wechat_from = ""
         wechat_buf = ""
+        wechat_base_url = ""
         if hasattr(acc, "wechat_bot") and acc.wechat_bot:
             wechat_token = encrypt_local_secret(acc.wechat_bot.bot_token) if acc.wechat_bot.bot_token else ""
             wechat_ctx = acc.wechat_bot.context_token or ""
@@ -395,6 +398,7 @@ def sync_config():
             wechat_to = acc.wechat_bot.to_user_id or ""
             wechat_from = acc.wechat_bot.from_user_id or ""
             wechat_buf = acc.wechat_bot.get_updates_buf or ""
+            wechat_base_url = getattr(acc.wechat_bot, "base_url", "")
 
         accounts_data.append({
             "username": acc.username,
@@ -415,6 +419,7 @@ def sync_config():
             "wechat_to_user_id": wechat_to,
             "wechat_from_user_id": wechat_from,
             "wechat_get_updates_buf": wechat_buf,
+            "wechat_base_url": wechat_base_url,
         })
     config["active_username"] = active_username or ""
     config["accounts"] = accounts_data
@@ -510,6 +515,7 @@ async def on_startup():
             wechat_to_user_id=item.get("wechat_to_user_id", ""),
             wechat_from_user_id=item.get("wechat_from_user_id", ""),
             wechat_get_updates_buf=item.get("wechat_get_updates_buf", ""),
+            wechat_base_url=item.get("wechat_base_url", ""),
         )
         accounts[uname] = acc
 
@@ -2080,6 +2086,8 @@ async def get_wechat_status(username: Optional[str] = Query(None)):
                 "is_bound": False,
                 "masked_token": "无",
                 "wechat_nickname": "",
+                "has_context": False,
+                "base_url": "",
                 "push_count": 0,
                 "replayed_count": 0,
                 "buffered_count": 0,
