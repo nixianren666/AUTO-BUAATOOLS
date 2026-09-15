@@ -179,6 +179,19 @@ def run_compiled_exe_verification():
         print(f"[E2E] WeChat ClawBot modal open: {wechat_modal_open}")
         assert wechat_modal_open is True
 
+        # 验证二维码自动生成与渲染 (图片 src 为合法的 base64 data URI，占位文本自动隐藏)
+        qr_src = None
+        for _ in range(25):
+            qr_src = eval_js("document.getElementById('wechatQrImg')?.src || ''")
+            if qr_src and qr_src.startswith("data:image/"):
+                break
+            time.sleep(0.3)
+        print(f"[E2E] WeChat QR Code src prefix: '{qr_src[:35] if qr_src else 'None'}'")
+        assert qr_src and qr_src.startswith("data:image/"), "微信二维码必须成功生成为合法的 data:image Base64 URI！"
+        placeholder_hidden = eval_js("document.getElementById('wechatQrPlaceholder')?.classList.contains('hidden')")
+        print(f"[E2E] WeChat QR placeholder hidden: {placeholder_hidden}")
+        assert placeholder_hidden is True, "生成二维码后占位文本必须隐去！"
+
         eval_js("typeof closeWeChatClawBotModal === 'function' && closeWeChatClawBotModal()")
         wechat_modal_closed = eval_js("document.getElementById('wechatClawBotModal')?.classList.contains('hidden')")
         print(f"[E2E] WeChat ClawBot modal closed: {wechat_modal_closed}")

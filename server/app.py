@@ -2052,7 +2052,21 @@ class WeChatTestPushRequest(BaseModel):
 async def get_wechat_status(username: Optional[str] = Query(None)):
     target_acc = accounts.get(username) if username else get_active_account()
     if not target_acc:
-        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+        return {
+            "status": "success",
+            "username": "default",
+            "name": "当前未登录学生",
+            "wechat": {
+                "enabled": False,
+                "status": "unbound",
+                "is_bound": False,
+                "masked_token": "无",
+                "wechat_nickname": "",
+                "push_count": 0,
+                "replayed_count": 0,
+                "buffered_count": 0,
+            },
+        }
     return {
         "status": "success",
         "username": target_acc.username,
@@ -2065,8 +2079,11 @@ async def get_wechat_status(username: Optional[str] = Query(None)):
 async def create_wechat_qrcode(username: Optional[str] = Query(None)):
     target_acc = accounts.get(username) if username else get_active_account()
     if not target_acc:
-        raise HTTPException(status_code=404, detail="未找到有效学生账号")
-    res = target_acc.wechat_bot.get_binding_qrcode()
+        from core.wechat_clawbot import WeChatClawBot
+        bot = WeChatClawBot(username="default", name="默认学生")
+        res = await asyncio.to_thread(bot.get_binding_qrcode)
+        return res
+    res = await asyncio.to_thread(target_acc.wechat_bot.get_binding_qrcode)
     return res
 
 
@@ -2074,8 +2091,13 @@ async def create_wechat_qrcode(username: Optional[str] = Query(None)):
 async def poll_wechat_qrcode(qrcode_key: str = Query(...), username: Optional[str] = Query(None)):
     target_acc = accounts.get(username) if username else get_active_account()
     if not target_acc:
-        raise HTTPException(status_code=404, detail="未找到有效学生账号")
-    res = target_acc.wechat_bot.poll_qrcode_status(qrcode_key)
+        from core.wechat_clawbot import WeChatClawBot
+        bot = WeChatClawBot(username="default", name="默认学生")
+        res = await asyncio.to_thread(bot.poll_qrcode_status, qrcode_key)
+        return res
+    res = await asyncio.to_thread(target_acc.wechat_bot.poll_qrcode_status, qrcode_key)
+    if res.get("status") == "confirmed":
+        sync_config()
     return res
 
 

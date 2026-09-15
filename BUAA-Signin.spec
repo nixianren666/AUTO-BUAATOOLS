@@ -22,6 +22,8 @@ a = Analysis(
         'core.boya_scheduler',
         'core.autostart',
         'core.wechat_clawbot',
+        'qrcode',
+        'qrcode.image.pil',
         'pystray',
         'pystray._win32',
         'PIL',

@@ -1654,6 +1654,12 @@ async function openWeChatClawBotModal(targetUsername = null) {
   if (modal) modal.classList.remove("hidden");
 
   await loadWeChatStatus();
+
+  // 若当前学生尚未绑定，自动触发二维码获取，无需用户二次点击
+  const currentAcc = (appState.accounts || []).find(a => a.username === appState.wechatTargetUsername);
+  if (!currentAcc || !currentAcc.wechat || !currentAcc.wechat.is_bound) {
+    requestWechatQrCode();
+  }
 }
 
 function closeWeChatClawBotModal() {
@@ -1672,6 +1678,11 @@ async function handleWechatStudentSwitch(uname) {
     wechatPollTimer = null;
   }
   await loadWeChatStatus();
+
+  const currentAcc = (appState.accounts || []).find(a => a.username === uname);
+  if (!currentAcc || !currentAcc.wechat || !currentAcc.wechat.is_bound) {
+    requestWechatQrCode();
+  }
 }
 
 async function loadWeChatStatus() {
@@ -1765,24 +1776,27 @@ function renderWeChatUI(data) {
 }
 
 async function requestWechatQrCode() {
-  const uname = appState.wechatTargetUsername;
-  if (!uname) return;
+  const uname = appState.wechatTargetUsername || "";
 
   const btn = document.getElementById("wechatGetQrBtn");
   const msgEl = document.getElementById("wechatQrStatusMsg");
   const imgEl = document.getElementById("wechatQrImg");
   const placeholderEl = document.getElementById("wechatQrPlaceholder");
 
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳ 正在获取二维码...</span>`;
+  }
   if (msgEl) {
     msgEl.className = "qr-status-msg waiting";
     msgEl.textContent = "正在向腾讯 iLink 官方网关安全申请绑定二维码...";
   }
 
   try {
-    const res = await fetch(`/api/wechat/qrcode?username=${encodeURIComponent(uname)}`, { method: "POST" });
+    const url = uname ? `/api/wechat/qrcode?username=${encodeURIComponent(uname)}` : "/api/wechat/qrcode";
+    const res = await fetch(url, { method: "POST" });
     const data = await res.json();
-    if (data.status === "success" || data.status === "fallback") {
+    if ((data.status === "success" || data.status === "fallback") && (data.qrcode_img_base64 || data.qrcode_url)) {
       const qrSrc = data.qrcode_img_base64 || data.qrcode_url;
       if (imgEl && qrSrc) {
         imgEl.src = qrSrc;
@@ -1793,34 +1807,47 @@ async function requestWechatQrCode() {
         msgEl.className = "qr-status-msg active";
         msgEl.textContent = "请打开手机微信【扫一扫】屏幕中央的二维码进行授权";
       }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🔄 刷新二维码</span>`;
+      }
       // 开始轮询扫码授权状态
       startWechatQrPolling(data.qrcode_key);
     } else {
       if (msgEl) {
         msgEl.className = "qr-status-msg";
-        msgEl.textContent = `获取二维码失败: ${data.message || "接口异常"}`;
+        msgEl.textContent = `获取二维码失败: ${data.message || "接口响应异常"}`;
       }
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>📲 重试获取二维码</span>`;
+      }
     }
   } catch (e) {
     if (msgEl) {
       msgEl.className = "qr-status-msg";
       msgEl.textContent = `网络错误: ${e.message}`;
     }
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>📲 重试获取二维码</span>`;
+    }
   }
 }
 
 function startWechatQrPolling(qrcodeKey) {
   if (wechatPollTimer) clearInterval(wechatPollTimer);
 
-  const uname = appState.wechatTargetUsername;
+  const uname = appState.wechatTargetUsername || "";
   const msgEl = document.getElementById("wechatQrStatusMsg");
   const btn = document.getElementById("wechatGetQrBtn");
 
   wechatPollTimer = setInterval(async () => {
     try {
-      const res = await fetch(`/api/wechat/qrcode_poll?username=${encodeURIComponent(uname)}&qrcode_key=${encodeURIComponent(qrcodeKey)}`);
+      const pollUrl = uname
+        ? `/api/wechat/qrcode_poll?username=${encodeURIComponent(uname)}&qrcode_key=${encodeURIComponent(qrcodeKey)}`
+        : `/api/wechat/qrcode_poll?qrcode_key=${encodeURIComponent(qrcodeKey)}`;
+      const res = await fetch(pollUrl);
       const data = await res.json();
 
       if (data.status === "scanned") {
@@ -1832,7 +1859,10 @@ function startWechatQrPolling(qrcodeKey) {
         clearInterval(wechatPollTimer);
         wechatPollTimer = null;
         showToast("微信绑定成功！已开启实时守护推送", "success");
-        if (btn) btn.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>📲 获取绑定二维码</span>`;
+        }
         await loadWeChatStatus();
         await fetchInitialState();
       } else if (data.status === "expired") {
@@ -1840,12 +1870,15 @@ function startWechatQrPolling(qrcodeKey) {
         wechatPollTimer = null;
         if (msgEl) {
           msgEl.className = "qr-status-msg";
-          msgEl.textContent = "二维码已过期，请重新点击获取二维码";
+          msgEl.textContent = "二维码已过期，请点击下方刷新二维码";
         }
-        if (btn) btn.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>🔄 刷新二维码</span>`;
+        }
       }
     } catch (e) {}
-  }, 1600);
+  }, 2000);
 }
 
 async function handleWechatToggle(enabled) {

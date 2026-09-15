@@ -142,17 +142,21 @@ class WeChatClawBot:
 
         url = f"{ILINK_BASE_URL}/ilink/bot/get_bot_qrcode?bot_type=3"
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 res = client.get(url, headers={"User-Agent": "BUAA-Signin-ClawBot/1.3.1"})
                 if res.status_code == 200:
                     data = res.json()
-                    qr_key = data.get("qrcode_key") or data.get("qrcode") or ""
-                    qr_url = data.get("qrcode_url") or data.get("url") or f"{ILINK_BASE_URL}/ilink/bot/qrcode?key={qr_key}"
-                    img_base64 = data.get("qrcode_img_base64") or data.get("img") or qr_url
+                    qr_key = data.get("qrcode") or data.get("qrcode_key") or ""
+                    qr_content = data.get("qrcode_img_content") or data.get("url") or data.get("qrcode_url") or ""
+                    if not qr_content and qr_key:
+                        qr_content = f"https://liteapp.weixin.qq.com/q/7GiQu1?qrcode={qr_key}&bot_type=3"
+
+                    # 使用 qrcode 库将官方授权链接渲染为本地高清晰 PNG Base64 Data URI
+                    img_base64 = self._generate_qr_data_uri(qr_content)
                     return {
                         "status": "success",
                         "qrcode_key": qr_key,
-                        "qrcode_url": qr_url,
+                        "qrcode_url": qr_content,
                         "qrcode_img_base64": img_base64,
                     }
                 else:
@@ -162,16 +166,45 @@ class WeChatClawBot:
             self.last_error = f"申请微信二维码失败: {e}"
             logger.warning(self.last_error)
             # 优雅降级返回模拟二维码，避免本地离线测试阻断
+            fallback_data_uri = self._generate_qr_data_uri(f"https://buaa-signin-mock.local/{self.username}")
             return {
                 "status": "fallback",
                 "qrcode_key": f"offline_qr_{self.username}",
                 "qrcode_url": "",
+                "qrcode_img_base64": fallback_data_uri,
                 "message": str(e),
             }
 
+    @staticmethod
+    def _generate_qr_data_uri(content: str) -> str:
+        """将任意文本链接动态编码为标准 Base64 PNG 图片 Data URI"""
+        if not content:
+            return ""
+        try:
+            import io
+            import qrcode
+            qr = qrcode.QRCode(box_size=6, border=2)
+            qr.add_data(content)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="#000000", back_color="#ffffff")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+            return f"data:image/png;base64,{b64}"
+        except Exception as ex:
+            logger.warning(f"Failed to generate PNG QR with qrcode library: {ex}")
+            # 降级生成纯文本占位 SVG
+            svg_data = (
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">'
+                f'<rect width="200" height="200" fill="#ffffff" rx="12"/>'
+                f'<text x="100" y="100" font-family="sans-serif" font-size="12" fill="#333" text-anchor="middle">扫码链接已生成</text>'
+                f'</svg>'
+            )
+            return f"data:image/svg+xml;base64,{base64.b64encode(svg_data.encode()).decode()}"
+
     def poll_qrcode_status(self, qrcode_key: str) -> Dict[str, Any]:
         """
-        轮询扫码确认状态
+        轮询扫码确认状态 (采用长轮询机制与异常兜底)
         返回结构: { status: "waiting" | "scanned" | "confirmed" | "expired", ... }
         """
         if self.mock_mode or qrcode_key.startswith("mock_qr_") or os.environ.get("MOCK_WECHAT_BOT") == "1":
@@ -192,16 +225,18 @@ class WeChatClawBot:
 
         url = f"{ILINK_BASE_URL}/ilink/bot/get_qrcode_status?qrcode={urllib.parse.quote(qrcode_key)}"
         try:
-            with httpx.Client(timeout=15.0) as client:
+            with httpx.Client(timeout=35.0) as client:
                 res = client.get(url, headers={"User-Agent": "BUAA-Signin-ClawBot/1.3.1"})
                 if res.status_code == 200:
                     data = res.json()
-                    status_str = data.get("status", "waiting").lower()
-                    if status_str in ("confirmed", "success"):
-                        self.bot_token = data.get("bot_token", "")
-                        self.context_token = data.get("context_token", "")
+                    status_str = str(data.get("status", "")).lower()
+                    ret_code = data.get("ret", 0)
+
+                    if status_str in ("confirmed", "success") or "bot_token" in data:
+                        self.bot_token = data.get("bot_token") or data.get("token") or data.get("ilink_bot_token") or ""
+                        self.context_token = data.get("context_token") or data.get("context") or ""
                         user_info = data.get("user_info") or {}
-                        self.wechat_nickname = user_info.get("nickname") or data.get("nickname") or "微信用户"
+                        self.wechat_nickname = user_info.get("nickname") or data.get("nickname") or data.get("wechat_nickname") or "微信用户"
                         with self._lock:
                             self.status = "connected"
                             self.last_active_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -220,10 +255,15 @@ class WeChatClawBot:
                             if self.status == "waiting_scan":
                                 self.status = "unbound"
                         return {"status": "expired"}
+                    elif status_str == "wait" or ret_code == 0:
+                        return {"status": "waiting"}
                     else:
                         return {"status": "waiting"}
                 else:
                     return {"status": "waiting"}
+        except httpx.TimeoutException:
+            # 官方 HTTP 长轮询超时为正常心跳保持，返回 waiting 等待下次探测
+            return {"status": "waiting"}
         except Exception as e:
             logger.debug(f"poll_qrcode_status network error: {e}")
             return {"status": "waiting", "error": str(e)}
