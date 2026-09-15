@@ -268,6 +268,9 @@ class AccountState:
         wechat_context_token: str = "",
         wechat_nickname: str = "",
         wechat_enabled: bool = True,
+        wechat_to_user_id: str = "",
+        wechat_from_user_id: str = "",
+        wechat_get_updates_buf: str = "",
     ):
         self.username = username
         self.name = name or username
@@ -297,6 +300,9 @@ class AccountState:
             bot_token=wechat_bot_token,
             context_token=wechat_context_token,
             wechat_nickname=wechat_nickname,
+            to_user_id=wechat_to_user_id,
+            from_user_id=wechat_from_user_id,
+            get_updates_buf=wechat_get_updates_buf,
             enabled=wechat_enabled,
             on_status_change=lambda: sync_config(),
             on_event_log=lambda lvl, msg, u, n, c: add_log(lvl, msg, u, n, c),
@@ -378,11 +384,17 @@ def sync_config():
         wechat_ctx = ""
         wechat_nick = ""
         wechat_on = True
+        wechat_to = ""
+        wechat_from = ""
+        wechat_buf = ""
         if hasattr(acc, "wechat_bot") and acc.wechat_bot:
             wechat_token = encrypt_local_secret(acc.wechat_bot.bot_token) if acc.wechat_bot.bot_token else ""
             wechat_ctx = acc.wechat_bot.context_token or ""
             wechat_nick = acc.wechat_bot.wechat_nickname or ""
             wechat_on = acc.wechat_bot.enabled
+            wechat_to = acc.wechat_bot.to_user_id or ""
+            wechat_from = acc.wechat_bot.from_user_id or ""
+            wechat_buf = acc.wechat_bot.get_updates_buf or ""
 
         accounts_data.append({
             "username": acc.username,
@@ -400,6 +412,9 @@ def sync_config():
             "wechat_context_token": wechat_ctx,
             "wechat_nickname": wechat_nick,
             "wechat_enabled": wechat_on,
+            "wechat_to_user_id": wechat_to,
+            "wechat_from_user_id": wechat_from,
+            "wechat_get_updates_buf": wechat_buf,
         })
     config["active_username"] = active_username or ""
     config["accounts"] = accounts_data
@@ -492,6 +507,9 @@ async def on_startup():
             wechat_context_token=item.get("wechat_context_token", ""),
             wechat_nickname=item.get("wechat_nickname", ""),
             wechat_enabled=item.get("wechat_enabled", True),
+            wechat_to_user_id=item.get("wechat_to_user_id", ""),
+            wechat_from_user_id=item.get("wechat_from_user_id", ""),
+            wechat_get_updates_buf=item.get("wechat_get_updates_buf", ""),
         )
         accounts[uname] = acc
 
@@ -2134,16 +2152,17 @@ async def test_wechat_push(req: Optional[WeChatTestPushRequest] = None):
     target_acc = accounts.get(target_uname) if target_uname else get_active_account()
     if not target_acc:
         raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    res = await asyncio.to_thread(target_acc.wechat_bot.send_test_message)
     add_log(
-        "info",
-        f"【{target_acc.name}】这是一条微信 ClawBot 实时测试推送日志！当前通道运行正常。",
+        "info" if res.get("status") == "success" else "warning",
+        f"【{target_acc.name}】微信实时推送测试: {res.get('message')}",
         username=target_acc.username,
         user_name=target_acc.name,
         category="wechat",
     )
     return {
-        "status": "success",
-        "message": "测试日志已分发并尝试通过微信推送",
+        "status": res.get("status", "success"),
+        "message": res.get("message", "测试消息已执行"),
         "wechat": target_acc.wechat_bot.to_dict(),
     }
 

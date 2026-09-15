@@ -7,7 +7,9 @@ WeChat ClawBot 独立单元测试套件
 3. 断连智能识别与消息外发保护机制 (Zero-Flood Protection)
 4. 断连重放缓冲区 (Disconnect Replay Buffer) 积压与自动补发回放
 5. 解除绑定生命周期完整性
-6. RESTful Web API 接口契约与异常响应
+6. 严格按腾讯官方 OpenClaw / iLink 规范验证 sendMessage 发包结构与 ret 状态码校验
+7. getupdates 长轮询与 context_token / to_user_id 动态续期
+8. RESTful Web API 接口契约与异常响应
 """
 
 import os
@@ -20,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from core.wechat_clawbot import WeChatClawBot
+from core.wechat_clawbot import WeChatClawBot, ILINK_BASE_URL
 from server.app import app, accounts, AccountState, add_log, logs_list
 from fastapi.testclient import TestClient
 
@@ -59,6 +61,7 @@ class TestWeChatClawBot(unittest.TestCase):
         self.assertTrue(bot.to_dict()["is_bound"])
         self.assertEqual(bot.wechat_nickname, "微信用户_测试张三")
         self.assertTrue(bot.bot_token.startswith("mock_token_23371001"))
+        self.assertEqual(bot.to_user_id, "mock_user_23371001@im.wechat")
 
     def test_multi_student_independent_binding_isolation(self):
         """测试多学生账号完全独立绑定与总日志定向投递"""
@@ -170,6 +173,8 @@ class TestWeChatClawBot(unittest.TestCase):
             bot_token="test_token",
             context_token="test_ctx",
             wechat_nickname="张三的微信号",
+            to_user_id="user123@im.wechat",
+            from_user_id="bot123@im.bot",
             mock_mode=True
         )
         bot.disconnected_queue.append({"time": "12:00:00", "level": "info", "message": "待发日志"})
@@ -180,8 +185,73 @@ class TestWeChatClawBot(unittest.TestCase):
         self.assertEqual(bot.bot_token, "")
         self.assertEqual(bot.context_token, "")
         self.assertEqual(bot.wechat_nickname, "")
+        self.assertEqual(bot.to_user_id, "")
+        self.assertEqual(bot.from_user_id, "")
         self.assertEqual(len(bot.disconnected_queue), 0)
         self.assertFalse(bot.to_dict()["is_bound"])
+
+    def test_official_ilink_sendmessage_payload_and_ret_code(self):
+        """严格按腾讯官方 iLink 规范验证 sendmessage 报文嵌套结构与 ret 校验"""
+        bot = WeChatClawBot(
+            username="23371001",
+            name="测试张三",
+            bot_token="real_test_bot_token",
+            context_token="real_test_ctx_token",
+            to_user_id="test_user@im.wechat",
+            from_user_id="test_bot@im.bot",
+            mock_mode=False,
+        )
+
+        old_mock = os.environ.pop("MOCK_WECHAT_BOT", None)
+        try:
+            with patch("httpx.Client.post") as mock_post:
+                # 1. 模拟腾讯 iLink 官方返回成功 (ret=0)
+                mock_resp_success = MagicMock()
+                mock_resp_success.status_code = 200
+                mock_resp_success.json.return_value = {"ret": 0, "errmsg": "ok"}
+                mock_post.return_value = mock_resp_success
+
+                ok = bot._send_text_message("测试消息内容")
+                self.assertTrue(ok)
+
+                # 验证请求参数严格对齐官方规范
+                call_args, call_kwargs = mock_post.call_args
+                self.assertIn("/ilink/bot/sendmessage", call_args[0])
+                headers = call_kwargs["headers"]
+                self.assertEqual(headers["AuthorizationType"], "ilink_bot_token")
+                self.assertEqual(headers["Authorization"], "Bearer real_test_bot_token")
+                self.assertEqual(headers["iLink-App-Id"], "bot")
+                self.assertEqual(headers["iLink-App-ClientVersion"], "132104")
+                self.assertIn("X-WECHAT-UIN", headers)
+
+                body = call_kwargs["json"]
+                self.assertIn("msg", body)
+                self.assertIn("base_info", body)
+                self.assertEqual(body["base_info"]["channel_version"], "2.4.8")
+
+                msg = body["msg"]
+                self.assertEqual(msg["to_user_id"], "test_user@im.wechat")
+                self.assertEqual(msg["from_user_id"], "test_bot@im.bot")
+                self.assertEqual(msg["message_type"], 2)  # MessageType.BOT
+                self.assertEqual(msg["message_state"], 2)  # MessageState.FINISH
+                self.assertEqual(msg["context_token"], "real_test_ctx_token")
+                self.assertTrue(msg["client_id"].startswith("ubaa_"))
+                self.assertEqual(len(msg["item_list"]), 1)
+                self.assertEqual(msg["item_list"][0]["type"], 1)  # MessageItemType.TEXT
+                self.assertEqual(msg["item_list"][0]["text_item"]["text"], "测试消息内容")
+
+                # 2. 模拟腾讯返回业务拒绝 (ret=-1), 杜绝假成功！
+                mock_resp_fail = MagicMock()
+                mock_resp_fail.status_code = 200
+                mock_resp_fail.json.return_value = {"ret": -1, "errmsg": "invalid user"}
+                mock_post.return_value = mock_resp_fail
+
+                fail_ok = bot._send_text_message("测试被拒消息")
+                self.assertFalse(fail_ok, "当 ret!=0 时必须返回 False，严禁误判为成功！")
+                self.assertIn("ret=-1", bot.last_error)
+        finally:
+            if old_mock is not None:
+                os.environ["MOCK_WECHAT_BOT"] = old_mock
 
     def test_wechat_api_endpoints_contract(self):
         """测试 Web RESTful API 端点全链路契约"""

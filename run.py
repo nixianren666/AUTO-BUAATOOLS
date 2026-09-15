@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-BUAA 课程独立签到助手 v1.3.1 - 原生独立应用入口
+BUAA 课程独立签到助手 v1.3.2 - 原生独立应用入口
 - 原生独立桌面窗口 (pywebview / Edge Chromium WebView2)
 - Windows 任务栏系统托盘常驻 (pystray)
 - 窗口右上角关闭拦截并最小化至托盘
@@ -53,7 +54,7 @@ except Exception:
 
 from PIL import Image, ImageDraw
 
-APP_TITLE = "BUAA 课程签到 Pro v1.3.1"
+APP_TITLE = "BUAA 课程签到 Pro v1.3.2"
 DEFAULT_PORT = 18346
 
 window = None
@@ -334,7 +335,7 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title="BUAA 课程独立签到助手 v1.3.1 (后台运行中)",
+            title="BUAA 课程独立签到助手 v1.3.2 (后台运行中)",
             menu=tray_menu,
         )
         if run_now:
