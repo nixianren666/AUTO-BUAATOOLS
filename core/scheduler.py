@@ -218,6 +218,14 @@ class SigninScheduler:
                             username=username,
                             user_name=user_name,
                         )
+                        # 步骤完成铁律：签到成功后立即向学校拉取最新课表，即刻刷新内存与界面状态
+                        try:
+                            refreshed_classes = await client.get_today_classes()
+                            if acc_obj and refreshed_classes is not None:
+                                acc_obj.last_classes = refreshed_classes
+                                acc_obj.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                        except Exception as ref_err:
+                            logger.debug(f"Post-signin schedule refresh error for {username}: {ref_err}")
                     else:
                         self.retry_counts[key] = attempt_num
                         if attempt_num < 3:

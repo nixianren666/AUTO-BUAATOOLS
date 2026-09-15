@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initModalBackdrops();
   fetchInitialState();
   startLogsPolling();
+  startActiveViewAutoRefresh();
 });
 
 // 模态弹窗蒙层点击与 ESC 快捷关闭
@@ -211,7 +212,7 @@ function updateUIElements() {
 
 // ==================== 1. 常规课堂考勤逻辑 ====================
 
-async function fetchClasses() {
+async function fetchClasses(isSilent = false) {
   try {
     const res = await fetch("/api/classes");
     const data = await res.json();
@@ -220,7 +221,7 @@ async function fetchClasses() {
       renderClassesList(data.classes);
     }
   } catch (e) {
-    console.error("fetchClasses error:", e);
+    if (!isSilent) console.error("fetchClasses error:", e);
   }
 }
 
@@ -1079,7 +1080,42 @@ async function fetchLogs() {
     if (isAtBottom) {
       container.scrollTop = container.scrollHeight;
     }
+
+    // 事件驱动即时刷新：一旦检测到签到/签退/选课/退课等关键动作成功日志，即刻拉取最新课表与博雅状态
+    if (logs.length > 0) {
+      const topLog = logs[logs.length - 1];
+      const topSig = `${topLog.time}_${topLog.message}`;
+      if (topSig !== appState.lastSeenLogSig) {
+        appState.lastSeenLogSig = topSig;
+        const msg = topLog.message || "";
+        if (msg.includes("签到成功") || msg.includes("签退成功")) {
+          fetchClasses(true);
+          fetchBoyaData(false);
+        } else if (msg.includes("抢中") || msg.includes("退选成功") || msg.includes("已退选")) {
+          fetchBoyaData(false);
+        }
+      }
+    }
   } catch (e) {}
+}
+
+// 活跃视板块静默保活自动同步（25秒周期与窗口切回自适应）
+function startActiveViewAutoRefresh() {
+  setInterval(() => {
+    if (appState.currentMainView === "regular") {
+      fetchClasses(true);
+    } else if (appState.currentMainView === "boya") {
+      fetchBoyaData(false);
+    }
+  }, 25000);
+
+  window.addEventListener("focus", () => {
+    if (appState.currentMainView === "regular") {
+      fetchClasses(true);
+    } else if (appState.currentMainView === "boya") {
+      fetchBoyaData(false);
+    }
+  });
 }
 
 async function clearLogs() {
