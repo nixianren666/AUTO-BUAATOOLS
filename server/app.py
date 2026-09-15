@@ -844,6 +844,14 @@ async def perform_signin(req: SigninRequest):
     success, msg = await target_acc.client.perform_signin(req.course_id)
     if success:
         add_log("success", f"【{target_acc.name}】排课 [{req.course_id}] 签到成功: {msg}", username=target_acc.username, user_name=target_acc.name)
+        # 步骤完成铁律：签到成功后立即向学校拉取最新课表，即时更新内存与前台状态
+        try:
+            refreshed = await target_acc.client.get_today_classes()
+            if refreshed is not None:
+                target_acc.last_classes = refreshed
+                target_acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+        except Exception as ref_err:
+            logger.debug(f"Post manual signin schedule refresh error: {ref_err}")
     else:
         add_log("warning", f"【{target_acc.name}】排课 [{req.course_id}] 签到反馈: {msg}", username=target_acc.username, user_name=target_acc.name)
 
@@ -1712,6 +1720,13 @@ async def sign_boya_course(req: BoyaSignRequest):
         record_key = f"{acc.username}_{'signout' if req.sign_type == 2 else 'sign'}_{req.course_id}_{today_str}"
         boya_scheduler.done_records.add(record_key)
         add_log("success", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 手动{action_text}成功！微扰定位坐标: ({lat}, {lng})", username=acc.username, user_name=acc.name, category="boya")
+        # 步骤完成铁律：博雅签到/签退成功后立即向系统拉取最新已选列表与学分统计，即时刷新内存
+        try:
+            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
+            acc.boya_statistics = acc.boya_client.query_statistics()
+            acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+        except Exception as ref_err:
+            logger.debug(f"Post manual boya sign refresh error: {ref_err}")
         return {"status": "success", "result": res}
     except Exception as e:
         add_log("warning", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 手动{action_text}反馈: {e}", username=acc.username, user_name=acc.name, category="boya")

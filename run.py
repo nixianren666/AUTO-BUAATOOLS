@@ -1,5 +1,5 @@
 """
-BUAA 课程独立签到助手 v1.2.2 - 原生独立应用入口
+BUAA 课程独立签到助手 v1.2.6 - 原生独立应用入口
 - 原生独立桌面窗口 (pywebview / Edge Chromium WebView2)
 - Windows 任务栏系统托盘常驻 (pystray)
 - 窗口右上角关闭拦截并最小化至托盘
@@ -53,7 +53,7 @@ except Exception:
 
 from PIL import Image, ImageDraw
 
-APP_TITLE = "BUAA 课程签到 Pro v1.2.5"
+APP_TITLE = "BUAA 课程签到 Pro v1.2.6"
 DEFAULT_PORT = 18346
 
 window = None
@@ -310,7 +310,7 @@ else:
             pass
 
 
-def setup_tray() -> Optional[Any]:
+def setup_tray(run_now: bool = True) -> Optional[Any]:
     """
     初始化系统托盘：
     - Windows: 支持左键单击唤醒与右键菜单
@@ -334,10 +334,11 @@ def setup_tray() -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title="BUAA 课程独立签到助手 v1.2.2 (后台运行中)",
+            title="BUAA 课程独立签到助手 v1.2.6 (后台运行中)",
             menu=tray_menu,
         )
-        icon.run_detached()
+        if run_now:
+            icon.run_detached()
         return icon
     except Exception as te:
         print(f"系统托盘创建跳过: {te}")

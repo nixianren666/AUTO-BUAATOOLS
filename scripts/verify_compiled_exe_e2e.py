@@ -174,8 +174,14 @@ def run_compiled_exe_verification():
 
         ws_sock.close()
     finally:
-        proc_edge.terminate()
-        proc_exe.terminate()
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc_edge.pid)], capture_output=True)
+        except Exception:
+            proc_edge.terminate()
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc_exe.pid)], capture_output=True)
+        except Exception:
+            proc_exe.terminate()
         shutil.rmtree(user_data_dir, ignore_errors=True)
 
 if __name__ == "__main__":

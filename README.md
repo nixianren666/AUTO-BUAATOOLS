@@ -1,4 +1,4 @@
-# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.2.5)
+# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.2.6)
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 **北航师生专属的轻量化、多账号并发守护、博雅抢课打卡、Origin 极简质感全平台客户端**
 
-[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
+[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)

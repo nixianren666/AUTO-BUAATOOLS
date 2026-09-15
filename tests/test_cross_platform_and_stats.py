@@ -184,12 +184,11 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         """测试托盘菜单配置：必须包含【显示主界面】与【退出应用】，杜绝 macOS 死锁"""
         import run
         if run.pystray is not None:
-            tray = run.setup_tray()
+            tray = run.setup_tray(run_now=False)
             if tray and hasattr(tray, "menu") and tray.menu is not None:
                 item_texts = [str(item.text) for item in tray.menu.items]
                 self.assertIn("显示主界面", item_texts, "托盘必须包含恢复窗口菜单项")
                 self.assertIn("退出应用", item_texts, "托盘必须包含退出应用菜单项")
-                tray.stop()
 
     def test_macos_spec_and_scripts_integrity(self):
         """跨平台检查：macOS 打包 spec 与 Gatekeeper 修复脚本语法与完整性"""

@@ -302,6 +302,14 @@ class TestUIInteractions(unittest.TestCase):
             server.should_exit = True
             server.force_exit = True
             server_thread.join(timeout=1)
+            for acc in list(accounts.values()):
+                try:
+                    if hasattr(acc, "client") and hasattr(acc.client, "client"):
+                        acc.client.client.close()
+                    if hasattr(acc, "boya_client") and hasattr(acc.boya_client, "http_client"):
+                        acc.boya_client.http_client.close()
+                except Exception:
+                    pass
             accounts.clear()
             accounts.update(orig_accounts)
             config["disclaimer_accepted"] = orig_disclaimer

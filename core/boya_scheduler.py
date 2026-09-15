@@ -314,6 +314,8 @@ class BoyaScheduler:
         self.last_pool_sync_times: Dict[str, float] = {}
         # 记录各账号课池巡检日志心跳输出时间戳：username -> float
         self.last_inspect_log_times: Dict[str, float] = {}
+        # 记录各账号课池守护总览日志是否已输出过（每个账号仅输出首条，彻底杜绝10分钟无意义重复刷屏）：username
+        self.logged_pool_summary: Set[str] = set()
 
     def start(self, interval_seconds: int = 60) -> None:
         if self.running:
@@ -332,6 +334,7 @@ class BoyaScheduler:
         self._stop_event.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=2.0)
+        self.logged_pool_summary.clear()
         self.add_log("info", "博雅自动化守护任务已停止", category="boya")
 
     def _run_loop(self) -> None:
@@ -565,9 +568,9 @@ class BoyaScheduler:
         demands = get_user_category_demands(enrolled_courses, sem_start, sem_end)
         candidates.sort(key=lambda c: calculate_candidate_priority(c, demands), reverse=True)
 
-        # 周期性（每 10 分钟或初次启动时）向个人日志输出守护态势心跳
-        last_log = self.last_inspect_log_times.get(username, 0)
-        if time.time() - last_log > 600 or last_log == 0:
+        # 仅在初次开启或初次课池同步时向个人日志输出一条守护态势总览，后续每 10 分钟在后台静默巡检，彻底杜绝刷屏
+        if username not in self.logged_pool_summary:
+            self.logged_pool_summary.add(username)
             self.last_inspect_log_times[username] = time.time()
             guard_note = f"，{offline_count}门非线上打卡安全排除" if offline_count > 0 or require_auto_sign else ""
             self.add_log(
@@ -773,6 +776,13 @@ class BoyaScheduler:
                             user_name=user_name,
                             category="boya",
                         )
+                        # 步骤完成铁律：自动签到成功后立即同步最新已选列表与学分统计
+                        try:
+                            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
+                            acc.boya_statistics = acc.boya_client.query_statistics()
+                            acc.boya_last_refresh_time = datetime.now().strftime("%H:%M:%S")
+                        except Exception as ref_err:
+                            logger.debug(f"Post-signin Boya refresh error for {username}: {ref_err}")
                     except Exception as e:
                         err_msg = str(e)
                         if any(kw in err_msg for kw in ["已签到", "不能重复", "已完成"]):
@@ -832,6 +842,13 @@ class BoyaScheduler:
                             user_name=user_name,
                             category="boya",
                         )
+                        # 步骤完成铁律：自动签退成功后立即同步最新已选列表与学分统计
+                        try:
+                            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
+                            acc.boya_statistics = acc.boya_client.query_statistics()
+                            acc.boya_last_refresh_time = datetime.now().strftime("%H:%M:%S")
+                        except Exception as ref_err:
+                            logger.debug(f"Post-signout Boya refresh error for {username}: {ref_err}")
                     except Exception as e:
                         err_msg = str(e)
                         if any(kw in err_msg for kw in ["已签退", "不能重复", "已完成"]):
