@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BUAA 课程签到 Pro - Origin v1.2.6</title>
+  <title>BUAA 课程签到 Pro - Origin v1.3.1</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.2.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.3.1">
 </head>
 <body class="origin-theme">
   <!-- Gemini iOS 风格背景：底层流动光斑与星尘粒子 -->
@@ -29,7 +29,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.2.6</span>
+            <span class="origin-tag">v1.3.1</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -63,6 +63,14 @@
           </span>
           <span class="nav-item-title">学生账号中心</span>
           <span class="nav-badge" id="navBadgeAccounts">0</span>
+        </button>
+
+        <button class="origin-nav-item" id="navBtnWechat" onclick="openWeChatClawBotModal()">
+          <span class="nav-item-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 13.5A5.5 5.5 0 1 1 14 8c0 .82-.18 1.6-.5 2.3L15 13l-2.7-.5A5.47 5.47 0 0 1 8.5 13.5z"></path><path d="M15.5 10.5a4.5 4.5 0 1 1 4.5 4.5c-.5 0-1-.1-1.5-.2L16 16l.5-1.8a4.4 4.4 0 0 1-1-3.7z"></path></svg>
+          </span>
+          <span class="nav-item-title">微信 ClawBot</span>
+          <span class="origin-status-dot gray" id="navDotWechat" title="微信未绑定"></span>
         </button>
 
         <button class="origin-nav-item" id="navBtnLogs" onclick="switchMainView('logs')">
@@ -440,6 +448,112 @@
       </div>
     </div>
 
+    <!-- 模态框：微信 ClawBot 实时推送管理中心 -->
+    <div class="origin-modal-backdrop hidden" id="wechatClawBotModal">
+      <div class="origin-modal-dialog wechat-dialog" style="max-width: 580px;">
+        <div class="modal-header">
+          <div class="disclaimer-title-row">
+            <span class="disclaimer-badge" style="background: rgba(7, 193, 96, 0.15); color: #07c160; border-color: rgba(7, 193, 96, 0.3);">WECHAT ILINK</span>
+            <h3 class="modal-title">微信 ClawBot 实时推送系统</h3>
+          </div>
+          <button class="origin-icon-btn" onclick="closeWeChatClawBotModal()">✕</button>
+        </div>
+        <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+          <!-- 当前关联学生标识栏 -->
+          <div class="wechat-student-bar">
+            <div class="wechat-student-meta">
+              <span class="student-label">当前守护学生:</span>
+              <strong class="student-val" id="wechatTargetStudentName">--</strong>
+              <span class="student-uid" id="wechatTargetStudentUid">(--)</span>
+            </div>
+            <select class="origin-select" id="wechatStudentSelect" onchange="handleWechatStudentSwitch(this.value)" style="padding: 4px 10px; font-size: 12px; height: 32px;">
+            </select>
+          </div>
+
+          <!-- 微信绑定状态主卡片 -->
+          <div class="wechat-status-card" id="wechatStatusCard">
+            <div class="wechat-card-top">
+              <div class="wechat-icon-wrap">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="#07c160"><path d="M8.5 13.5A5.5 5.5 0 1 1 14 8c0 .82-.18 1.6-.5 2.3L15 13l-2.7-.5A5.47 5.47 0 0 1 8.5 13.5z"></path><path d="M15.5 10.5a4.5 4.5 0 1 1 4.5 4.5c-.5 0-1-.1-1.5-.2L16 16l.5-1.8a4.4 4.4 0 0 1-1-3.7z"></path></svg>
+              </div>
+              <div class="wechat-card-info">
+                <div class="wechat-user-row">
+                  <span class="wechat-nick" id="wechatNickDisplay">微信未绑定</span>
+                  <span class="wechat-status-pill gray" id="wechatStatusPill">未绑定</span>
+                </div>
+                <div class="wechat-token-row">
+                  <span class="token-label">智联凭证:</span>
+                  <span class="token-val" id="wechatTokenDisplay">无</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 统计数据格 -->
+            <div class="wechat-stats-grid">
+              <div class="wechat-stat-box">
+                <div class="stat-num" id="wechatPushCount">0</div>
+                <div class="stat-lbl">实时推送总条数</div>
+              </div>
+              <div class="wechat-stat-box">
+                <div class="stat-num" id="wechatReplayedCount">0</div>
+                <div class="stat-lbl">断连重放补发数</div>
+              </div>
+              <div class="wechat-stat-box">
+                <div class="stat-num" id="wechatBufferedCount">0</div>
+                <div class="stat-lbl">当前积压保护数</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 二维码扫描绑定区 (未绑定或更换绑定时展示) -->
+          <div class="wechat-qr-section" id="wechatQrSection">
+            <div class="qr-box-wrapper">
+              <div class="qr-image-box" id="wechatQrImageBox">
+                <div class="qr-placeholder" id="wechatQrPlaceholder">
+                  <span>点击下方按钮获取专属扫码二维码</span>
+                </div>
+                <img id="wechatQrImg" class="hidden" alt="微信绑定二维码" style="width: 180px; height: 180px; border-radius: 8px;">
+              </div>
+              <div class="qr-status-msg" id="wechatQrStatusMsg">请点击“获取绑定二维码”进行扫码授权</div>
+              <div class="qr-action-row">
+                <button type="button" class="origin-btn origin-btn-primary" id="wechatGetQrBtn" onclick="requestWechatQrCode()">
+                  <span>📲 获取绑定二维码</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 控制设置区 (已绑定时展示) -->
+          <div class="wechat-controls-section" id="wechatControlsSection">
+            <div class="wechat-toggle-card">
+              <div class="toggle-info">
+                <span class="toggle-title">微信实时推送总日志</span>
+                <span class="toggle-desc">包含常规考勤打卡、博雅秒抢、线上签到签退、断连重放与系统异常报警</span>
+              </div>
+              <label class="origin-switch">
+                <input type="checkbox" id="wechatPushToggle" onchange="handleWechatToggle(this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="wechat-actions-row">
+              <button type="button" class="origin-btn origin-btn-ghost" onclick="testWechatPush()" id="wechatTestBtn">
+                <span>🔔 发送测试通知</span>
+              </button>
+              <button type="button" class="origin-btn origin-btn-danger" onclick="unbindWechat()" id="wechatUnbindBtn">
+                <span>❌ 解除绑定</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 安全合规提示卡 -->
+          <div class="origin-callout" style="margin-top: 14px; font-size: 11px; line-height: 1.6;">
+            <strong>🛡️ 腾讯官方 iLink 智联协议保障：</strong>本程序严格接入腾讯微信官方 <code>ilinkai.weixin.qq.com</code> 安全网关，非逆向非外挂，零封号风险；支持<strong>断连识别与消息外发保护</strong>，网络恢复后<strong>自动回放补发积压日志</strong>。
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 模态框：手动 ID 签到 -->
     <div class="origin-modal-backdrop hidden" id="manualSignModal">
       <div class="origin-modal-dialog">
@@ -471,7 +585,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.2.5</span>
+          <span class="origin-version">v1.3.1</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
@@ -514,6 +628,6 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/app.js?v=1.2.6"></script>
+  <script src="/static/js/app.js?v=1.3.1"></script>
 </body>
 </html>

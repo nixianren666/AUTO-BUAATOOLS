@@ -24,6 +24,7 @@ from core.scheduler import SigninScheduler
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
 from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius, get_current_semester_range
 from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
+from core.wechat_clawbot import WeChatClawBot
 
 
 def resolve_config_path() -> pathlib.Path:
@@ -143,6 +144,8 @@ def load_config() -> Dict[str, Any]:
                     for acc in data.get("accounts", []):
                         if acc.get("password"):
                             acc["password"] = decrypt_local_secret(acc["password"])
+                        if acc.get("wechat_bot_token"):
+                            acc["wechat_bot_token"] = decrypt_local_secret(acc["wechat_bot_token"])
                 return data
         except Exception:
             pass
@@ -232,6 +235,20 @@ def add_log(
     if len(logs_list) > 1000:
         logs_list.pop(0)
 
+    # 微信 ClawBot 实时总日志流式分发器 (多学生独立推送 + 全局广播分流)
+    try:
+        if username and username in accounts:
+            bot = getattr(accounts[username], "wechat_bot", None)
+            if bot and bot.enabled and bot.status != "unbound":
+                bot.push_log(entry)
+        elif not username:
+            for acc in accounts.values():
+                bot = getattr(acc, "wechat_bot", None)
+                if bot and bot.enabled and bot.status != "unbound":
+                    bot.push_log(entry)
+    except Exception as wechat_err:
+        logger.debug(f"WeChat log dispatch error: {wechat_err}")
+
 
 class AccountState:
     def __init__(
@@ -247,6 +264,10 @@ class AccountState:
         boya_require_auto_sign: bool = True,
         boya_allow_offline: bool = False,
         campus: str = "北京",
+        wechat_bot_token: str = "",
+        wechat_context_token: str = "",
+        wechat_nickname: str = "",
+        wechat_enabled: bool = True,
     ):
         self.username = username
         self.name = name or username
@@ -268,6 +289,19 @@ class AccountState:
         self.boya_statistics: Optional[Dict[str, Any]] = None
         self.boya_last_refresh_time: Optional[str] = None
         self._is_connecting: bool = False
+
+        # 每个学生账号专属的独立微信 ClawBot 守护实例
+        self.wechat_bot = WeChatClawBot(
+            username=self.username,
+            name=self.name,
+            bot_token=wechat_bot_token,
+            context_token=wechat_context_token,
+            wechat_nickname=wechat_nickname,
+            enabled=wechat_enabled,
+            on_status_change=lambda: sync_config(),
+            on_event_log=lambda lvl, msg, u, n, c: add_log(lvl, msg, u, n, c),
+            mock_mode=bool(os.environ.get("TESTING") == "1" or os.environ.get("MOCK_WECHAT_BOT") == "1"),
+        )
 
     def to_dict(self, is_active: bool = False) -> Dict[str, Any]:
         return {
@@ -291,6 +325,7 @@ class AccountState:
             "boya_course_count": len(self.boya_all_courses) if self.boya_all_courses is not None else 0,
             "boya_selected_count": len(self.boya_selected_courses) if self.boya_selected_courses is not None else 0,
             "boya_last_refresh_time": self.boya_last_refresh_time,
+            "wechat": self.wechat_bot.to_dict() if hasattr(self, "wechat_bot") else None,
         }
 
 
@@ -339,6 +374,16 @@ def sync_config():
     accounts_data = []
     for acc in accounts.values():
         stored_pwd = encrypt_local_secret(acc.password) if (acc.remember and acc.password) else ""
+        wechat_token = ""
+        wechat_ctx = ""
+        wechat_nick = ""
+        wechat_on = True
+        if hasattr(acc, "wechat_bot") and acc.wechat_bot:
+            wechat_token = encrypt_local_secret(acc.wechat_bot.bot_token) if acc.wechat_bot.bot_token else ""
+            wechat_ctx = acc.wechat_bot.context_token or ""
+            wechat_nick = acc.wechat_bot.wechat_nickname or ""
+            wechat_on = acc.wechat_bot.enabled
+
         accounts_data.append({
             "username": acc.username,
             "name": acc.name,
@@ -351,6 +396,10 @@ def sync_config():
             "boya_require_auto_sign": getattr(acc, "boya_require_auto_sign", True),
             "boya_allow_offline": getattr(acc, "boya_allow_offline", False),
             "campus": getattr(acc, "campus", "北京"),
+            "wechat_bot_token": wechat_token,
+            "wechat_context_token": wechat_ctx,
+            "wechat_nickname": wechat_nick,
+            "wechat_enabled": wechat_on,
         })
     config["active_username"] = active_username or ""
     config["accounts"] = accounts_data
@@ -439,6 +488,10 @@ async def on_startup():
             boya_require_auto_sign=item.get("boya_require_auto_sign", True),
             boya_allow_offline=item.get("boya_allow_offline", False),
             campus=item.get("campus", "北京"),
+            wechat_bot_token=item.get("wechat_bot_token", ""),
+            wechat_context_token=item.get("wechat_context_token", ""),
+            wechat_nickname=item.get("wechat_nickname", ""),
+            wechat_enabled=item.get("wechat_enabled", True),
         )
         accounts[uname] = acc
 
@@ -1983,6 +2036,107 @@ async def boya_strategy_alias(req: BoyaToggleAutoRequest):
 @app.get("/api/boya/logs")
 async def get_boya_logs(username: Optional[str] = Query(None)):
     return await get_logs(username=username, category="boya")
+
+# ==================== 微信 ClawBot 智联交互路由 ====================
+
+class WeChatToggleRequest(BaseModel):
+    enabled: bool
+    username: Optional[str] = None
+
+
+class WeChatTestPushRequest(BaseModel):
+    username: Optional[str] = None
+
+
+@app.get("/api/wechat/status")
+async def get_wechat_status(username: Optional[str] = Query(None)):
+    target_acc = accounts.get(username) if username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    return {
+        "status": "success",
+        "username": target_acc.username,
+        "name": target_acc.name,
+        "wechat": target_acc.wechat_bot.to_dict(),
+    }
+
+
+@app.post("/api/wechat/qrcode")
+async def create_wechat_qrcode(username: Optional[str] = Query(None)):
+    target_acc = accounts.get(username) if username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    res = target_acc.wechat_bot.get_binding_qrcode()
+    return res
+
+
+@app.get("/api/wechat/qrcode_poll")
+async def poll_wechat_qrcode(qrcode_key: str = Query(...), username: Optional[str] = Query(None)):
+    target_acc = accounts.get(username) if username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    res = target_acc.wechat_bot.poll_qrcode_status(qrcode_key)
+    return res
+
+
+@app.post("/api/wechat/toggle")
+async def toggle_wechat_push(req: WeChatToggleRequest):
+    target_acc = accounts.get(req.username) if req.username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    target_acc.wechat_bot.set_enabled(req.enabled)
+    sync_config()
+    return {
+        "status": "success",
+        "enabled": req.enabled,
+        "wechat": target_acc.wechat_bot.to_dict(),
+    }
+
+
+@app.post("/api/wechat/unbind")
+async def unbind_wechat_account(username: Optional[str] = Query(None)):
+    target_acc = accounts.get(username) if username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    target_acc.wechat_bot.unbind()
+    sync_config()
+    return {
+        "status": "success",
+        "wechat": target_acc.wechat_bot.to_dict(),
+    }
+
+
+@app.post("/api/wechat/test_push")
+async def test_wechat_push(req: Optional[WeChatTestPushRequest] = None):
+    target_uname = req.username if (req and req.username) else None
+    target_acc = accounts.get(target_uname) if target_uname else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    add_log(
+        "info",
+        f"【{target_acc.name}】这是一条微信 ClawBot 实时测试推送日志！当前通道运行正常。",
+        username=target_acc.username,
+        user_name=target_acc.name,
+        category="wechat",
+    )
+    return {
+        "status": "success",
+        "message": "测试日志已分发并尝试通过微信推送",
+        "wechat": target_acc.wechat_bot.to_dict(),
+    }
+
+
+@app.get("/api/wechat/buffer")
+async def get_wechat_buffer(username: Optional[str] = Query(None)):
+    target_acc = accounts.get(username) if username else get_active_account()
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="未找到有效学生账号")
+    return {
+        "status": "success",
+        "buffered_count": len(target_acc.wechat_bot.disconnected_queue),
+        "logs": list(target_acc.wechat_bot.disconnected_queue),
+    }
+
 
 @app.get("/")
 async def serve_index():

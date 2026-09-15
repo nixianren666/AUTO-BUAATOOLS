@@ -54,6 +54,7 @@ function initModalBackdrops() {
     { id: "accountCardsModal", closeFn: closeAccountCardsModal },
     { id: "loginModal", closeFn: closeLoginModal },
     { id: "manualSignModal", closeFn: closeManualSignModal },
+    { id: "wechatClawBotModal", closeFn: closeWeChatClawBotModal },
   ];
   modalConfigs.forEach(({ id, closeFn }) => {
     const el = document.getElementById(id);
@@ -68,6 +69,11 @@ function initModalBackdrops() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      const wechatModal = document.getElementById("wechatClawBotModal");
+      if (wechatModal && !wechatModal.classList.contains("hidden")) {
+        closeWeChatClawBotModal();
+        return;
+      }
       const manualModal = document.getElementById("manualSignModal");
       if (manualModal && !manualModal.classList.contains("hidden")) {
         closeManualSignModal();
@@ -207,6 +213,22 @@ function updateUIElements() {
     if (sSelect) sSelect.checked = !!appState.activeUser.boya_auto_select;
     if (sSign) sSign.checked = !!appState.activeUser.boya_auto_sign;
     if (sCampus) sCampus.value = appState.activeUser.campus || "北京";
+
+    // 微信 ClawBot 侧边栏状态小圆点同步
+    const dotWechat = document.getElementById("navDotWechat");
+    if (dotWechat) {
+      const wStatus = appState.activeUser.wechat ? appState.activeUser.wechat.status : "unbound";
+      if (wStatus === "connected") {
+        dotWechat.className = "origin-status-dot green";
+        dotWechat.title = "微信 ClawBot 已连接在线";
+      } else if (wStatus === "disconnected" || wStatus === "reconnecting") {
+        dotWechat.className = "origin-status-dot orange";
+        dotWechat.title = "微信 ClawBot 离线保护中";
+      } else {
+        dotWechat.className = "origin-status-dot gray";
+        dotWechat.title = "微信未绑定";
+      }
+    }
   }
 }
 
@@ -1607,4 +1629,291 @@ function updateGlassOpacity(val, save = true) {
     localStorage.setItem("origin_glass_opacity", numVal.toString());
   }
 }
+
+// ==================== 微信 ClawBot 智联推送控制器 ====================
+
+let wechatPollTimer = null;
+
+async function openWeChatClawBotModal(targetUsername = null) {
+  appState.wechatTargetUsername = targetUsername || (appState.activeUser ? appState.activeUser.username : (appState.accounts[0]?.username || ""));
+  
+  // 填充学生账号选择下拉框
+  const selectEl = document.getElementById("wechatStudentSelect");
+  if (selectEl) {
+    selectEl.innerHTML = "";
+    appState.accounts.forEach(acc => {
+      const opt = document.createElement("option");
+      opt.value = acc.username;
+      opt.textContent = `${acc.name || acc.username} (${acc.username})`;
+      if (acc.username === appState.wechatTargetUsername) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  const modal = document.getElementById("wechatClawBotModal");
+  if (modal) modal.classList.remove("hidden");
+
+  await loadWeChatStatus();
+}
+
+function closeWeChatClawBotModal() {
+  const modal = document.getElementById("wechatClawBotModal");
+  if (modal) modal.classList.add("hidden");
+  if (wechatPollTimer) {
+    clearInterval(wechatPollTimer);
+    wechatPollTimer = null;
+  }
+}
+
+async function handleWechatStudentSwitch(uname) {
+  appState.wechatTargetUsername = uname;
+  if (wechatPollTimer) {
+    clearInterval(wechatPollTimer);
+    wechatPollTimer = null;
+  }
+  await loadWeChatStatus();
+}
+
+async function loadWeChatStatus() {
+  const uname = appState.wechatTargetUsername;
+  if (!uname) return;
+
+  try {
+    const res = await fetch(`/api/wechat/status?username=${encodeURIComponent(uname)}`);
+    const data = await res.json();
+    if (data.status === "success" && data.wechat) {
+      renderWeChatUI(data);
+    }
+  } catch (e) {
+    console.error("loadWeChatStatus error:", e);
+  }
+}
+
+function renderWeChatUI(data) {
+  const wechat = data.wechat;
+  const uname = data.username;
+  const name = data.name;
+
+  const targetNameEl = document.getElementById("wechatTargetStudentName");
+  const targetUidEl = document.getElementById("wechatTargetStudentUid");
+  if (targetNameEl) targetNameEl.textContent = name;
+  if (targetUidEl) targetUidEl.textContent = `(${uname})`;
+
+  const nickEl = document.getElementById("wechatNickDisplay");
+  const pillEl = document.getElementById("wechatStatusPill");
+  const tokenEl = document.getElementById("wechatTokenDisplay");
+  const pushCntEl = document.getElementById("wechatPushCount");
+  const replayedCntEl = document.getElementById("wechatReplayedCount");
+  const bufferedCntEl = document.getElementById("wechatBufferedCount");
+  const toggleEl = document.getElementById("wechatPushToggle");
+
+  if (nickEl) nickEl.textContent = wechat.is_bound ? `已绑定微信: ${wechat.wechat_nickname}` : "微信未绑定";
+  if (tokenEl) tokenEl.textContent = wechat.masked_token || "无";
+  if (pushCntEl) pushCntEl.textContent = wechat.push_count || 0;
+  if (replayedCntEl) replayedCntEl.textContent = wechat.replayed_count || 0;
+  if (bufferedCntEl) bufferedCntEl.textContent = wechat.buffered_count || 0;
+  if (toggleEl) toggleEl.checked = !!wechat.enabled;
+
+  if (pillEl) {
+    if (wechat.status === "connected") {
+      pillEl.className = "wechat-status-pill green";
+      pillEl.textContent = "● 已连接在线";
+    } else if (wechat.status === "disconnected") {
+      pillEl.className = "wechat-status-pill orange";
+      pillEl.textContent = "● 离线保护中";
+    } else if (wechat.status === "reconnecting") {
+      pillEl.className = "wechat-status-pill orange";
+      pillEl.textContent = "● 智联重连中";
+    } else if (wechat.status === "waiting_scan") {
+      pillEl.className = "wechat-status-pill blue";
+      pillEl.textContent = "● 等待扫码";
+    } else {
+      pillEl.className = "wechat-status-pill gray";
+      pillEl.textContent = "● 未绑定";
+    }
+  }
+
+  // 区域显示与隐藏
+  const qrSection = document.getElementById("wechatQrSection");
+  const controlsSection = document.getElementById("wechatControlsSection");
+
+  if (wechat.is_bound) {
+    if (qrSection) qrSection.classList.add("hidden");
+    if (controlsSection) controlsSection.classList.remove("hidden");
+  } else {
+    if (qrSection) qrSection.classList.remove("hidden");
+    if (controlsSection) controlsSection.classList.add("hidden");
+  }
+
+  // 同步侧边栏导航小圆点
+  if (appState.activeUser && appState.activeUser.username === uname) {
+    appState.activeUser.wechat = wechat;
+    const dotWechat = document.getElementById("navDotWechat");
+    if (dotWechat) {
+      if (wechat.status === "connected") {
+        dotWechat.className = "origin-status-dot green";
+        dotWechat.title = "微信 ClawBot 已连接在线";
+      } else if (wechat.status === "disconnected" || wechat.status === "reconnecting") {
+        dotWechat.className = "origin-status-dot orange";
+        dotWechat.title = "微信 ClawBot 离线保护中";
+      } else {
+        dotWechat.className = "origin-status-dot gray";
+        dotWechat.title = "微信未绑定";
+      }
+    }
+  }
+}
+
+async function requestWechatQrCode() {
+  const uname = appState.wechatTargetUsername;
+  if (!uname) return;
+
+  const btn = document.getElementById("wechatGetQrBtn");
+  const msgEl = document.getElementById("wechatQrStatusMsg");
+  const imgEl = document.getElementById("wechatQrImg");
+  const placeholderEl = document.getElementById("wechatQrPlaceholder");
+
+  if (btn) btn.disabled = true;
+  if (msgEl) {
+    msgEl.className = "qr-status-msg waiting";
+    msgEl.textContent = "正在向腾讯 iLink 官方网关安全申请绑定二维码...";
+  }
+
+  try {
+    const res = await fetch(`/api/wechat/qrcode?username=${encodeURIComponent(uname)}`, { method: "POST" });
+    const data = await res.json();
+    if (data.status === "success" || data.status === "fallback") {
+      const qrSrc = data.qrcode_img_base64 || data.qrcode_url;
+      if (imgEl && qrSrc) {
+        imgEl.src = qrSrc;
+        imgEl.classList.remove("hidden");
+      }
+      if (placeholderEl) placeholderEl.classList.add("hidden");
+      if (msgEl) {
+        msgEl.className = "qr-status-msg active";
+        msgEl.textContent = "请打开手机微信【扫一扫】屏幕中央的二维码进行授权";
+      }
+      // 开始轮询扫码授权状态
+      startWechatQrPolling(data.qrcode_key);
+    } else {
+      if (msgEl) {
+        msgEl.className = "qr-status-msg";
+        msgEl.textContent = `获取二维码失败: ${data.message || "接口异常"}`;
+      }
+      if (btn) btn.disabled = false;
+    }
+  } catch (e) {
+    if (msgEl) {
+      msgEl.className = "qr-status-msg";
+      msgEl.textContent = `网络错误: ${e.message}`;
+    }
+    if (btn) btn.disabled = false;
+  }
+}
+
+function startWechatQrPolling(qrcodeKey) {
+  if (wechatPollTimer) clearInterval(wechatPollTimer);
+
+  const uname = appState.wechatTargetUsername;
+  const msgEl = document.getElementById("wechatQrStatusMsg");
+  const btn = document.getElementById("wechatGetQrBtn");
+
+  wechatPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/wechat/qrcode_poll?username=${encodeURIComponent(uname)}&qrcode_key=${encodeURIComponent(qrcodeKey)}`);
+      const data = await res.json();
+
+      if (data.status === "scanned") {
+        if (msgEl) {
+          msgEl.className = "qr-status-msg active";
+          msgEl.textContent = "📱 手机已扫描二维码！请在手机微信上点击【确认授权】...";
+        }
+      } else if (data.status === "confirmed") {
+        clearInterval(wechatPollTimer);
+        wechatPollTimer = null;
+        showToast("微信绑定成功！已开启实时守护推送", "success");
+        if (btn) btn.disabled = false;
+        await loadWeChatStatus();
+        await fetchInitialState();
+      } else if (data.status === "expired") {
+        clearInterval(wechatPollTimer);
+        wechatPollTimer = null;
+        if (msgEl) {
+          msgEl.className = "qr-status-msg";
+          msgEl.textContent = "二维码已过期，请重新点击获取二维码";
+        }
+        if (btn) btn.disabled = false;
+      }
+    } catch (e) {}
+  }, 1600);
+}
+
+async function handleWechatToggle(enabled) {
+  const uname = appState.wechatTargetUsername;
+  if (!uname) return;
+
+  try {
+    const res = await fetch("/api/wechat/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: uname, enabled }),
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showToast(enabled ? "已开启微信实时推送" : "已暂停微信实时推送", "info");
+      renderWeChatUI({ username: uname, name: document.getElementById("wechatTargetStudentName")?.textContent || uname, wechat: data.wechat });
+    }
+  } catch (e) {
+    showToast(`切换失败: ${e.message}`, "error");
+  }
+}
+
+async function testWechatPush() {
+  const uname = appState.wechatTargetUsername;
+  if (!uname) return;
+
+  const btn = document.getElementById("wechatTestBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch("/api/wechat/test_push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: uname }),
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showToast("测试日志已触发！请检查绑定的微信消息", "success");
+      await loadWeChatStatus();
+    } else {
+      showToast(`发送失败: ${data.message}`, "error");
+    }
+  } catch (e) {
+    showToast(`请求异常: ${e.message}`, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function unbindWechat() {
+  const uname = appState.wechatTargetUsername;
+  if (!uname) return;
+
+  if (!confirm("确定要解除当前学生的微信 ClawBot 绑定吗？解绑后将停止接收实时推送日志。")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/wechat/unbind?username=${encodeURIComponent(uname)}`, { method: "POST" });
+    const data = await res.json();
+    if (data.status === "success") {
+      showToast("已成功解除微信绑定", "info");
+      await loadWeChatStatus();
+      await fetchInitialState();
+    }
+  } catch (e) {
+    showToast(`解绑失败: ${e.message}`, "error");
+  }
+}
+
 

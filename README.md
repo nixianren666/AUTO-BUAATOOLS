@@ -1,4 +1,4 @@
-# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.2.6)
+# AUTO-BUAA 北航学生自动托管签到及自动博雅系统 (BUAA Signin Pro v1.3.1)
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 
 **北航师生专属的轻量化、多账号并发守护、博雅抢课打卡、Origin 极简质感全平台客户端**
 
-[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-blue.svg)](https://github.com/nixianren666/AUTO-BUAATOOLS)
@@ -123,7 +123,14 @@
   - 上层覆盖高质感毛玻璃（Backdrop Filter），设置中心提供**单个直观的透光度滑块**，可随心调节磨砂玻璃浓度；
   - 官方标准北航校徽矢量 Logo 与纯净文字标识。
 
-### 5. 🖥️ 全平台深度原生融合与 24/7 守护生态
+### 5. 📲 微信 ClawBot 实时日志推送系统 (基于腾讯官方 iLink 智联协议)
+- **多学生独立扫码绑定**：每个录入系统的学生均可独立扫码绑定各自的微信号，无需安装繁杂的 Node.js/OpenClaw 框架，纯原生轻量化体验；
+- **实时全景总日志流式卡片推送**：包含常规课堂考勤打卡成功、博雅课程秒抢命中、线上签到签退、断连重放与系统异常报警；
+- **智能断连识别与防洪水保护（Zero-Flood Protection）**：精准检测网络波动或长轮询中断，断连期间严禁盲目发包，自动转入安全重放缓冲区；
+- **重连自动回放补发（Disconnect Replay Buffer）**：通道恢复后首先推送专属重连卡片，随后自动将离线期间拦截保存的关键运行日志批量补发回放，无缝恢复实时流式推送；
+- **官方协议合规零封号风险**：严格通过腾讯微信官方 `ilinkai.weixin.qq.com` 授权接口通信，非逆向非外挂，100% 安全合规。
+
+### 6. 🖥️ 全平台深度原生融合与 24/7 守护生态
 - **Windows 原生集成**：托盘常驻守护、单实例防多开唤醒、注册表级免提权开机自启动；
 - **macOS 原生适配**：Apple Silicon (M1~M4) / Intel 双架构独立 App、DMG 镜像安装、LaunchAgent 24/7 系统级后台守护服务，并附带 Gatekeeper 免拦截一键修复工具；
 - **Linux / Docker 云端部署**：全自动感知无显示环境并智能切换至 Headless 纯后端模式，提供一键式 Systemd 守护服务管理脚本与 Docker Compose 容器化支持，通过 `http://<IP>:18346` 远程 WebUI 访问。
@@ -133,12 +140,12 @@
 ## 🚀 使用方法
 
 ### 方案 1：Windows 标准安装向导（推荐 ⭐⭐⭐）
-1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载安装包：`BUAA-Signin-Setup-v1.2.5.exe`；
+1. 在 [Releases 发布页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases) 下载安装包：`BUAA-Signin-Setup-v1.3.1.exe`；
 2. 双击打开安装向导，按照提示选择安装路径；
 3. 安装程序会自动在桌面与开始菜单创建快捷方式，并支持在 Windows“应用和功能”中一键干净卸载。
 
 ### 方案 2：Windows 绿色便携版（免安装 ⭐⭐⭐）
-1. 下载可执行文件：`BUAA-Signin.exe` 或 `BUAA-Signin-v1.2.5-portable.exe`；
+1. 下载可执行文件：`BUAA-Signin.exe` 或 `BUAA-Signin-v1.3.1-portable.exe`；
 2. 将程序放置在任意目录（例如桌面或个人工具箱），双击即可直接运行；
 3. 绿色便携版将配置文件保存在同级目录下，即插即用，随拷随走。
 

@@ -21,6 +21,7 @@ a = Analysis(
         'core.boya_client',
         'core.boya_scheduler',
         'core.autostart',
+        'core.wechat_clawbot',
         'pystray',
         'pystray._win32',
         'PIL',

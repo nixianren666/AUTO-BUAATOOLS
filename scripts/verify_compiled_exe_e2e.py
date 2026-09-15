@@ -48,7 +48,8 @@ def run_compiled_exe_verification():
 
     # 启动真实 Edge 浏览器连接编译程序
     edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-    user_data_dir = os.path.join(os.environ.get("TEMP", r"C:\Users\cjt16\AppData\Local\Temp"), f"edge_e2e_{port}")
+    import tempfile
+    user_data_dir = os.path.join(tempfile.gettempdir(), f"edge_e2e_{port}")
     shutil.rmtree(user_data_dir, ignore_errors=True)
 
     proc_edge = subprocess.Popen([
@@ -167,6 +168,21 @@ def run_compiled_exe_verification():
         logs_active = eval_js("!document.getElementById('viewLogs')?.classList.contains('hidden')")
         print(f"[E2E] Logs view active: {logs_active}")
         assert logs_active is True
+
+        # 验证微信 ClawBot 侧边栏按钮与弹窗交互
+        has_wechat_btn = eval_js("document.getElementById('navBtnWechat') !== null")
+        print(f"[E2E] WeChat nav button exists: {has_wechat_btn}")
+        assert has_wechat_btn is True
+
+        eval_js("typeof openWeChatClawBotModal === 'function' && openWeChatClawBotModal()")
+        wechat_modal_open = eval_js("!document.getElementById('wechatClawBotModal')?.classList.contains('hidden')")
+        print(f"[E2E] WeChat ClawBot modal open: {wechat_modal_open}")
+        assert wechat_modal_open is True
+
+        eval_js("typeof closeWeChatClawBotModal === 'function' && closeWeChatClawBotModal()")
+        wechat_modal_closed = eval_js("document.getElementById('wechatClawBotModal')?.classList.contains('hidden')")
+        print(f"[E2E] WeChat ClawBot modal closed: {wechat_modal_closed}")
+        assert wechat_modal_closed is True
 
         print("\n" + "="*60)
         print("[SUCCESS] COMPILED STANDALONE EXE E2E VERIFICATION PASSED!")
