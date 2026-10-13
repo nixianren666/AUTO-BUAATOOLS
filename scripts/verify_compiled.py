@@ -75,10 +75,13 @@ def main():
                     try:proc.wait(timeout=10)
                     except subprocess.TimeoutExpired:
                         proc.terminate();proc.wait(timeout=10)
+                    log.flush()
+                    shutil.copy2(Path(directory)/"process-output.txt",output/"compiled-process-output.txt")
     assert proc.returncode==0,"Built process did not exit cleanly"
     if args.native:
         native=output/"compiled-native.json"
-        result=subprocess.run([str(exe),"--smoke-test","--smoke-report",str(native),"--port",str(free_port())],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=100)
+        with open(output/"compiled-native-output.txt","w",encoding="utf-8") as native_log:
+            result=subprocess.run([str(exe),"--smoke-test","--smoke-report",str(native),"--port",str(free_port())],env=env,stdout=native_log,stderr=native_log,timeout=100)
         assert result.returncode==0 and native.exists(),"Compiled native window must complete"
         state=json.loads(native.read_text(encoding="utf-8"))
         assert state["passed"] and state["native_gui"]

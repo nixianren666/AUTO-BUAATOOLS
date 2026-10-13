@@ -11,6 +11,7 @@
 [Setup]
 ; 基础应用信息
 AppId={code:GetApplicationId}
+UsePreviousLanguage=no
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}

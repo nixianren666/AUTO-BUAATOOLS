@@ -19,6 +19,7 @@ class OperationLedger:
         self.db.execute("CREATE INDEX IF NOT EXISTS group_lookup ON operation_groups(group_key)")
         self.db.execute("CREATE TABLE IF NOT EXISTS reservations (user_key TEXT, cid INTEGER, data TEXT, PRIMARY KEY(user_key,cid))")
         self.db.commit()
+        self._last_prune = time.monotonic()
 
     @staticmethod
     def key(user, action, cid, day):
@@ -26,6 +27,9 @@ class OperationLedger:
 
     def claim(self, key, limit=3, group=None, block_group_success=False):
         with self.lock:
+            if time.monotonic() - self._last_prune >= 86400:
+                self.prune()
+                self._last_prune = time.monotonic()
             self.db.execute("BEGIN IMMEDIATE")
             try:
                 if group:
@@ -91,7 +95,7 @@ class OperationLedger:
 
     def prune(self):
         with self.lock:
-            self.db.execute("DELETE FROM operations WHERE updated < ?", (time.time()-180*86400,))
+            self.db.execute("DELETE FROM operations WHERE state IN ('success','failed') AND updated < ?", (time.time()-180*86400,))
             self.db.execute("DELETE FROM operation_groups WHERE key NOT IN (SELECT key FROM operations)")
             self.db.commit()
 
