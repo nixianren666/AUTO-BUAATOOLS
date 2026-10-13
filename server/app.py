@@ -359,11 +359,22 @@ def sync_config():
             "campus": getattr(acc, "campus", "北京"),
             "boya_targets": acc.boya_targets,
         })
-    config["active_username"] = active_username or ""
-    config["accounts"] = accounts_data
-    config["global_auto_checkin"] = scheduler.enabled
-    config["checkin_interval"] = scheduler.interval_seconds
-    save_config(config)
+    candidate = {**config, "active_username": active_username or "", "accounts": accounts_data,
+                 "global_auto_checkin": scheduler.enabled, "checkin_interval": scheduler.interval_seconds}
+    save_config(candidate)
+    config.update(candidate)
+
+
+def persist_switch(restore, stop_requested=False):
+    try:
+        sync_config()
+        return True
+    except Exception:
+        restore()
+        if not stop_requested:
+            raise HTTPException(status_code=503, detail="配置无法保存；已撤回本次开启/设置变更")
+        add_log("warning", "后台已暂停，但配置保存失败；重启前请确认保存，否则旧开关可能恢复")
+        return False
 
 
 class LoginRequest(BaseModel):
@@ -401,7 +412,7 @@ class SigninRequest(BaseModel):
 
 class AutoCheckinRequest(BaseModel):
     enabled: bool
-    interval: Optional[int] = 20
+    interval: Optional[int] = Field(default=20, strict=True, ge=10, le=60)
 
 
 class BoyaActionRequest(BaseModel):
@@ -665,15 +676,16 @@ async def toggle_account_auto_checkin(req: ToggleAutoRequest):
         raise HTTPException(status_code=404, detail="Account not found")
 
     acc = accounts[req.username]
+    old_enabled = acc.auto_checkin
     acc.auto_checkin = req.enabled
-    sync_config()
+    persisted = persist_switch(lambda: setattr(acc,"auto_checkin",old_enabled) if req.enabled else None, stop_requested=not req.enabled)
     add_log(
         "info",
         f"学生 【{acc.name}】 的自动签到开关已{'开启' if req.enabled else '关闭'}",
         username=acc.username,
         user_name=acc.name,
     )
-    return {"status": "ok", "username": acc.username, "auto_checkin": acc.auto_checkin}
+    return {"status": "ok", "username": acc.username, "auto_checkin": acc.auto_checkin, "persisted": persisted}
 
 
 @app.post("/api/accounts/remove")
@@ -964,13 +976,17 @@ async def perform_signin(req: SigninRequest):
 @app.post("/api/auto_checkin")
 async def toggle_global_auto_checkin(req: AutoCheckinRequest):
     interval = req.interval or 20
+    old_enabled, old_interval = scheduler.enabled, scheduler.interval_seconds
     if req.enabled:
         scheduler.start(interval_seconds=interval)
     else:
         scheduler.stop()
 
-    sync_config()
-    return {"enabled": scheduler.enabled, "interval": scheduler.interval_seconds}
+    def restore():
+        if req.enabled:
+            scheduler.start(interval_seconds=old_interval) if old_enabled else scheduler.stop()
+    persisted = persist_switch(restore, stop_requested=not req.enabled)
+    return {"enabled": scheduler.enabled, "interval": scheduler.interval_seconds, "persisted": persisted}
 
 
 @app.get("/api/boya/status")
@@ -1276,6 +1292,8 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         with account_lock(acc):
             if acc.removed:
                 raise HTTPException(status_code=409, detail="账号已移除")
+            fields={"boya_auto_select":req.auto_select,"boya_auto_sign":req.auto_sign,"campus":req.campus,"boya_targets":req.targets}
+            previous={key:getattr(acc,key) for key in fields}
             if req.auto_select is not None:
                 acc.boya_auto_select = req.auto_select
             if req.auto_sign is not None:
@@ -1284,12 +1302,16 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
                 acc.campus = req.campus
             if req.targets is not None:
                 acc.boya_targets = dict(req.targets)
-    await asyncio.to_thread(update_preferences)
+            def restore():
+                for key,value in previous.items():
+                    if key in ("boya_auto_select","boya_auto_sign") and fields[key] is False:
+                        continue
+                    setattr(acc,key,value)
+            return persist_switch(restore, stop_requested=req.auto_select is False or req.auto_sign is False)
+    persisted = await asyncio.to_thread(update_preferences)
     # 铁律：自动秒抢永久仅抢支持线上自主打卡课程，彻底消除线下考勤风险
     acc.boya_require_auto_sign = True
     acc.boya_allow_offline = False
-
-    sync_config()
 
     any_boya = any(getattr(a, "boya_auto_select", False) or getattr(a, "boya_auto_sign", False) for a in accounts.values())
     if any_boya and not boya_scheduler.running:
@@ -1313,6 +1335,7 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         "campus": acc.campus,
         "scheduler_running": boya_scheduler.running,
         "boya_targets": acc.boya_targets,
+        "persisted": persisted,
     }
 
 
@@ -1408,15 +1431,20 @@ async def get_autostart():
 @app.post("/api/system/autostart")
 async def update_autostart(req: AutostartRequest):
     from core.autostart import set_autostart, get_autostart_status
-    success = set_autostart(req.enabled)
-    config["autostart"] = req.enabled
-    save_config(config)
-    add_log("info", f"开机自启动配置已更新为: {'已启用' if req.enabled else '已禁用'}")
-    cur_status = get_autostart_status()
-    final_enabled = cur_status if success else bool(req.enabled)
+    success = await asyncio.to_thread(set_autostart, req.enabled)
+    cur_status = await asyncio.to_thread(get_autostart_status)
+    confirmed = success and cur_status == req.enabled
+    persisted = True
+    if confirmed:
+        try:
+            candidate={**config,"autostart":cur_status}
+            save_config(candidate);config.update(candidate)
+        except Exception:persisted=False
+    add_log("info" if confirmed else "warning", "系统已确认开机自启状态" if confirmed else "系统未确认自启修改，保留实际查询状态")
     return {
-        "status": "ok",
-        "enabled": final_enabled,
+        "status": "ok" if confirmed else "error",
+        "enabled": cur_status,
+        "persisted": persisted,
     }
 
 

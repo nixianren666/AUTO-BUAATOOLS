@@ -426,15 +426,17 @@ async function manualSignIn(courseSchedId) {
 
 async function toggleAutoCheckin(enabled) {
   try {
-    await apiFetch("/api/auto_checkin", {
+    const res = await apiFetch("/api/auto_checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: enabled }),
     });
-    appState.globalAutoCheckin = enabled;
+    const data = await res.json();
+    appState.globalAutoCheckin = data.enabled;
     updateUIElements();
-    showToast(`常规课程自动签到已${enabled ? "启动守护" : "暂停"}`, "info");
+    showToast(data.persisted === false ? "已暂停，但配置未保存；重启前请重新保存" : `常规课程自动签到已${data.enabled ? "启动守护" : "暂停"}`, data.persisted === false ? "warning" : "info");
   } catch (e) {
+    updateUIElements();
     showToast("切换自动打卡状态失败", "error");
   }
 }
@@ -974,7 +976,7 @@ async function updateBoyaPreferences(body) {
     if (!res.ok || data.status !== "ok") throw new Error("配置未保存");
     if (appState.activeUser) Object.assign(appState.activeUser, data);
     updateUIElements();
-    showToast("博雅配置已保存", "success");
+    showToast(data.persisted === false ? "已暂停，但配置未保存；重启前请重新保存" : "博雅配置已保存", data.persisted === false ? "warning" : "success");
     fetchBoyaData();
   } catch (error) {
     if (!viewStillCurrent(username,generation)) return;
@@ -1366,6 +1368,7 @@ async function initAutostartWidget() {
     const data = await res.json();
     const checkbox = document.getElementById("autostartCheckbox");
     if (checkbox) checkbox.checked = !!data.enabled;
+    if (data.status !== "ok") { showToast("系统未确认自启修改，已恢复实际状态", "error"); return; }
   } catch (e) {}
 }
 

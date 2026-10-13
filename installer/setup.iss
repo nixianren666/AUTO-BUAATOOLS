@@ -12,6 +12,7 @@
 ; 基础应用信息
 AppId={code:GetApplicationId}
 UsePreviousLanguage=no
+UsePreviousPrivileges=no
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
@@ -81,4 +82,20 @@ begin
     Result := '{D925D39B-16C2-4FAA-BB5C-9B5725290B88}'
   else
     Result := '{C8E2B548-7391-497B-95DC-8A2F226D1E3A}';
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Command, InstalledExe: String;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'BUAA-Signin', Command) then
+    begin
+      Command := Lowercase(Trim(Command));
+      InstalledExe := Lowercase(ExpandConstant('{app}\{#MyAppExeName}'));
+      if (Command = InstalledExe) or (Pos('"' + InstalledExe + '"', Command) = 1) or (Pos(InstalledExe + ' ', Command) = 1) then
+        RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'BUAA-Signin');
+    end;
+  end;
 end;

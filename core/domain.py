@@ -85,6 +85,11 @@ def autonomous(course, require_windows=False):
 
 def attendance_allowed(course, sign_type, current):
     cfg = sign_config(course.get("courseSignConfig", course.get("signConfig")))
+    raw_checkin, raw_pass = course.get("checkin"), course.get("pass")
+    def official_enum(value, allowed):
+        return value is None or (type(value) is int and value in allowed) or (type(value) is str and value in {str(v) for v in allowed})
+    if not official_enum(raw_checkin, (0,1,2,3,4,5,6,7,8,9,10,11)) or not official_enum(raw_pass,(0,1)):
+        return False
     try:
         if isinstance(course.get("checkin"), bool) or isinstance(course.get("pass"), bool):
             return False
