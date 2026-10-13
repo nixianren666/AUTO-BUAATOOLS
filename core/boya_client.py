@@ -6,6 +6,8 @@
 import json
 import logging
 import re
+import threading
+import time
 import urllib.parse
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urljoin, urlparse
@@ -15,6 +17,8 @@ import httpx
 from core.cas import CasParser
 from core.webvpn import to_webvpn_url
 from core.boya_crypto import BykcCrypto
+from core.domain import trusted_url, semester, course_id, now as china_now
+from core import operations
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +46,17 @@ class BoyaClient:
     def __init__(self, mode: str = "direct", token: Optional[str] = None) -> None:
         self.mode = mode.lower()  # "direct" 或 "webvpn"
         self.token = token
-        self.http_client = httpx.Client(timeout=25, follow_redirects=False, verify=False)
+        self.http_client = httpx.Client(timeout=25, follow_redirects=False, verify=True, trust_env=False)
+        self.request_guard = lambda: True
+        self.semester_info = None
+        self.operation_user = None
+        self.operation_scope = None
+        self._request_lock = threading.RLock()
+
+    def close(self):
+        with self._request_lock:
+            self.token = None
+            self.http_client.close()
 
     def upstream(self, url: str) -> str:
         if self.mode == "webvpn":
@@ -66,27 +80,36 @@ class BoyaClient:
         """使用北航统一认证账号密码直接登录并换取博雅 Token"""
         sso_url = self.upstream(SSO_LOGIN)
         resp = self.http_client.get(sso_url)
+        resp.raise_for_status() if resp.status_code >= 400 else None
 
         # 检查是否已有会话
         if resp.status_code not in (301, 302, 303, 307):
             html = resp.text
+            if CasParser.detect_captcha(html) and not captcha:
+                raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
             err = CasParser.find_login_error(html)
             if err:
                 raise BoyaApiError("cas_error", err)
 
             params = CasParser.build_login_params(html, username, password, captcha=captcha)
             post_resp = self.http_client.post(sso_url, data=params)
+            if post_resp.status_code >= 400:
+                raise BoyaApiError("auth_http", "统一认证请求失败")
 
             # 跟随重定向
             curr = post_resp
             for _ in range(8):
                 if curr.status_code in (301, 302, 303, 307) and curr.headers.get("location"):
-                    target = urljoin(str(curr.url), curr.headers.get("location"))
+                    target = trusted_url(urljoin(str(curr.url), curr.headers.get("location")))
                     curr = self.http_client.get(target)
                 else:
                     break
 
             final_html = curr.text
+            if CasParser.detect_captcha(final_html):
+                raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
+            if CasParser.find_login_error(final_html):
+                raise BoyaApiError("cas_error", "统一认证未通过，请手动检查账号")
             if CasParser.is_ignorable_password_expiry(final_html):
                 execution = CasParser.extract_execution(final_html)
                 if execution:
@@ -112,7 +135,7 @@ class BoyaClient:
             raise BoyaApiError("token_acquire_failed", "未能从博雅系统重定向中解析出 token")
 
         self.token = token
-        logger.info(f"成功提取博雅 Token: {token[:8]}***")
+        logger.info("博雅授权已建立")
         return token
 
     def _follow_for_token(self) -> Optional[str]:
@@ -121,30 +144,33 @@ class BoyaClient:
             for _ in range(12):
                 resp = self.http_client.get(curr_url, follow_redirects=False, timeout=15)
                 # 1. 检查当前 URL 中的 token
-                t = self._extract_token(str(resp.url))
+                t = self._extract_token(trusted_url(str(resp.url)))
                 if t:
                     return t
                 # 2. 检查 Location 头
                 loc = resp.headers.get("location")
                 if loc:
-                    t = self._extract_token(loc)
+                    target = trusted_url(urljoin(str(resp.url), loc))
+                    t = self._extract_token(target)
                     if t:
                         return t
-                    curr_url = urljoin(str(resp.url), loc)
+                    curr_url = target
                 elif 300 <= resp.status_code <= 399:
                     break
                 else:
                     if resp.status_code == 200:
-                        t = self._extract_token(resp.text)
-                        if t:
-                            return t
+                        break
                     break
         return None
 
     def _extract_token(self, url: str) -> Optional[str]:
         if not url:
             return None
+        from core.webvpn import from_webvpn_url
+        url = from_webvpn_url(trusted_url(url)) if self.mode == "webvpn" else trusted_url(url)
         parsed = urlparse(url)
+        if parsed.hostname != "bykc.buaa.edu.cn":
+            return None
         q = parse_qs(parsed.query).get("token")
         if q and q[0]:
             return q[0]
@@ -152,6 +178,10 @@ class BoyaClient:
         return m.group(1) if m else None
 
     def call(self, api_name: str, payload: Any = None) -> Dict[str, Any]:
+        with self._request_lock:
+            return self._call_locked(api_name, payload)
+
+    def _call_locked(self, api_name: str, payload: Any = None) -> Dict[str, Any]:
         """发起加密的 BYKC API 请求并自动解密返回"""
         if not self.token:
             raise BoyaSessionExpired("未获取到博雅 token，请先执行博雅登录")
@@ -173,28 +203,62 @@ class BoyaClient:
             **req_enc.headers,
         }
 
-        resp = self.http_client.post(endpoint_url, content=req_enc.body, headers=headers, timeout=25)
-        if resp.status_code in (401, 403):
-            raise BoyaSessionExpired(f"博雅会话已失效 (HTTP {resp.status_code})")
-
-        # 检查是否被重定向到 CAS 登录页
-        if "login" in resp.text.lower() and "<html" in resp.text.lower():
-            raise BoyaSessionExpired("博雅凭证过期，已被重定向至登录页")
-
+        writing = api_name in ("choseCourse", "delChosenCourse", "signCourseByUser")
+        key = None
+        if writing:
+            if not self.operation_user or not self.request_guard():
+                raise BoyaApiError("cancelled", "身份未绑定、账号已暂停或操作窗口已结束")
+            cid = (payload or {}).get("courseId", (payload or {}).get("id"))
+            action = api_name + ":" + str((payload or {}).get("signType", ""))
+            key = operations.ledger.key(self.operation_user, action, cid, self.operation_scope or china_now().date())
+            if api_name == "choseCourse":
+                quota = operations.ledger.key(self.operation_user, "selection-budget", cid, china_now().date())
+                row = operations.ledger.read(quota)
+                if row and time.time()-row[2] < 60:
+                    raise operations.OperationBusy("同一课程的选课请求至少间隔60秒")
+            group = operations.ledger.key(self.operation_user, action, cid, "group")
+            if not operations.ledger.claim(key, group=group):
+                return {"status": "0", "already_accepted": True}
+            if api_name == "choseCourse":
+                try:
+                    operations.ledger.claim(quota, limit=9)
+                    operations.ledger.finish(quota, "failed")
+                except BaseException:
+                    operations.ledger.finish(key, "failed")
+                    raise
         try:
-            decoded = crypto.decrypt_response(resp.content)
-        except Exception as e:
-            raise BoyaApiError("decrypt_error", f"解密博雅响应失败: {str(e)[:120]}")
-
-        if not isinstance(decoded, dict):
-            return {"data": decoded}
-
-        status = decoded.get("status")
-        errmsg = decoded.get("errmsg") or decoded.get("msg") or ""
-        if status not in ("0", 0, "200", 200, None):
-            raise BoyaApiError(status, str(errmsg))
-
-        return decoded
+            resp = self.http_client.post(endpoint_url, content=req_enc.body, headers=headers, timeout=25)
+            if resp.status_code in (401, 403):
+                self.token = None
+                raise BoyaSessionExpired("博雅会话已失效")
+            if "login" in resp.text.lower() and "<html" in resp.text.lower():
+                self.token = None
+                raise BoyaSessionExpired("博雅凭证过期")
+            resp.raise_for_status()
+            try:
+                decoded = crypto.decrypt_response(resp.content)
+            except Exception as exc:
+                raise ValueError("博雅响应解密失败，写入结果待复核") from exc
+            if not isinstance(decoded, dict) or "status" not in decoded or isinstance(decoded["status"], bool):
+                raise ValueError("博雅响应缺少有效官方业务状态")
+            status = decoded["status"]
+            message = str(decoded.get("errmsg") or decoded.get("msg") or "")
+            if str(status) == "98005399" or "会话已失效" in message or "重新登录" in message:
+                self.token = None
+                raise BoyaSessionExpired("博雅会话已失效")
+            if status not in ("0", 0, "200", 200):
+                raise BoyaApiError(status, message)
+            if key:
+                operations.ledger.finish(key, "success")
+            return decoded
+        except (BoyaSessionExpired, BoyaApiError):
+            if key:
+                operations.ledger.finish(key, "failed")
+            raise
+        except BaseException:
+            if key:
+                operations.ledger.finish(key, "uncertain")
+            raise
 
     def get_all_config(self) -> Dict[str, Any]:
         return self.call("getAllConfig", {})
@@ -202,54 +266,78 @@ class BoyaClient:
     def query_course_page(self, page_number: int = 1, page_size: int = 100) -> Dict[str, Any]:
         return self.call("queryStudentSemesterCourseByPage", {"pageNumber": page_number, "pageSize": page_size})
 
-    def query_courses(self, max_pages: int = 10) -> List[Dict[str, Any]]:
-        """拉取全量学期博雅课程"""
-        all_courses = []
-        page = 1
-        while page <= max_pages:
-            res = self.query_course_page(page, page_size=100)
-            data = res.get("data") or {}
-            content = data.get("content") or []
-            all_courses.extend(content)
+    def query_courses(self, max_pages=None):
+        courses, ids_seen, previous_pages = [], set(), set()
+        expected_total, expected_pages = None, None
+        started = time.monotonic()
+        for page in range(1, 1001):
+            if time.monotonic()-started > 120:
+                raise BoyaApiError("pagination_timeout", "本轮全量同步超时，暂停选课并等待下一轮")
+            if max_pages is not None and page > max_pages:
+                raise BoyaApiError("pagination_incomplete", "课池未完整读取，暂停自动选课")
+            data = self.query_course_page(page, 100).get("data")
+            if not isinstance(data, dict) or not isinstance(data.get("content"), list):
+                raise BoyaApiError("protocol_error", "缺少课池分页数据")
+            content = data["content"]
+            ids = tuple(course_id(c) if isinstance(c, dict) else None for c in content)
+            if content and (None in ids or len(set(ids)) != len(ids) or set(ids) & ids_seen or ids in previous_pages):
+                raise BoyaApiError("protocol_error", "课程ID无效或分页重复/变化，稍后重新全量同步")
+            previous_pages.add(ids)
+            ids_seen.update(ids)
+            courses.extend(content)
+            for field in ("totalPages", "totalElements"):
+                value = data.get(field)
+                if value is not None and (isinstance(value, bool) or not str(value).isdigit()):
+                    raise BoyaApiError("protocol_error", "无效的分页总数")
+            pages = int(data["totalPages"]) if data.get("totalPages") is not None else None
+            total = int(data["totalElements"]) if data.get("totalElements") is not None else None
+            if page == 1:
+                expected_total, expected_pages = total, pages
+            elif (expected_total is not None and total != expected_total) or (expected_pages is not None and pages != expected_pages):
+                raise BoyaApiError("pagination_changed", "分页数量发生变化，稍后重新全量同步")
+            ended = data.get("last") is True or not content or (pages is not None and page >= pages) or (total is not None and len(courses) >= total)
+            if ended:
+                if (expected_total is not None and len(courses) != expected_total) or (expected_pages is not None and page < expected_pages):
+                    raise BoyaApiError("pagination_incomplete", "课池分页提前结束，未取得完整课程")
+                return courses
+        raise BoyaApiError("pagination_incomplete", "分页超过安全上限，课池不可用于自动选课")
 
-            total_pages = data.get("totalPages") or 1
-            if data.get("last") is True or page >= int(total_pages):
-                break
-            if not content:
-                break
-            page += 1
-        return all_courses
+    def query_course_detail(self, cid):
+        data = self.call("queryCourseById", {"id": int(cid)}).get("data")
+        if not isinstance(data, dict) or course_id(data) != int(cid):
+            raise BoyaApiError("protocol_error", "课程详情ID不匹配")
+        return data
 
-    def query_chosen_courses(self, start_date: str = "2024-01-01", end_date: str = "2027-01-01") -> List[Dict[str, Any]]:
-        """查询当前学生已选中的博雅课程"""
-        data = self.call("queryChosenCourse", {"startDate": start_date, "endDate": end_date})
-        raw_list = (data.get("data") or {}).get("courseList") or []
-        res = []
-        for item in raw_list:
+    def current_semester(self):
+        self.semester_info = semester(self.get_all_config())
+        return self.semester_info
+
+    def query_chosen_courses(self, start_date=None, end_date=None):
+        if start_date is None or end_date is None:
+            info = self.current_semester()
+            start_date, end_date = info["semesterStartDate"], info["semesterEndDate"]
+        data = self.call("queryChosenCourse", {"startDate": start_date, "endDate": end_date}).get("data")
+        if not isinstance(data, dict) or not isinstance(data.get("courseList"), list):
+            raise BoyaApiError("protocol_error", "缺少官方已选课程数据")
+        result = []
+        for item in data["courseList"]:
             info = item.get("courseInfo") or {}
-            real_cid = info.get("id") or item.get("courseId") or item.get("course_id")
-            chosen_reg_id = item.get("id")
-            merged = {**info, **item}
-            if real_cid is not None:
-                merged["id"] = real_cid
-                merged["courseId"] = real_cid
-            merged["chosenCourseId"] = chosen_reg_id
-            merged["selected"] = True
-            if "checkin" in item:
-                merged["checkin"] = item["checkin"]
-            if "pass" in item:
-                merged["pass"] = item["pass"]
-            if "score" in item:
-                merged["score"] = item["score"]
-            if "signInfo" in item:
-                merged["signInfo"] = item["signInfo"]
-            res.append(merged)
-        return res
+            cid = course_id({"courseInfo": info, "courseId": item.get("courseId")})
+            if cid is None:
+                raise BoyaApiError("protocol_error", "已选课程缺少本体ID")
+            merged = {**info, **item, "id": cid, "courseId": cid, "chosenCourseId": item.get("id"), "selected": True}
+            result.append(merged)
+        return result
 
     def query_statistics(self) -> Dict[str, Any]:
         """获取学生博雅学分完成情况与分类考核统计"""
         data = self.call("queryStatisticByUserId", {})
-        return data.get("data") or {}
+        result = data.get("data")
+        if not isinstance(result, dict):
+            raise BoyaApiError("protocol_error", "缺少官方统计数据")
+        result = dict(result)
+        result["semesterInfo"] = self.current_semester()
+        return result
 
 
     def select_course(self, course_id: int) -> Dict[str, Any]:

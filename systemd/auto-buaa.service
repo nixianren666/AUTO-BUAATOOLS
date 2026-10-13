@@ -1,16 +1,12 @@
-﻿[Unit]
-Description=AUTO-BUAA Course Signin Pro Web Service
+# Documentation template only; install via scripts/install_linux_service.sh.
+# Generated user unit is ~/.config/systemd/user/buaa-signin.service.
+[Unit]
+Description=AUTO-BUAA user service
 After=network.target
-
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/opt/auto-buaa
-ExecStart=/usr/bin/python3 run.py --headless --host 0.0.0.0 --port 18346
+ExecStart=/absolute/project/.venv/bin/python /absolute/project/run.py --headless --host 127.0.0.1
 Restart=always
 RestartSec=5
-Environment=HEADLESS=1
-Environment=PYTHONUNBUFFERED=1
-
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

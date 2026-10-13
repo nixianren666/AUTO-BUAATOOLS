@@ -1,15 +1,16 @@
-version: '3.8'
-
 services:
   auto-buaa:
     build: .
-    image: auto-buaa:v1.2.5
-    container_name: auto-buaa
+    image: auto-buaa:1.2.7
     restart: unless-stopped
     ports:
-      - "18346:18346"
+      - "127.0.0.1:18346:18346"
     volumes:
-      - ./config.json:/app/config.json
+      - buaa-profile:/data
     environment:
-      - TZ=Asia/Shanghai
-      - HEADLESS=1
+      TZ: Asia/Shanghai
+      HEADLESS: "1"
+      BUAA_ADMIN_PASSWORD: ${BUAA_ADMIN_PASSWORD:?Set a separate application management password}
+      BUAA_ALLOWED_HOSTS: "127.0.0.1,localhost"
+volumes:
+  buaa-profile:

@@ -1,0 +1,813 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "business_baseline": "v1.2.6",
+  "baseline_commit": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+  "previous_head": "fcc513140798211d55dd0db98e54a5e168f80b10",
+  "scope": "Current baseline audit and explicitly authorized v1.3 withdrawal. No business logic fixes or school writes. Credentials used only in memory.",
+  "current_sources": [
+    {
+      "path": "core/iclass.py",
+      "sha256": "68dc927c16076f2bd63362104c38d559acbb1672b8ef2d66fc306dfc9a9167b5",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/cas.py",
+      "sha256": "fe3bcce3db9e28fcc5a50daa2f1e13164bfc6649d34d5672887bd88ac38f2ca9",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/webvpn.py",
+      "sha256": "fb7430ef1785ecf79043a97fa177bac3306e1ddcb0981ff1ce9de35c992e7036",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/scheduler.py",
+      "sha256": "43804535fff4dc271bba811f78c8658144c20a6cbda9b2caadf294d2c7d4b4ae",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/boya_client.py",
+      "sha256": "bc66a4ecd25bfb0763b9e66ffd4f22e32de445bdf3c8349c756305e9980f4d10",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/boya_crypto.py",
+      "sha256": "22570dac73f037687e10e8128b774ea8a2272438f17070a0b735fe1453894dda",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/boya_scheduler.py",
+      "sha256": "605079d31b097c4ff3d72ca15c9435209e5c8df9e3ebcfe2accb0860204f977d",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "core/autostart.py",
+      "sha256": "24d24fdf30931425543b5006c83eefe8b0c3d6d2d17fc269b911c7fe523aaf1f",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "server/app.py",
+      "sha256": "4069ffb0b790909f53a9b6b13f847cbcd308b7fd01efe78efc48fed4a9e05c6b",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "run.py",
+      "sha256": "e18eb7aa43f93ba52cbb02c041f1b5f66a03a48041d8a05fb3c713718d0e25ea",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": false
+    },
+    {
+      "path": "server/static/js/app.js",
+      "sha256": "8e3ac80de443a1cb1b24fe6c5ff88875e010e14f65d4629e85b70b36f1965568",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": true
+    },
+    {
+      "path": "server/static/index.html",
+      "sha256": "30df74820ba72bacf5ce2bf877ec4c3ccda5c74eb1656ded362659b455905637",
+      "unchanged_since_review_start": true,
+      "matches_tag_normalized": false
+    }
+  ],
+  "existing_suite": {
+    "source": "current v1.2.6 baseline isolated fixture",
+    "tests_run": 79,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "success": false,
+    "elapsed_seconds": 23.69,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [
+      "test_ui_interactions (test_ui_interactions.TestUIInteractions.test_ui_interactions)"
+    ],
+    "error_names": []
+  },
+  "backend_probes": {
+    "baseline": "v1.2.6 current source, isolated empty configuration",
+    "date": "2026-10-14",
+    "scenario_count": 36,
+    "confirmed": 36,
+    "blocked_real_network_attempts": 0,
+    "scenarios": [
+      {
+        "id": "V01",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "server/app.py::compute_semester_statistics"
+      },
+      {
+        "id": "V02",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "server/app.py::compute_semester_statistics"
+      },
+      {
+        "id": "V03",
+        "observed": {
+          "exam": true,
+          "final": true
+        },
+        "issue_observation": {
+          "exam": true,
+          "final": true
+        },
+        "confirmed": true,
+        "source": "server/app.py::enrich_selected_courses"
+      },
+      {
+        "id": "V04",
+        "observed": {
+          "attendance": true,
+          "final": true
+        },
+        "issue_observation": {
+          "attendance": true,
+          "final": true
+        },
+        "confirmed": true,
+        "source": "server/app.py::enrich_selected_courses"
+      },
+      {
+        "id": "V05",
+        "observed": false,
+        "issue_observation": false,
+        "confirmed": true,
+        "source": "server/app.py::enrich_selected_courses"
+      },
+      {
+        "id": "V06",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::is_auto_select_candidate"
+      },
+      {
+        "id": "V07",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::is_auto_select_candidate"
+      },
+      {
+        "id": "V08",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::is_auto_select_candidate"
+      },
+      {
+        "id": "V09",
+        "observed": {
+          "id": 1001,
+          "used_other_point": true
+        },
+        "issue_observation": {
+          "id": 1001,
+          "used_other_point": true
+        },
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_sign"
+      },
+      {
+        "id": "V10",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_sign"
+      },
+      {
+        "id": "V11",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_sign"
+      },
+      {
+        "id": "V12",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_sign"
+      },
+      {
+        "id": "V13",
+        "observed": [
+          1001,
+          1002
+        ],
+        "issue_observation": [
+          1001,
+          1002
+        ],
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_select"
+      },
+      {
+        "id": "V14",
+        "observed": 0,
+        "issue_observation": 0,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_select"
+      },
+      {
+        "id": "V15",
+        "observed": 3,
+        "issue_observation": 3,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_select"
+      },
+      {
+        "id": "V16",
+        "observed": {
+          "sign_calls": 3,
+          "renew_calls": 0
+        },
+        "issue_observation": {
+          "sign_calls": 3,
+          "renew_calls": 0
+        },
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_sign"
+      },
+      {
+        "id": "V17",
+        "observed": {
+          "running": false,
+          "writes": 2
+        },
+        "issue_observation": {
+          "running": false,
+          "writes": 2
+        },
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::_check_auto_select"
+      },
+      {
+        "id": "V18",
+        "observed": 0,
+        "issue_observation": 0,
+        "confirmed": true,
+        "source": "core/iclass.py::get_today_classes"
+      },
+      {
+        "id": "V19",
+        "observed": 6,
+        "issue_observation": 6,
+        "confirmed": true,
+        "source": "core/iclass.py::perform_signin"
+      },
+      {
+        "id": "V20",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "core/iclass.py::perform_signin"
+      },
+      {
+        "id": "V21",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true,
+        "source": "core/iclass.py::perform_signin"
+      },
+      {
+        "id": "V22",
+        "observed": [
+          "2026-10-14T09:00:30"
+        ],
+        "issue_observation": [
+          "2026-10-14T09:00:30"
+        ],
+        "confirmed": true,
+        "source": "core/scheduler.py::_check_and_sign_all"
+      },
+      {
+        "id": "V23",
+        "observed": 1,
+        "issue_observation": 1,
+        "confirmed": true,
+        "source": "server/app.py::perform_signin"
+      },
+      {
+        "id": "V24",
+        "observed": 2,
+        "issue_observation": 2,
+        "confirmed": true,
+        "source": "server/app.py::perform_signin"
+      },
+      {
+        "id": "V25",
+        "observed": {
+          "id": 99999,
+          "lat": 39.9822,
+          "lng": 116.3475,
+          "type": 9
+        },
+        "issue_observation": {
+          "id": 99999,
+          "lat": 39.9822,
+          "lng": 116.3475,
+          "type": 9
+        },
+        "confirmed": true,
+        "source": "server/app.py::sign_boya_course"
+      },
+      {
+        "id": "V26",
+        "observed": [
+          1001,
+          2002
+        ],
+        "issue_observation": [
+          1001,
+          2002
+        ],
+        "confirmed": true,
+        "source": "server/app.py::drop_boya_course"
+      },
+      {
+        "id": "V27",
+        "observed": {
+          "preflight": 200,
+          "allow_origin": "https://untrusted.example",
+          "post": 200,
+          "calls": 1
+        },
+        "issue_observation": {
+          "preflight": 200,
+          "allow_origin": "https://untrusted.example",
+          "post": 200,
+          "calls": 1
+        },
+        "confirmed": true,
+        "source": "server/app.py::CORSMiddleware"
+      },
+      {
+        "id": "V28",
+        "observed": 0,
+        "issue_observation": 0,
+        "confirmed": true,
+        "source": "core/boya_client.py::__init__"
+      },
+      {
+        "id": "V29",
+        "observed": "synthetic-secret",
+        "issue_observation": "synthetic-secret",
+        "confirmed": true,
+        "source": "core/boya_crypto.py::encrypt_local_secret"
+      },
+      {
+        "id": "V30",
+        "observed": {
+          "errmsg": "Synthetic error without status"
+        },
+        "issue_observation": {
+          "errmsg": "Synthetic error without status"
+        },
+        "confirmed": true,
+        "source": "core/boya_client.py::call"
+      },
+      {
+        "id": "V31",
+        "observed": {
+          "status": "0"
+        },
+        "issue_observation": {
+          "status": "0"
+        },
+        "confirmed": true,
+        "source": "core/boya_client.py::call"
+      },
+      {
+        "id": "V32",
+        "observed": 300,
+        "issue_observation": 300,
+        "confirmed": true,
+        "source": "core/boya_client.py::query_courses"
+      },
+      {
+        "id": "V33",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::get_current_semester_range"
+      },
+      {
+        "id": "V34",
+        "observed": false,
+        "issue_observation": false,
+        "confirmed": true,
+        "source": "server/app.py::remove_account"
+      },
+      {
+        "id": "V35",
+        "observed": {
+          "exception": "TypeError",
+          "next_queries": 0
+        },
+        "issue_observation": {
+          "exception": "TypeError",
+          "next_queries": 0
+        },
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::tick"
+      },
+      {
+        "id": "V36",
+        "observed": 0,
+        "issue_observation": 0,
+        "confirmed": true,
+        "source": "core/boya_scheduler.py::__init__"
+      }
+    ],
+    "scope": "Synthetic requests and virtual time; no real school, user credentials, GUI or OS service changes."
+  },
+  "frontend_checks": {
+    "scenarios": [
+      {
+        "id": "F01",
+        "observed": {
+          "active": "fixture-B",
+          "course": "A"
+        },
+        "issue_observation": {
+          "active": "fixture-B",
+          "course": "A"
+        },
+        "confirmed": true
+      },
+      {
+        "id": "F02",
+        "observed": {
+          "body": {
+            "course_id": "fixture-A-schedule"
+          },
+          "usernameField": false
+        },
+        "issue_observation": {
+          "body": {
+            "course_id": "fixture-A-schedule"
+          },
+          "usernameField": false
+        },
+        "confirmed": true
+      },
+      {
+        "id": "F03",
+        "observed": true,
+        "issue_observation": true,
+        "confirmed": true
+      },
+      {
+        "id": "F04",
+        "observed": false,
+        "issue_observation": false,
+        "confirmed": true
+      }
+    ],
+    "confirmed": 4,
+    "scope": "Actual app.js in Node VM; F03 evaluates generated click handler with synthetic ID. No real browser exploitation claimed."
+  },
+  "browser_checks": {
+    "loaded": true,
+    "buttonEnabled": true,
+    "view_switches": [
+      true,
+      true,
+      true
+    ],
+    "manual_modal": [
+      true,
+      true
+    ],
+    "generated_handler_xss": true,
+    "page_errors": [],
+    "all_page_requests_intercepted": true,
+    "no_school_request": true,
+    "scope": "Windows Edge headless, actual HTML/JS/CSS, all business responses synthetic; not desktop WebView/tray or full existing CDP suite."
+  },
+  "git_privacy_before_version_operations": {
+    "scope": "All blobs reachable from local Git refs; current main blob IDs matched remote",
+    "objects": 454,
+    "blobs_scanned": 250,
+    "bytes_scanned": 707668054,
+    "sensitive_pattern_findings": [],
+    "nonempty_config_fields": [],
+    "limits": [
+      "Pattern/known-value scan; not OCR of historical images",
+      "Opaque binary strings scan does not prove absence of secrets in compressed archive payloads",
+      "Unreachable remote Git objects and deleted server-side refs not covered"
+    ]
+  },
+  "withdrawal": {
+    "reviewed_plan": {
+      "date": "2026-10-14",
+      "repository": "nixianren666/AUTO-BUAATOOLS",
+      "current_main": "fcc513140798211d55dd0db98e54a5e168f80b10",
+      "restore_main": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "stable_exe_sha256": "fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+      "stable_portable": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin-v1.2.6-portable.exe",
+      "releases": [
+        {
+          "id": 389123154,
+          "tag": "v1.3.2"
+        },
+        {
+          "id": 388942332,
+          "tag": "v1.3.1"
+        }
+      ],
+      "delete_tags": [
+        "v1.3.2",
+        "v1.3.1"
+      ],
+      "local_retired_files": [
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+          "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+          "wechat_module": true,
+          "reason": "embedded withdrawn WeChat module"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+          "sha256": "2bc3c6d6dcef58fe72e8d49339b50ab45c73dc6eaeb4f13419904fcbdee0ec95",
+          "wechat_module": true,
+          "reason": "embedded withdrawn WeChat module"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-Setup-v1.3.1.exe",
+          "sha256": "2c74777e0e20a2f6242f22109c8384178fb924950c22351e47f5a9ccd1d46ccd",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-Setup-v1.3.2.exe",
+          "sha256": "9ac685ab77c0893d0fd76ec49f61ce6ec81254743a9febb46bf2151ccbfe1b1d",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-v1.3.2-portable.exe",
+          "sha256": "2bc3c6d6dcef58fe72e8d49339b50ab45c73dc6eaeb4f13419904fcbdee0ec95",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-Setup-v1.3.1.exe",
+          "sha256": "2c74777e0e20a2f6242f22109c8384178fb924950c22351e47f5a9ccd1d46ccd",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-Setup-v1.3.2.exe",
+          "sha256": "bc8638f70524c5d99bd054bec65f135162ed270e333b96d9bb30e17fb2511f52",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-v1.3.1-portable.exe",
+          "sha256": "25d142e37fe405e015136792e73d16ef0d51f13c64b3fe3bfa8b4b7309d9c6d6",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-v1.3.2-portable.exe",
+          "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+          "reason": "explicit v1.3 program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin.exe",
+          "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+          "wechat_module": true,
+          "reason": "embedded withdrawn WeChat module"
+        }
+      ],
+      "inspected_programs": [
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+          "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+          "wechat_module": true
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin-v1.2.2-portable.exe",
+          "sha256": "17b21ead2ba4edd269a896940af152b26b0b0bd839c5ad390fb464e55992fb96",
+          "wechat_module": false
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+          "sha256": "2bc3c6d6dcef58fe72e8d49339b50ab45c73dc6eaeb4f13419904fcbdee0ec95",
+          "wechat_module": true
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\Github库\\BUAA-Signin.exe",
+          "sha256": "098cf186110bd2619d7471d6794d66d459f492c7fab538aa889545ab4f888a2e",
+          "wechat_module": false
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin.exe",
+          "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+          "wechat_module": true
+        }
+      ],
+      "required_precondition": "disable unsafe release workflow; clean local Git; force-with-lease expected main; all historical blob privacy scan clear",
+      "scope": "Withdraw v1.3 releases/tags, restore main to exact v1.2.6, replace default executable aliases, remove local withdrawn artifacts. Preserve user config, UI previews, v1.2 releases, original Antigravity records and audit metadata. Remote immutable/unreachable objects are not certified erased."
+    },
+    "remote": {
+      "date": "2026-10-14",
+      "operations": [
+        {
+          "operation": "disable_unsafe_release_workflow",
+          "id": 355668095,
+          "status": 204
+        },
+        {
+          "operation": "restore_remote_main_with_lease",
+          "sha": "5158df8da851ce53d64e8ea3a55438aad96aeef0"
+        },
+        {
+          "operation": "delete_release",
+          "tag": "v1.3.2",
+          "status": 204
+        },
+        {
+          "operation": "delete_release",
+          "tag": "v1.3.1",
+          "status": 204
+        },
+        {
+          "operation": "delete_remote_tag",
+          "tag": "v1.3.2",
+          "status": 204
+        },
+        {
+          "operation": "delete_remote_tag",
+          "tag": "v1.3.1",
+          "status": 204
+        },
+        {
+          "operation": "set_v126_latest",
+          "status": 200
+        }
+      ],
+      "local_git": {
+        "head": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+        "status": "",
+        "tags": [
+          "v1.2.2",
+          "v1.2.5",
+          "v1.2.6"
+        ]
+      },
+      "remote_main": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "remote_release_tags": [
+        "v1.2.6",
+        "v1.2.5",
+        "v1.2.2",
+        "v1.2.0"
+      ],
+      "remote_tags": [
+        "v1.2.6",
+        "v1.2.5",
+        "v1.2.2",
+        "v1.2.0"
+      ],
+      "latest": "v1.2.6",
+      "workflow_state": "disabled_manually",
+      "deleted_endpoint_checks": [
+        {
+          "tag": "v1.3.2",
+          "release_status": 404,
+          "ref_status": 404
+        },
+        {
+          "tag": "v1.3.1",
+          "release_status": 404,
+          "ref_status": 404
+        }
+      ],
+      "remote_completed": true
+    },
+    "local": {
+      "completed": true,
+      "actions": [
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+          "action": "replaced_with_verified_v126"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+          "action": "replaced_with_verified_v126"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-Setup-v1.3.1.exe",
+          "action": "deleted_retired_v13_program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-Setup-v1.3.2.exe",
+          "action": "deleted_retired_v13_program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist_installer\\BUAA-Signin-v1.3.2-portable.exe",
+          "action": "deleted_retired_v13_program"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-Setup-v1.3.1.exe",
+          "action": "already_removed_by_git_restore"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-Setup-v1.3.2.exe",
+          "action": "already_removed_by_git_restore"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-v1.3.1-portable.exe",
+          "action": "already_removed_by_git_restore"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin-v1.3.2-portable.exe",
+          "action": "already_removed_by_git_restore"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin.exe",
+          "action": "already_restored_to_verified_v126"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\core\\__pycache__\\wechat_clawbot.cpython-314.pyc",
+          "action": "deleted_withdrawn_module_cache"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\tests\\__pycache__\\test_wechat_clawbot.cpython-314.pyc",
+          "action": "deleted_withdrawn_module_cache"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\core\\__pycache__\\wechat_clawbot.cpython-314.pyc",
+          "action": "deleted_withdrawn_module_cache"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\tests\\__pycache__\\test_wechat_clawbot.cpython-314.pyc",
+          "action": "deleted_withdrawn_module_cache"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\build\\BUAA-Signin",
+          "action": "deleted_generated_v13_build_or_audit_source"
+        },
+        {
+          "path": "C:\\Users\\cjt16\\AppData\\Local\\Temp\\ubaa-github-audit-3489cb3949e94003948c3f6bdc64d4fe\\source",
+          "action": "deleted_generated_v13_build_or_audit_source"
+        }
+      ],
+      "ui_preview_unchanged": true,
+      "verified_default_aliases": [
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+          "sha256": "fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+          "wechat_module_present": false
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+          "sha256": "fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+          "wechat_module_present": false
+        },
+        {
+          "path": "C:\\Users\\cjt16\\Desktop\\Github库\\BUAA-Signin.exe",
+          "sha256": "fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+          "wechat_module_present": false
+        }
+      ],
+      "remaining_v13_named_programs": [],
+      "user_config_unchanged": true
+    }
+  },
+  "reproduction": [
+    {
+      "path": "verification/v126_review_probes.py",
+      "sha256": "82dcf2f6b3190e1dba65b83469f264fb358d4d1a1ba1abc2019dfd57b6d71b06"
+    },
+    {
+      "path": "verification/v126_frontend_review.js",
+      "sha256": "e653ac64bdb6adf5c21ff6dbe4fe79eb485871eef605eb9584c09d2add93fd84"
+    }
+  ],
+  "limits": [
+    "Original CDP UI test still fails; root cause unresolved, independent basic browser checks do not turn it into a pass",
+    "No live school or native macOS/Linux/desktop tray acceptance",
+    "No removal guarantee for inaccessible/unreachable GitHub objects, caches or other downloaded copies",
+    "No exhaustive OCR or decompression privacy certification"
+  ],
+  "document_validation": {
+    "files_scanned": 11,
+    "local_links_checked": 28,
+    "known_sensitive_value_matches": 0,
+    "credential_pattern_matches": 0,
+    "source_unchanged": true,
+    "git_worktree_clean": true,
+    "errors": []
+  }
+}

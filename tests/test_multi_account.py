@@ -1,3 +1,4 @@
+from core.domain import now as china_now
 import os
 os.environ["TESTING"] = "1"
 """
@@ -22,13 +23,13 @@ class DummyClient:
         return True
 
     async def get_today_classes(self):
-        now = datetime.now()
+        now = china_now()
         # 构造一个 5 分钟后开始的课程 (处于 [start - 10m, start] 窗口内)
         start_time = (now + timedelta(minutes=5)).strftime("%H:%M")
         end_time = (now + timedelta(minutes=50)).strftime("%H:%M")
         return [
             {
-                "courseId": "test_c1",
+                "courseSchedId": "1001", "courseId": "1001",
                 "courseName": "测试计算机课程",
                 "classBeginTime": start_time,
                 "classEndTime": end_time,
@@ -36,7 +37,7 @@ class DummyClient:
             }
         ]
 
-    async def perform_signin(self, course_id):
+    async def perform_signin(self, course_id, guard=None):
         self.call_count += 1
         if self.call_count <= self.fail_times:
             return False, "模拟签到临时失败"
@@ -49,6 +50,8 @@ class DummyClient:
 class TestMultiAccount(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        csrf = self.client.get("/api/session").json()["csrf"]
+        self.client.headers["X-BUAA-CSRF"] = csrf
         accounts.clear()
 
     def test_accounts_crud_and_switch(self):
@@ -142,29 +145,29 @@ class TestMultiAccount(unittest.TestCase):
 
         loop = asyncio.new_event_loop()
         try:
-            key = ("test_stu", "test_c1")
+            key = ("test_stu", "1001", scheduler.clock().date().isoformat())
 
             # 轮次 1: 规划打卡时间点
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertIn(key, scheduler.planned_targets)
 
             # 模拟到达计划打卡时间 -> 触发第 1 次尝试 (失败)
-            scheduler.planned_targets[key] = datetime.now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 1)
 
             # 模拟到达第 2 次重试时间 -> 触发第 2 次尝试 (失败)
-            scheduler.planned_targets[key] = datetime.now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 2)
 
             # 模拟到达第 3 次重试时间 -> 触发第 3 次尝试 (成功)
-            scheduler.planned_targets[key] = datetime.now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 3)
 
             self.assertIn(key, scheduler.signed_courses)
-            self.assertTrue(any("签到成功" in msg for _, msg, _, _ in logs_received))
+            self.assertTrue(any("签到请求已接受" in msg for _, msg, _, _ in logs_received))
         finally:
             loop.close()
 

@@ -1,0 +1,61 @@
+"""Fresh native build, post-build tests and provenance; never publishes a Release."""
+import hashlib
+import importlib.metadata
+import json
+import os
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import tarfile
+
+ROOT=Path(__file__).resolve().parent.parent
+sys.path.insert(0,str(ROOT))
+from core.version import VERSION
+
+def call(*args):
+    subprocess.run(list(args),cwd=ROOT,check=True)
+
+def main():
+    dist=ROOT/"dist"
+    if dist.exists() and any(dist.iterdir()):
+        raise RuntimeError("构建目录必须为空，避免混入旧版本产物；请使用独立构建目录")
+    output=ROOT/"release-assets";output.mkdir(exist_ok=True)
+    if any(output.iterdir()):raise RuntimeError("产物目录必须为空")
+    system=sys.platform;arch=platform.machine().lower()
+    suffix={"win32":"Windows-x64","darwin":"macOS-"+arch,"linux":"Linux-"+arch}[system]
+    spec={"win32":"BUAA-Signin.spec","darwin":"BUAA-Signin-mac.spec","linux":"BUAA-Signin-linux.spec"}[system]
+    call(sys.executable,"-m","PyInstaller","--noconfirm","--clean",spec)
+    executable=dist/("BUAA-Signin.exe" if system=="win32" else "BUAA-Signin.app/Contents/MacOS/BUAA-Signin" if system=="darwin" else "BUAA-Signin")
+    if system=="darwin":
+        call("codesign","--force","--deep","-s","-",str(dist/"BUAA-Signin.app"))
+        call("codesign","--verify","--deep","--strict",str(dist/"BUAA-Signin.app"))
+    call(sys.executable,"scripts/verify_compiled.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"),"--native")
+    if os.environ.get("GITHUB_ACTIONS")=="true" and system in ("linux","darwin"):
+        call(sys.executable,"scripts/verify_native_service.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"))
+    if system=="win32":
+        shutil.copy2(executable,output/f"BUAA-Signin-v{VERSION}-portable.exe")
+        compiler=os.environ.get("BUAA_ISCC") or r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+        if not Path(compiler).is_file():raise RuntimeError("Inno Setup compiler required")
+        call(compiler,"installer/setup.iss")
+        setup=ROOT/"dist_installer"/f"BUAA-Signin-Setup-v{VERSION}.exe"
+        # Validate installed executable and safe uninstall in a temporary location.
+        call(sys.executable,"scripts/verify_installer.py","--installer",str(setup),"--expected-executable",str(executable),"--report-dir",str(ROOT/"acceptance"))
+        shutil.copy2(setup,output/setup.name)
+    elif system=="darwin":
+        staging=dist/"dmg-root";staging.mkdir()
+        shutil.copytree(dist/"BUAA-Signin.app",staging/"BUAA-Signin.app",symlinks=True)
+        (staging/"Applications").symlink_to("/Applications")
+        call("hdiutil","create","-volname",f"BUAA-Signin {VERSION}","-srcfolder",str(staging),"-ov","-format","UDZO",str(output/f"BUAA-Signin-v{VERSION}-{suffix}.dmg"))
+        call("ditto","-c","-k","--sequesterRsrc","--keepParent",str(dist/"BUAA-Signin.app"),str(output/f"BUAA-Signin-v{VERSION}-{suffix}.zip"))
+    else:
+        with tarfile.open(output/f"BUAA-Signin-v{VERSION}-{suffix}.tar.gz","w:gz") as archive:
+            archive.add(executable,arcname="BUAA-Signin")
+            archive.add(ROOT/"README.md",arcname="README.md")
+    commit=os.environ.get("GITHUB_SHA") or os.environ.get("BUAA_BUILD_COMMIT","development-unpublished")
+    assets=[{"name":file.name,"size":file.stat().st_size,"sha256":hashlib.sha256(file.read_bytes()).hexdigest()} for file in sorted(output.iterdir()) if file.is_file()]
+    manifest={"version":VERSION,"commit":commit,"run_id":os.environ.get("GITHUB_RUN_ID"),"platform":system,"architecture":arch,"python":platform.python_version(),"dependencies":sorted({d.metadata['Name']+"=="+d.version for d in importlib.metadata.distributions() if d.metadata.get('Name')}),"post_build_verified":True,"assets":assets}
+    (output/f"manifest-{suffix}.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
+
+if __name__=="__main__":main()

@@ -1,0 +1,494 @@
+{
+  "schema_version": 1,
+  "completed_date": "2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "scope": "Independent upstream source research, synthetic offline verification, current source comparison; no Antigravity claims used as technical authority; no business code changes or production requests.",
+  "upstreams": {
+    "BUAASubnet/UBAA": {
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "tree": "d9732a21c8e824cc3233dc61e3bb7af86e2675e9",
+      "source_url": "https://github.com/BUAASubnet/UBAA/tree/e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "fetch": "Public Git clone without credentials",
+      "local_tests": "Not run; no java/gradle command available"
+    },
+    "DeNeRATe-cool/AutoBoya": {
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "tree": "901ec390419076ed36805103a99d56b2e7b9a787",
+      "source_url": "https://github.com/DeNeRATe-cool/AutoBoya/tree/c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "fetch": "Public Git clone without credentials",
+      "local_tests": "55 pytest tests passed"
+    }
+  },
+  "cited_source_fingerprints": [
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonMain/kotlin/cn/edu/ubaa/api/local/LocalConnectionAuth.kt",
+      "line": null,
+      "sha256": "99097ef2ee3f9677729bdadc8042e67d225075dfb503160e93f6c8dfd71f82c3",
+      "lines": 988
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/auth.py",
+      "line": null,
+      "sha256": "1a61345cc0a68148ce08b6ba8b1b87482be6ba1db28d1ec28d4c0a7a9319b5e5",
+      "lines": 251
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/webvpn.py",
+      "line": null,
+      "sha256": "9939357043243bb4cd653af70834c2d5cd2cc90648b7d1a74a87f3743684c7aa",
+      "lines": 39
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/session.py",
+      "line": null,
+      "sha256": "84233e23685e260b70f5a0eaa446c3aa0564370cf7080aef3168cb057f791136",
+      "lines": 91
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/storage.py",
+      "line": null,
+      "sha256": "3952f5f08d4f1e39b3d15d7f317fd97f9d62a0fa2b659df10795ac6b4d1b2e7f",
+      "lines": 100
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonMain/kotlin/cn/edu/ubaa/api/local/LocalSigninApi.kt",
+      "line": 113,
+      "sha256": "ec8acf1121fe6be185755ce73fd23b36bafe3fe35f8df55c2956e346ff34370b",
+      "lines": 320
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "server/src/main/kotlin/cn/edu/ubaa/signin/SigninClient.kt",
+      "line": null,
+      "sha256": "53930d34dfa9bc31b58dd833aadbe9c706c023ba4e4e25599814801e2b3b25b8",
+      "lines": 307
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonTest/kotlin/cn/edu/ubaa/api/LocalSigninApiBackendTest.kt",
+      "line": 556,
+      "sha256": "1fa9f0906276694f2b0430588e7595dd94d34051d9e7dad73841e26e67fff8d7",
+      "lines": 671
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "composeApp/src/commonMain/kotlin/cn/edu/ubaa/ui/screens/signin/SigninViewModel.kt",
+      "line": null,
+      "sha256": "7a38467fe29b58e298a1894c0891355a6330e362dad2ca423b47b2a0a5d5d6e1",
+      "lines": 88
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "server/src/main/kotlin/cn/edu/ubaa/bykc/BykcCrypto.kt",
+      "line": null,
+      "sha256": "d1d1cf1a8792a36be682b34b68fe2c40dd6c2f16b87df809a4586419b467eeee",
+      "lines": 162
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonMain/kotlin/cn/edu/ubaa/api/local/LocalBykcApi.kt",
+      "line": 448,
+      "sha256": "6fcf658eb2a719786dea2dd5d1c2c595f78ab5bd369029858c6311785986427c",
+      "lines": 959
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/crypto.py",
+      "line": null,
+      "sha256": "87aee78a5ada46acd85aa7645c59534a32df5b0152e0cf3d19f290ad9e2b9272",
+      "lines": 80
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/bykc.py",
+      "line": null,
+      "sha256": "3f010d981a18fafebb3b691e8a9312815b67874c30a7c398c9da862f92d55ff4",
+      "lines": 203
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "tests/test_manual_operations.py",
+      "line": 51,
+      "sha256": "7d58d64fdbdfcc16bd164445fb277a4b822836a06d2c2d855e0e2994b4b97a59",
+      "lines": 123
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonMain/kotlin/cn/edu/ubaa/model/dto/Bykc.kt",
+      "line": null,
+      "sha256": "df6edbf010a87701af128f87dcae4ae109ecd2b0dc46e2b90cddccf5d4c2f463",
+      "lines": 319
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "server/src/main/kotlin/cn/edu/ubaa/bykc/BykcService.kt",
+      "line": 244,
+      "sha256": "2255b8461cb13625139554ca062ef83ec0b385a3826b892387d9333eafb063e6",
+      "lines": 624
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "shared/src/commonMain/kotlin/cn/edu/ubaa/api/local/LocalBykcApi.kt",
+      "line": 647,
+      "sha256": "6fcf658eb2a719786dea2dd5d1c2c595f78ab5bd369029858c6311785986427c",
+      "lines": 959
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "composeApp/src/commonMain/kotlin/cn/edu/ubaa/ui/screens/bykc/BykcTimeFormatters.kt",
+      "line": 116,
+      "sha256": "9b62dfa09827a8c24351e06f7463527db674163a28d692f666c80c89a5b35f49",
+      "lines": 198
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/scheduler.py",
+      "line": null,
+      "sha256": "d211405c691c490b97cdf835eec67cd13acdb54e088a5dda044e9fe6e59aae3f",
+      "lines": 299
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/rules.py",
+      "line": null,
+      "sha256": "31e08ba231f60756adcbc623f35df6d9a77c9e31b3c2cb728c4e5908ad718e43",
+      "lines": 91
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/cli.py",
+      "line": null,
+      "sha256": "3c2ebd04c39af287327029d9366a20e2f71e7f3b415133771b8cee9c9cdc59aa",
+      "lines": 649
+    },
+    {
+      "repository": "DeNeRATe-cool/AutoBoya",
+      "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+      "path": "autoboya/cache.py",
+      "line": null,
+      "sha256": "fcdadd08f0b0d2419f2f362c52ada9dc4ab1195262d08704a96eb83e4258b5a5",
+      "lines": 75
+    },
+    {
+      "repository": "BUAASubnet/UBAA",
+      "commit": "e8a397fcb35a68147eee65a94c66ffb84e2f09fe",
+      "path": "composeApp/src/commonMain/kotlin/cn/edu/ubaa/ui/screens/bykc/BykcChosenCoursesScreen.kt",
+      "line": 243,
+      "sha256": "300a0664c5278927605e28eb71e29ceba93db735693548eeb36a38c31240f375",
+      "lines": 265
+    }
+  ],
+  "current_source_fingerprints": [
+    {
+      "path": "core/iclass.py",
+      "sha256": "68dc927c16076f2bd63362104c38d559acbb1672b8ef2d66fc306dfc9a9167b5",
+      "lines": 559
+    },
+    {
+      "path": "core/cas.py",
+      "sha256": "fe3bcce3db9e28fcc5a50daa2f1e13164bfc6649d34d5672887bd88ac38f2ca9",
+      "lines": 127
+    },
+    {
+      "path": "core/webvpn.py",
+      "sha256": "fb7430ef1785ecf79043a97fa177bac3306e1ddcb0981ff1ce9de35c992e7036",
+      "lines": 124
+    },
+    {
+      "path": "core/scheduler.py",
+      "sha256": "43804535fff4dc271bba811f78c8658144c20a6cbda9b2caadf294d2c7d4b4ae",
+      "lines": 270
+    },
+    {
+      "path": "core/boya_client.py",
+      "sha256": "bc66a4ecd25bfb0763b9e66ffd4f22e32de445bdf3c8349c756305e9980f4d10",
+      "lines": 304
+    },
+    {
+      "path": "core/boya_crypto.py",
+      "sha256": "22570dac73f037687e10e8128b774ea8a2272438f17070a0b735fe1453894dda",
+      "lines": 116
+    },
+    {
+      "path": "core/boya_scheduler.py",
+      "sha256": "605079d31b097c4ff3d72ca15c9435209e5c8df9e3ebcfe2accb0860204f977d",
+      "lines": 867
+    },
+    {
+      "path": "server/app.py",
+      "sha256": "4069ffb0b790909f53a9b6b13f847cbcd308b7fd01efe78efc48fed4a9e05c6b",
+      "lines": 2009
+    }
+  ],
+  "initial_handoff_hash_comparisons": [
+    {
+      "path": "core/iclass.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/cas.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/webvpn.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/scheduler.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/boya_client.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/boya_crypto.py",
+      "matches_initial": true
+    },
+    {
+      "path": "core/boya_scheduler.py",
+      "matches_initial": true
+    },
+    {
+      "path": "server/app.py",
+      "matches_initial": true
+    }
+  ],
+  "verification": {
+    "upstream": "DeNeRATe-cool/AutoBoya",
+    "commit": "c8fc785bbc07178bfbd79d99b89b5358e021b23b",
+    "existing_test_exit": 0,
+    "existing_tests": {
+      "passed": 55
+    },
+    "probes": [
+      {
+        "id": "nested_id_preserved",
+        "observation": [
+          1001,
+          2002
+        ],
+        "expected_observation": [
+          1001,
+          2002
+        ],
+        "confirmed": true,
+        "kind": "contract"
+      },
+      {
+        "id": "empty_coordinate_point_is_candidate",
+        "observation": true,
+        "expected_observation": true,
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "invalid_capacity_is_candidate",
+        "observation": true,
+        "expected_observation": true,
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "cancelled_finished_course_is_candidate",
+        "observation": true,
+        "expected_observation": true,
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "completed_course_still_generates_sign",
+        "observation": [
+          "sign"
+        ],
+        "expected_observation": [
+          "sign"
+        ],
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "missing_official_window_no_fallback",
+        "observation": 0,
+        "expected_observation": 0,
+        "confirmed": true,
+        "kind": "contract"
+      },
+      {
+        "id": "semester_uses_first_not_current",
+        "observation": [
+          "2026-03-01 00:00:00",
+          "2026-06-21 00:00:00"
+        ],
+        "expected_observation": [
+          "2026-03-01 00:00:00",
+          "2026-06-21 00:00:00"
+        ],
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "semester_missing_hardcoded_2026_spring",
+        "observation": [
+          "2026-03-01 00:00:00",
+          "2026-06-21 00:00:00"
+        ],
+        "expected_observation": [
+          "2026-03-01 00:00:00",
+          "2026-06-21 00:00:00"
+        ],
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "write_success_refresh_failure_repeats_select",
+        "observation": [
+          2,
+          false,
+          false
+        ],
+        "expected_observation": [
+          2,
+          false,
+          false
+        ],
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "disabled_cached_user_can_sign",
+        "observation": 1,
+        "expected_observation": 1,
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "execute_does_not_revalidate_expired_window",
+        "observation": 1,
+        "expected_observation": 1,
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "malformed_coordinates_escape_action_handler",
+        "observation": "KeyError",
+        "expected_observation": "KeyError",
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "http401_not_sessionexpired",
+        "observation": "HTTPStatusError",
+        "expected_observation": "HTTPStatusError",
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "missing_status_accepted",
+        "observation": {
+          "errmsg": "synthetic rejection without status"
+        },
+        "expected_observation": {
+          "errmsg": "synthetic rejection without status"
+        },
+        "confirmed": true,
+        "kind": "boundary"
+      },
+      {
+        "id": "coordinates_inside_inner65percent",
+        "observation": true,
+        "expected_observation": true,
+        "confirmed": true,
+        "kind": "contract"
+      },
+      {
+        "id": "refresh_first_user_failure_stops_next",
+        "observation": 2,
+        "expected_observation": 2,
+        "confirmed": true,
+        "kind": "boundary"
+      }
+    ],
+    "blocked_socket_attempts": 0,
+    "scope": "Offline synthetic mocks and upstream unit tests; no real school, credentials or native GUI validation."
+  },
+  "reproduction": {
+    "path": "verification/verify_upstreams.py",
+    "sha256": "d5ea72cec26cc6343a824128af6575ba673224e9c62ff3c9fbb139b853aabb5d",
+    "requires": "Python >=3.11, pinned AutoBoya checkout in ROOT/autoboya, project dependencies and pytest; environment commands documented in report"
+  },
+  "limitations": [
+    "UBAA Kotlin tests not executed",
+    "No current school endpoint contract or real attendance/selection validation",
+    "No native GUI or cross-platform acceptance",
+    "Document privacy scan only, not repository-wide release certification"
+  ],
+  "document_validation": {
+    "source_links_checked": 23,
+    "local_links_checked": 17,
+    "known_secret_matches": 0,
+    "credential_pattern_matches": 0,
+    "business_hash_comparisons": [
+      {
+        "path": "core/iclass.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/cas.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/webvpn.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/scheduler.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/boya_client.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/boya_crypto.py",
+        "matches_initial": true
+      },
+      {
+        "path": "core/boya_scheduler.py",
+        "matches_initial": true
+      },
+      {
+        "path": "server/app.py",
+        "matches_initial": true
+      }
+    ],
+    "errors": []
+  }
+}

@@ -1,0 +1,59 @@
+"""Run the complete suite without user configuration, school traffic or OS writes."""
+import contextlib
+import io
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+import tempfile
+import time
+import unittest
+
+def main():
+    project = Path(__file__).resolve().parent.parent
+    report_dir = Path(os.environ.get("BUAA_TEST_REPORT_DIR", tempfile.mkdtemp(prefix="buaa-test-reports-"))).resolve()
+    report_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="buaa-test-source-") as directory:
+        source = Path(directory)
+        for name in ("core", "server", "tests", "scripts", "installer", "systemd", ".github"):
+            if (project/name).is_dir():
+                shutil.copytree(project/name, source/name, ignore=shutil.ignore_patterns("__pycache__"))
+        for pattern in ("*.spec", "app_icon.*", "tray_icon.png", "Dockerfile", "docker-compose.yml", "run.py", "requirements*.txt", "README.md"):
+            for file in project.glob(pattern):
+                if file.is_file():
+                    shutil.copy2(file, source/file.name)
+        config = source/"config.json"
+        config.write_text("{}", encoding="utf-8")
+        os.environ.update({"TESTING": "1", "BUAA_CONFIG_FILE": str(config), "BUAA_VAULT_DIR": str(source/"private-vault"), "NO_PROXY": "*"})
+        os.environ.pop("BUAA_ADMIN_PASSWORD", None)
+        os.environ.pop("BUAA_SMOKE_PROFILE", None)
+        for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+            os.environ.pop(key, None)
+        blocked = []
+        def audit(event, args):
+            if event == "socket.connect":
+                address = args[1]
+                if isinstance(address, tuple) and str(address[0]) not in ("127.0.0.1", "localhost", "::1"):
+                    blocked.append(True)
+                    raise PermissionError("School/third-party traffic forbidden in isolated tests")
+            if event in ("winreg.SetValue", "winreg.DeleteValue", "winreg.DeleteKey"):
+                raise PermissionError("Registry mutations forbidden in isolated tests")
+        sys.addaudithook(audit)
+        os.chdir(source)
+        sys.path.insert(0, str(source))
+        sys.dont_write_bytecode = True
+        stream = io.StringIO()
+        started = time.monotonic()
+        with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
+            suite = unittest.defaultTestLoader.discover("tests", pattern="test_*.py")
+            result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
+        (report_dir/"test-output.txt").write_text(stream.getvalue(), encoding="utf-8")
+        summary = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors), "skipped": len(result.skipped), "passed": result.wasSuccessful() and not result.skipped, "elapsed_seconds": round(time.monotonic()-started,2), "blocked_non_loopback_attempts": len(blocked), "failure_names": [str(t) for t,_ in result.failures], "error_names": [str(t) for t,_ in result.errors]}
+        (report_dir/"test-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(json.dumps(summary, ensure_ascii=False))
+        os.chdir(project)
+        return 0 if summary["passed"] else 1
+
+if __name__ == "__main__":
+    raise SystemExit(main())

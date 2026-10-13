@@ -13,6 +13,8 @@ class TestApiServer(unittest.TestCase):
         self._orig_accounts = dict(accounts)
         accounts.clear()
         self.client = TestClient(app)
+        csrf = self.client.get("/api/session").json()["csrf"]
+        self.client.headers["X-BUAA-CSRF"] = csrf
 
     def tearDown(self):
         from server.app import accounts
@@ -65,10 +67,10 @@ class TestApiServer(unittest.TestCase):
         self.assertIn("style.css", resp.text)
         self.assertIn("app.js", resp.text)
 
-    def test_health_v125(self):
+    def test_health_current_version(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.2.5")
+        self.assertEqual(resp.json()["version"], "1.2.7")
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")

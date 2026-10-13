@@ -55,7 +55,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
                 "courseKind": "德育",
                 "courseStartDate": "2024-10-15 14:00:00",
                 "courseEndDate": "2024-10-15 16:00:00",
-                "final_passed": True,
+                "final_passed": True, "checkin": 1, "pass": 1,
             },
             # 往届 2025 年春季课（已考勤通过，应被彻底排除）
             {
@@ -64,7 +64,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
                 "courseKind": "劳育",
                 "courseStartDate": "2025-04-10 09:00:00",
                 "courseEndDate": "2025-04-10 11:00:00",
-                "final_passed": True,
+                "final_passed": True, "checkin": 1, "pass": 1,
             },
             # 本学期 2026-09-13 通过的《北京一号》（应被正确计入美育）
             {
@@ -73,7 +73,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
                 "courseKind": "美育",
                 "courseStartDate": "2026-09-13 14:00:00",
                 "courseEndDate": "2026-09-13 16:00:00",
-                "final_passed": True,
+                "final_passed": True, "checkin": 1, "pass": 1,
             },
             # 本学期 2026-09-16 的《心肺复苏CPR》（尚未考核通过，不计入通过）
             {
@@ -82,7 +82,7 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
                 "courseKind": "安全健康",
                 "courseStartDate": "2026-09-16 19:00:00",
                 "courseEndDate": "2026-09-16 21:00:00",
-                "final_passed": False,
+                "final_passed": False, "checkin": 0, "pass": None,
             },
         ]
 
@@ -104,13 +104,10 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         self.assertIn("all_time_stats", stats)
         self.assertEqual(stats["all_time_stats"]["total"], 10, "全学程历史累计修读总数必须保留为10门")
 
-    def test_semester_date_fallback_beihang_calendar(self):
-        """测试离线或缺少 semesterInfo 时，基于北航官方校历的基准推算"""
-        start, end, name = get_current_semester_range()
-        self.assertIsNotNone(start)
-        self.assertIsNotNone(end)
-        self.assertTrue(start < end)
-        self.assertIn("学年", name)
+    def test_missing_official_calendar_pauses_semester_statistics(self):
+        with self.assertRaises(ValueError):
+            get_current_semester_range()
+        self.assertFalse(compute_semester_statistics([], {}).get("semester_known"))
 
     def test_offline_checkin_course_can_be_selected(self):
         """严格安全性原则验证：默认严禁自动抢选现场刷卡考勤课程，防止因无法自动线上打卡导致旷课记过"""
@@ -160,7 +157,8 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
             "maxCount": 50,
             "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
         }
-        self.assertTrue(is_auto_select_candidate(c2, now, campus="北京"), "有名额课程可选")
+        c2.update({"id": 2001, "courseKind": "美育", "courseStartDate": "2026-09-15 14:00:00", "courseEndDate": "2026-09-15 16:00:00", "courseSignConfig": {"signPointList": [{"lat":39.9,"lng":116.3,"radius":30}], "signStartDate": "2026-09-15 13:50:00", "signEndDate": "2026-09-15 14:00:00", "signOutStartDate": "2026-09-15 15:50:00", "signOutEndDate": "2026-09-15 16:10:00"}})
+        self.assertTrue(is_auto_select_candidate(c2, now, campus="北京"), "有名额且自主考勤完整的课程可选")
 
     def test_windows_single_instance_lock(self):
         """测试单实例互斥锁能够正常获取与安全释放"""
@@ -211,11 +209,19 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
         self.assertTrue(os.path.exists(systemd_script), "install_linux_service.sh 必须存在")
         with open(systemd_script, "r", encoding="utf-8") as f:
             content = f.read()
-            self.assertIn("systemd", content)
-            self.assertIn("Restart=always", content)
+            self.assertIn("-m core.service_cli", content)
+            self.assertNotIn("sudo", content)
+        from core.service_cli import command
+        from unittest.mock import patch
+        with patch("core.service_cli.sys.platform", "linux"):
+            self.assertEqual(command("restart"), ["systemctl", "--user", "restart", "buaa-signin.service"])
+        with open(os.path.join(BASE_DIR, "core", "autostart.py"), encoding="utf-8") as f:
+            self.assertIn("Restart=always", f.read())
 
         docker_file = os.path.join(BASE_DIR, "Dockerfile")
         self.assertTrue(os.path.exists(docker_file), "Dockerfile 必须存在")
+        with open(docker_file, encoding="utf-8") as f:
+            self.assertNotIn("COPY config.json", f.read())
 
     def test_courses_time_overlap_detection(self):
         """测试博雅课程防选错：精准判断上课时间区间重叠冲突"""
@@ -245,9 +251,9 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
 
         # 假设学生当前美育已满 1 门，但德育 0/2，劳育 0/2，安全 0/1
         selected = [
-            {"courseKind": "美育", "courseStartDate": "2026-09-10 14:00:00", "final_passed": True}
+            {"courseKind": "美育", "courseStartDate": "2026-09-10 14:00:00", "courseEndDate": "2026-09-10 16:00:00", "final_passed": True, "checkin": 1, "pass": 1}
         ]
-        demands = get_user_category_demands(selected)
+        demands = get_user_category_demands(selected, datetime.datetime(2026,8,31), datetime.datetime(2027,1,3))
         self.assertEqual(demands["美育"]["remaining"], 0, "美育已满额，缺口应为0")
         self.assertEqual(demands["德育"]["remaining"], 2, "德育未修，缺口应为2")
         self.assertEqual(demands["劳育"]["remaining"], 2, "劳育未修，缺口应为2")
@@ -302,4 +308,3 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -1,32 +1,22 @@
-# Byte-compiled / optimized / DLL files
+config.json
+*.sqlite
+*.sqlite-*
+.vault-key-*
+.instance-*
 __pycache__/
-*.py[cod]
-*.class
-
-# PyInstaller / Build artifacts
-build/
-dist/
-*.spec.bak
-
-# Log files
-*.log
-
-# Local environment & caches
-.env
+*.pyc
 .venv/
 env/
-venv/
-.pytest_cache/
-.coverage
-htmlcov/
-
-# User-specific / OS files
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# Ignore other staging folders
-Github¿â/
-
+node_modules/
+build/
+dist/
 dist_installer/
+release-assets/
+acceptance/
+*.exe
+*.dmg
+*.zip
+*.tar.gz
+*.log
+preview_liquid_ui.html
+Githubåº“/

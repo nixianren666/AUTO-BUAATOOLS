@@ -1,3 +1,4 @@
+from core.domain import now as china_now
 import unittest
 import asyncio
 import datetime
@@ -9,7 +10,7 @@ from core.boya_scheduler import BoyaScheduler
 class TestV126RefreshAndHeartbeat(unittest.TestCase):
     def test_post_signin_immediate_schedule_refresh(self):
         """测试常规签到成功后立即向教务端重新获取最新课表并刷新内存与时间戳"""
-        now = datetime.datetime.now()
+        now = china_now()
         future_time_str = (now + datetime.timedelta(minutes=5)).strftime("%H:%M")
         refreshed_classes = [
             {"courseSchedId": "101", "courseName": "航空航天概论", "signStatus": 1, "classBeginTime": future_time_str}
@@ -23,6 +24,10 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         ])
 
         acc_obj = MagicMock()
+        acc_obj.removed = False
+        acc_obj.maintenance = False
+        acc_obj.auth_epoch = 0
+        acc_obj.auto_checkin = True
         acc_obj.last_classes = [
             {"courseSchedId": "101", "courseName": "航空航天概论", "signStatus": 0, "classBeginTime": future_time_str}
         ]
@@ -37,13 +42,14 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
 
         scheduler = SigninScheduler(get_active_accounts=lambda: [active_account])
         # 将计划时间设为过去，立即触发签到
-        scheduler.planned_targets[("20240001", "101")] = datetime.datetime.now() - datetime.timedelta(seconds=5)
+        scheduler.planned_targets[("20240001", "101", scheduler.clock().date().isoformat())] = china_now() - datetime.timedelta(seconds=5)
 
         # 触发巡检
         asyncio.run(scheduler._check_and_sign_all())
 
         # 验证 perform_signin 被调用
-        mock_client.perform_signin.assert_called_once_with("101")
+        self.assertEqual(mock_client.perform_signin.call_args.args[0], "101")
+        self.assertTrue(mock_client.perform_signin.call_args.kwargs["guard"]())
         # 验证在签到成功后立即触发了 get_today_classes 重新拉取
         self.assertGreaterEqual(mock_client.get_today_classes.call_count, 2)
         # 验证内存课表与时间戳已更新
@@ -57,6 +63,7 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
             logs.append((level, msg))
 
         mock_boya_client = MagicMock()
+        mock_boya_client.semester_info = {"semesterStartDate": "2026-08-31", "semesterEndDate": "2027-01-03"}
         mock_boya_client.is_authenticated.return_value = True
         mock_boya_client.query_chosen_courses.return_value = []
         mock_boya_client.query_courses.return_value = [
@@ -78,6 +85,10 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         ]
 
         acc = MagicMock()
+        acc.removed = False
+        acc.maintenance = False
+        acc.auth_epoch = 0
+        acc.boya_health = {}
         acc.username = "20240001"
         acc.name = "李四"
         acc.boya_auto_select = True

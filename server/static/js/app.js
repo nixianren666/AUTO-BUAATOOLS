@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.2.5 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.2.7 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -34,6 +34,59 @@ let appState = {
     scheduler_running: false,
   },
 };
+
+// Every management request is authenticated and bound to the captured account.
+const nativeFetch = window.fetch.bind(window);
+let managementSession = null;
+let viewGeneration = 0;
+async function establishManagementSession() {
+  let response = await nativeFetch("/api/session", { credentials: "same-origin" });
+  if (response.status === 401) {
+    const password = window.prompt("请输入应用管理密码（不是学校账号密码）");
+    if (!password) throw new Error("管理登录未完成");
+    response = await nativeFetch("/api/session", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+  }
+  if (!response.ok) throw new Error("无法建立应用管理会话");
+  return (await response.json()).csrf;
+}
+async function apiFetch(input, options = {}) {
+  const username = appState.activeUsername;
+  const scoped = /^\/api\/(classes|signin|status|mode|logout|boya\/)/.test(String(input));
+  const url = new URL(input, window.location.origin);
+  if (url.origin !== window.location.origin) throw new Error("拒绝外部管理请求");
+  const opts = { ...options, credentials: "same-origin", headers: { ...(options.headers || {}) } };
+  if (username && scoped) {
+    url.searchParams.set("username", username);
+    if (opts.body) {
+      const body = JSON.parse(opts.body);
+      if (!Object.hasOwn(body, "username")) body.username = username;
+      opts.body = JSON.stringify(body);
+    }
+  }
+  if (!managementSession) managementSession = establishManagementSession().catch(error => { managementSession = null; throw error; });
+  const csrf = await managementSession;
+  if (opts.method && !["GET", "HEAD"].includes(opts.method.toUpperCase())) opts.headers["X-BUAA-CSRF"] = csrf;
+  const response = await nativeFetch(url.pathname + url.search, opts);
+  if (!response.ok) {
+    if (response.status === 401) managementSession = null;
+    throw new Error("应用请求未完成（" + response.status + "）");
+  }
+  return response;
+}
+function viewStillCurrent(username, generation) {
+  return username === appState.activeUsername && generation === viewGeneration;
+}
+function actionAttributes(action, id, extra = "") {
+  return `data-action="${action}" data-id="${escapeHtml(String(id))}" ${extra}`;
+}
+document.addEventListener("click", event => {
+  const target = event.target.closest("[data-action]");
+  if (!target || target.disabled) return;
+  const action = target.dataset.action;
+  const id = target.dataset.id;
+  const handlers = { regularSign: () => manualSignIn(id), select: () => selectBoyaCourse(id), drop: () => dropBoyaCourse(id), sign: () => boyaSign(id, 1), signout: () => boyaSign(id, 2), switchAccount: () => switchStudentAccount(id), deleteAccount: () => deleteAccount(id) };
+  if (handlers[action]) { event.preventDefault(); event.stopPropagation(); handlers[action](); }
+});
 
 // 页面生命周期初始化
 document.addEventListener("DOMContentLoaded", () => {
@@ -104,7 +157,7 @@ function initClock() {
 // 主视图无缝切换 (Origin Left Rail)
 function switchMainView(viewName) {
   appState.currentMainView = viewName;
-  
+
   // 更新导航激活状态
   document.querySelectorAll(".origin-nav-item").forEach(item => item.classList.remove("active"));
   const btnMap = {
@@ -141,15 +194,20 @@ function switchMainView(viewName) {
 
 // 获取全系统初始状态
 async function fetchInitialState() {
+  const requestedUsername = appState.activeUsername;
+  const requestedGeneration = viewGeneration;
   try {
     const [statusRes, accountsRes, configRes] = await Promise.all([
-      fetch("/api/status").then(r => r.json()),
-      fetch("/api/accounts").then(r => r.json()),
-      fetch("/api/config").then(r => r.json()),
+      apiFetch("/api/status").then(r => r.json()),
+      apiFetch("/api/accounts").then(r => r.json()),
+      apiFetch("/api/config").then(r => r.json()),
     ]);
 
+
+    if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
     appState.accounts = accountsRes.accounts || [];
     appState.activeUsername = accountsRes.active_username || "";
+    viewGeneration++;
     appState.activeUser = appState.accounts.find(a => a.username === appState.activeUsername) || null;
 
     appState.mode = statusRes.mode || "direct";
@@ -178,6 +236,13 @@ function updateUIElements() {
 
   const autoToggle = document.getElementById("autoCheckinToggle");
   if (autoToggle) autoToggle.checked = appState.globalAutoCheckin;
+  const daemon = document.getElementById("regularDaemonStatus");
+  const dot = document.getElementById("regularDaemonDot");
+  const running = appState.globalAutoCheckin && !!appState.activeUser?.auto_checkin;
+  if (daemon) daemon.textContent = !appState.activeUsername ? "尚未登录" : running ? "自动签到守护已启用" : "自动签到已暂停";
+  if (dot) dot.className = "origin-status-dot " + (running ? "green" : "");
+  const health = document.getElementById("regularHealthText");
+  if (health) health.textContent = appState.regularStale ? "课表未同步，显示上次成功数据" : appState.regularLastSuccess ? "最近同步：" + appState.regularLastSuccess : "尚未完成课表同步";
 
   const badgeAccounts = document.getElementById("navBadgeAccounts");
   if (badgeAccounts) badgeAccounts.textContent = appState.accounts.length;
@@ -207,15 +272,28 @@ function updateUIElements() {
     if (sSelect) sSelect.checked = !!appState.activeUser.boya_auto_select;
     if (sSign) sSign.checked = !!appState.activeUser.boya_auto_sign;
     if (sCampus) sCampus.value = appState.activeUser.campus || "北京";
+    const targets=appState.activeUser.boya_targets || {"德育":2,"劳育":2,"美育":1,"安全健康":1};
+    for (const [category,id] of Object.entries({"德育":"Moral","劳育":"Labor","美育":"Art","安全健康":"Security"})) {
+      const input=document.getElementById("boyaTarget"+id);
+      if (input && document.activeElement !== input) input.value=targets[category];
+    }
   }
 }
 
 // ==================== 1. 常规课堂考勤逻辑 ====================
 
 async function fetchClasses(isSilent = false) {
+  const requestedUsername = appState.activeUsername;
+  const requestedGeneration = viewGeneration;
   try {
-    const res = await fetch("/api/classes");
+    const res = await apiFetch("/api/classes");
     const data = await res.json();
+
+    if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
+    appState.regularStale = !!(data.stale || data.offline);
+    if (!appState.regularStale && data.status === "success") appState.regularLastSuccess = new Date().toLocaleTimeString("zh-CN", {timeZone:"Asia/Shanghai"});
+    updateUIElements();
+    if (data.stale || data.offline) { if (!isSilent) showToast("课表未同步，显示上次成功数据", "info"); }
     if (data.classes) {
       appState.classes = data.classes;
       renderClassesList(data.classes);
@@ -236,7 +314,7 @@ function renderClassesList(classes) {
 
   const total = classes.length;
   const signed = classes.filter(c => c.signStatus === 1).length;
-  const pending = total - signed;
+  const pending = classes.filter(c => c.signStatus === 0).length;
 
   const badgeEl = document.getElementById("navBadgeClasses");
   const mTotal = document.getElementById("metricTotalClasses");
@@ -261,6 +339,11 @@ function renderClassesList(classes) {
 
   container.innerHTML = classes.map(c => {
     const isSigned = c.signStatus === 1;
+    const statusKnown = c.signStatus === 0 || c.signStatus === 1;
+    const begins = parseIsoOrSpaceDate(c.classBeginTime);
+    const timestamp = Date.now();
+    const canSign = statusKnown && !isSigned && begins && timestamp >= begins.getTime()-600000 && timestamp <= begins.getTime();
+    const signHint = !statusKnown ? "官方状态未知" : !begins ? "课程时间未核实" : timestamp > begins.getTime() ? "课前签到窗口已结束" : "尚未到课前10分钟";
     const courseName = c.courseName || "未知课程";
     const timeRange = `${c.startTime || "--"} - ${c.endTime || "--"}`;
     const room = c.classroom || c.roomName || "校内教室";
@@ -274,7 +357,7 @@ function renderClassesList(classes) {
             <h4 class="feed-title">${escapeHtml(courseName)}</h4>
             <div class="feed-meta-row">
               <span class="feed-badge ${isSigned ? 'badge-green' : 'badge-cyan'}">
-                ${isSigned ? '✓ 已完成签到' : '⏳ 待签到'}
+                ${isSigned ? '✓ 已完成签到' : statusKnown ? '⏳ 待签到' : '状态未知'}
               </span>
               <span>ID: ${escapeHtml(schedId)}</span>
             </div>
@@ -301,7 +384,7 @@ function renderClassesList(classes) {
           ${isSigned ? `
             <button class="origin-btn origin-btn-ghost" disabled style="opacity:0.6;">已签到</button>
           ` : `
-            <button class="origin-btn origin-btn-primary" onclick="manualSignIn('${schedId}')">立即打卡</button>
+            <button class="origin-btn origin-btn-primary" ${actionAttributes("regularSign", schedId)} ${canSign ? '' : 'disabled'}>${canSign ? '立即打卡' : signHint}</button>
           `}
         </div>
       </div>
@@ -312,7 +395,7 @@ function renderClassesList(classes) {
 async function manualSignIn(courseSchedId) {
   showToast(`正在提交排课 ID [${courseSchedId}] 签到请求...`, "info");
   try {
-    const res = await fetch("/api/signin", {
+    const res = await apiFetch("/api/signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_id: String(courseSchedId) }),
@@ -331,12 +414,13 @@ async function manualSignIn(courseSchedId) {
 
 async function toggleAutoCheckin(enabled) {
   try {
-    await fetch("/api/auto_checkin", {
+    await apiFetch("/api/auto_checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: enabled }),
     });
     appState.globalAutoCheckin = enabled;
+    updateUIElements();
     showToast(`常规课程自动签到已${enabled ? "启动守护" : "暂停"}`, "info");
   } catch (e) {
     showToast("切换自动打卡状态失败", "error");
@@ -381,15 +465,19 @@ function parseSignConfigPoints(c) {
 }
 
 async function fetchBoyaData(isManual = false) {
+  const requestedUsername = appState.activeUsername;
+  const requestedGeneration = viewGeneration;
   if (isManual) showToast("正在同步博雅学分与最新课表...", "info");
   try {
     const [coursesRes, selectedRes, statusRes, statsRes] = await Promise.all([
-      fetch("/api/boya/courses").then(r => r.json()).catch(() => ({ courses: [] })),
-      fetch("/api/boya/selected").then(r => r.json()).catch(() => ({ selected: [] })),
-      fetch("/api/boya/status").then(r => r.json()).catch(() => ({})),
-      fetch("/api/boya/statistics").then(r => r.json()).catch(() => ({ statistics: {} })),
+      apiFetch("/api/boya/courses" + (isManual ? "?force=true" : "")).then(r => r.json()),
+      apiFetch("/api/boya/selected" + (isManual ? "?force=true" : "")).then(r => r.json()),
+      apiFetch("/api/boya/status").then(r => r.json()),
+      apiFetch("/api/boya/statistics" + (isManual ? "?force=true" : "")).then(r => r.json()),
     ]);
 
+
+    if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
     // 严密字段兼容读取
     appState.boyaCourses = coursesRes.courses || coursesRes.all_courses || [];
     appState.boyaSelected = selectedRes.selected || selectedRes.selected_courses || [];
@@ -405,9 +493,13 @@ async function fetchBoyaData(isManual = false) {
       if (campusSelect && statusRes.campus) campusSelect.value = statusRes.campus;
     }
 
+    const daemon = document.getElementById("boyaDaemonStatus");
+    if (daemon) daemon.textContent = statusRes.boya_auto_select || statusRes.boya_auto_sign ? "博雅自动化已启用" : "博雅自动化已暂停";
+    const health = document.getElementById("boyaHealthText");
+    if (health) health.textContent = coursesRes.stale || selectedRes.stale || statsRes.stale ? "官方数据未完全同步，显示上次数据" : statusRes.health?.last_success ? "最近后台同步：" + statusRes.health.last_success : "页面已读取官方数据";
     renderBoyaStatistics(appState.boyaStatistics);
-    renderBoyaFeed();
-    if (isManual) showToast(`博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, "success");
+    switchBoyaTab(appState.boyaTab);
+    if (isManual) showToast(coursesRes.stale || selectedRes.stale || statsRes.stale ? "博雅数据未完全同步，保留上次数据" : `博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, coursesRes.stale || selectedRes.stale || statsRes.stale ? "info" : "success");
   } catch (e) {
     console.error("fetchBoyaData error:", e);
     if (isManual) showToast("博雅数据拉取异常", "error");
@@ -416,116 +508,27 @@ async function fetchBoyaData(isManual = false) {
 
 // 考勤状态解析
 function getCourseAttendanceInfo(c) {
-  if (c.attendance_status && typeof c.attendance_status === "object") {
-    return c.attendance_status;
-  }
-  const raw = c.checkin ?? c.attendanceStatus ?? c.courseAttendanceStatus ?? c.checkInStatus ?? c.kaoqinStatus;
-  let isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
-  let isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
-
-  if (c.signInfo) {
-    try {
-      const sInfo = typeof c.signInfo === "string" ? JSON.parse(c.signInfo) : c.signInfo;
-      if (sInfo && typeof sInfo === "object") {
-        if (sInfo.signIn) isSigned = true;
-        if (sInfo.signOut) isSignedOut = true;
-      }
-    } catch (e) {}
-  }
-
-  if (raw === 1 || raw === "1" || raw === "合格" || raw === "通过" || raw === "正常") {
-    return { passed: true, text: "考勤通过", badge: "badge-green" };
-  }
-  if (raw === 0 || raw === "0" || raw === "缺勤" || raw === "未通过" || raw === "不合格") {
-    return { passed: false, text: "考勤缺勤", badge: "badge-red" };
-  }
-  if (isSigned && isSignedOut) {
-    return { passed: true, text: "考勤通过(已双签)", badge: "badge-green" };
-  }
-  if (isSigned) {
-    if (isCoursePast(c)) {
-      return { passed: true, text: "考勤通过(已签到)", badge: "badge-green" };
-    }
-    return { passed: null, text: "已签到", badge: "badge-green" };
-  }
-  if (isCoursePast(c)) {
-    return { passed: false, text: "考勤缺勤", badge: "badge-red" };
-  }
-  return { passed: null, text: "待考勤", badge: "badge-blue" };
+  if (c.attendance_status && typeof c.attendance_status === "object") return { ...c.attendance_status, badge: c.attendance_status.passed === true ? "badge-green" : "badge-amber" };
+  return { passed: c.checkin === 1 || c.checkin === "1" ? true : null, text: c.checkin === 1 || c.checkin === "1" ? "考勤通过" : "待官方考勤确认", badge: "badge-amber" };
 }
 
-// 考核状态解析
 function getCourseExamInfo(c) {
-  if (c.exam_status && typeof c.exam_status === "object") {
-    return c.exam_status;
-  }
-  const raw = c.pass ?? c.examStatus ?? c.checkStatus ?? c.passStatus ?? c.isPass ?? c.kaoheStatus;
-  if (raw === 1 || raw === "1" || raw === "通过" || raw === "合格" || raw === "PASS") {
-    return { passed: true, text: "考核通过", badge: "badge-green" };
-  }
-  if (raw === 0 || raw === "0" || raw === "未通过" || raw === "不合格" || raw === "FAIL") {
-    return { passed: false, text: "考核未通过", badge: "badge-red" };
-  }
-  if (raw === -1 || raw === "-1" || raw === "待评定" || raw === "评定中" || raw === "待考核") {
-    return { passed: null, text: "考核待评定", badge: "badge-amber" };
-  }
-  if (isCoursePast(c)) {
-    if (c.score !== undefined && c.score !== null && c.score !== "") {
-      const s = Number(c.score);
-      if (!isNaN(s)) {
-        return s >= 60 ? { passed: true, text: `考核通过 (${s.toFixed(0)}分)`, badge: "badge-green" }
-                       : { passed: false, text: `考核未通过 (${s.toFixed(0)}分)`, badge: "badge-red" };
-      }
-    }
-    const att = getCourseAttendanceInfo(c);
-    if (att.passed === true) {
-      return { passed: true, text: "考核通过", badge: "badge-green" };
-    }
-    return { passed: null, text: "考核待评定", badge: "badge-amber" };
-  }
-  return { passed: null, text: "未开考", badge: "badge-blue" };
+  if (c.exam_status && typeof c.exam_status === "object") return { ...c.exam_status, badge: c.exam_status.passed === true ? "badge-green" : "badge-amber" };
+  return { passed: c.pass === 1 || c.pass === "1" ? true : (c.pass === 0 || c.pass === "0" ? false : null), text: c.pass === 1 || c.pass === "1" ? "考核通过" : "待官方考核确认", badge: "badge-amber" };
 }
 
-// 最终考核判定：考勤和考核都通过才算完成最终考核
 function isCourseFinalPassed(c) {
-  if (c.final_passed === true) return true;
-  if (c.pass === 1 && (c.checkin === 1 || (c.signInfo && String(c.signInfo).includes("signIn")))) return true;
   const att = getCourseAttendanceInfo(c);
   const exam = getCourseExamInfo(c);
   return att.passed === true && exam.passed === true;
 }
 
 function renderBoyaStatistics(stats) {
-  // 严格限定当前学期时间范围（彻底排除历史学年往期结课）
-  const semStart = stats.semester_start ? parseIsoOrSpaceDate(stats.semester_start + " 00:00:00") : null;
-  const semEnd = stats.semester_end ? parseIsoOrSpaceDate(stats.semester_end + " 23:59:59") : null;
-
-  let moral = Number(stats.moral_completed || 0);
-  let labor = Number(stats.labor_completed || 0);
-  let art = Number(stats.art_completed || 0);
-  let sec = Number(stats.security_health_completed || 0);
-
-  // 如果前端已加载已选修课表，则以当前学期时间戳切片作为权威校准
-  if (appState.boyaSelected && appState.boyaSelected.length > 0 && semStart && semEnd) {
-    let listMoral = 0, listLabor = 0, listArt = 0, listSec = 0;
-    for (const c of appState.boyaSelected) {
-      const cDate = parseIsoOrSpaceDate(c.courseStartDate || c.courseEndDate || c.selectDate);
-      if (cDate && (cDate < semStart || cDate > semEnd)) {
-        continue; // 彻底排除非本学期的历史选课
-      }
-      if (isCourseFinalPassed(c)) {
-        const cat = normalizeBoyaCategory(c);
-        if (cat === "德育") listMoral++;
-        else if (cat === "劳育") listLabor++;
-        else if (cat === "美育") listArt++;
-        else if (cat === "安全健康") listSec++;
-      }
-    }
-    moral = listMoral;
-    labor = listLabor;
-    art = listArt;
-    sec = listSec;
-  }
+  // Backend uses the shared official-calendar/attendance contract. Never recount
+  // with guessed dates or signInfo strings in a second, divergent implementation.
+  const known = stats.semester_known === true;
+  const count = key => known && Number.isFinite(Number(stats[key])) ? Math.max(0,Number(stats[key])) : 0;
+  const moral=count("moral_completed"),labor=count("labor_completed"),art=count("art_completed"),sec=count("security_health_completed");
 
   // 四大类学期达标基准：德育 2, 劳育 2, 美育 1, 安全健康 1 (总基准 6 门)
   const reqMoral = 2;
@@ -547,13 +550,13 @@ function renderBoyaStatistics(stats) {
   const elFill = document.getElementById("boyaProgressFill");
   const elDenom = document.getElementById("boyaSemesterDenominator");
 
-  if (elEarned) elEarned.textContent = `${totalPassed}`;
-  if (elRate) elRate.textContent = `学期达标完成度 ${rate}%`;
+  if (elEarned) elEarned.textContent = known ? `${totalPassed}` : "—";
+  if (elRate) elRate.textContent = known ? `学期达标完成度 ${rate}%` : "官方校历未同步，不能计算学期达标";
   if (elFill) elFill.style.width = `${rate}%`;
-  if (elDenom && stats.semester_name) {
-    const sShort = stats.semester_name.replace(/（.*）/, "").trim();
-    elDenom.textContent = `/ 6 门 ${sShort}博雅素养达标要求`;
-    elDenom.title = `北航校历学期周期: ${stats.semester_start} 至 ${stats.semester_end}`;
+  if (elDenom) {
+    const sShort = known ? String(stats.semester_name || "当前学期").replace(/（.*）/, "").trim() : "学期未知";
+    elDenom.textContent = known ? `/ 6 门 ${sShort} · 默认类别指标` : "学期未知 · 默认类别指标为6门";
+    elDenom.title = known ? `官方校历: ${stats.semester_start} 至 ${stats.semester_end}；缺日期课程不计入` : "请同步学校官方校历";
   }
 
   const pMoral = document.getElementById("pillMoral");
@@ -562,78 +565,41 @@ function renderBoyaStatistics(stats) {
   const pSec = document.getElementById("pillSec");
 
   if (pMoral) {
-    pMoral.textContent = `${moral} / ${reqMoral} 门`;
+    pMoral.textContent = known ? `${moral} / ${reqMoral} 门` : `— / ${reqMoral} 门`;
     const wrap = document.getElementById("pillMoralWrap");
     if (wrap) wrap.classList.toggle("status-done", moral >= reqMoral);
   }
   if (pLabor) {
-    pLabor.textContent = `${labor} / ${reqLabor} 门`;
+    pLabor.textContent = known ? `${labor} / ${reqLabor} 门` : `— / ${reqLabor} 门`;
     const wrap = document.getElementById("pillLaborWrap");
     if (wrap) wrap.classList.toggle("status-done", labor >= reqLabor);
   }
   if (pArt) {
-    pArt.textContent = `${art} / ${reqArt} 门`;
+    pArt.textContent = known ? `${art} / ${reqArt} 门` : `— / ${reqArt} 门`;
     const wrap = document.getElementById("pillArtWrap");
     if (wrap) wrap.classList.toggle("status-done", art >= reqArt);
   }
   if (pSec) {
-    pSec.textContent = `${sec} / ${reqSec} 门`;
+    pSec.textContent = known ? `${sec} / ${reqSec} 门` : `— / ${reqSec} 门`;
     const wrap = document.getElementById("pillSecWrap");
     if (wrap) wrap.classList.toggle("status-done", sec >= reqSec);
   }
 }
 
-function parseIsoOrSpaceDate(str) {
-  if (!str) return null;
-  const s = String(str).trim().replace("T", " ");
-  const parts = s.split(" ");
-  if (!parts[0]) return null;
-  const dParts = parts[0].split(/[-/]/);
-  if (dParts.length < 3) return null;
-  const year = parseInt(dParts[0], 10);
-  const month = parseInt(dParts[1], 10) - 1;
-  const day = parseInt(dParts[2], 10);
-  let hours = 0, minutes = 0, seconds = 0;
-  if (parts[1]) {
-    const tParts = parts[1].split(":");
-    hours = parseInt(tParts[0], 10) || 0;
-    minutes = parseInt(tParts[1], 10) || 0;
-    seconds = parseInt(tParts[2], 10) || 0;
-  }
-  const dt = new Date(year, month, day, hours, minutes, seconds);
-  return isNaN(dt.getTime()) ? null : dt;
+function parseIsoOrSpaceDate(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  let text = value.trim().replaceAll("/", "-").replace(" ", "T");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) text += "T00:00:00";
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(text)) text += "+08:00";
+  const dt = new Date(text);
+  return Number.isNaN(dt.getTime()) ? null : dt;
 }
-
-// 课程结束时间计算：绝不回退至 23:59
 function getCourseEndDateTime(c) {
-  const endDateStr = c.courseEndDate || c.courseStartDate;
-  if (!endDateStr) return null;
-
-  if (endDateStr.includes(" ") || endDateStr.includes("T")) {
-    const directDt = parseIsoOrSpaceDate(endDateStr);
-    if (!c.courseEndTime && directDt) {
-      return new Date(directDt.getTime() + 2.5 * 3600 * 1000);
-    }
-  }
-
-  const cleanDate = String(endDateStr).trim().slice(0, 10);
-
-  if (c.courseEndTime && String(c.courseEndTime).trim()) {
-    const cleanTime = String(c.courseEndTime).trim().slice(0, 5);
-    const dt = new Date(`${cleanDate}T${cleanTime}:00`);
-    if (!isNaN(dt.getTime())) return dt;
-  }
-
-  if (c.courseStartTime && String(c.courseStartTime).trim()) {
-    const cleanStart = String(c.courseStartTime).trim().slice(0, 5);
-    const startDt = new Date(`${cleanDate}T${cleanStart}:00`);
-    if (!isNaN(startDt.getTime())) {
-      return new Date(startDt.getTime() + 2.5 * 3600 * 1000);
-    }
-  }
-
-  const dt = new Date(`${cleanDate}T22:00:00`);
-  return isNaN(dt.getTime()) ? null : dt;
+  if (!c.courseEndDate) return null;
+  const date = String(c.courseEndDate).trim();
+  if (/T| /.test(date)) return parseIsoOrSpaceDate(date);
+  if (!c.courseEndTime) return null;
+  return parseIsoOrSpaceDate(date + " " + String(c.courseEndTime));
 }
 
 function isCourseEnded(c) {
@@ -789,16 +755,21 @@ function renderBoyaFeed() {
     const name = c.courseName || c.name || "博雅课程";
     const category = normalizeBoyaCategory(c);
     const speaker = c.speaker || c.teacherName || c.courseTeacher || "主讲学者";
-    const time = `${c.courseStartDate || ""} ${c.courseStartTime || ""}`.trim() || c.courseTime || "--";
+    const startDate = c.courseStartDate && c.courseStartTime && String(c.courseStartDate).length === 10 ? parseIsoOrSpaceDate(c.courseStartDate + " " + c.courseStartTime) : parseIsoOrSpaceDate(c.courseStartDate);
+    const endDate = getCourseEndDateTime(c);
+    const formatDate = date => date.toLocaleString("zh-CN", {timeZone:"Asia/Shanghai",hour12:false});
+    const time = startDate && endDate ? formatDate(startDate) + " — " + formatDate(endDate) : "课程起止时间待官方补全";
     const location = c.coursePosition || c.courseAddress || "校内教室";
     const points = parseSignConfigPoints(c);
     const hasAutonomousSign = points.length > 0;
-    const capacity = c.courseMaxCount ?? c.courseMaxNum ?? 0;
-    const current = c.courseCurrentCount ?? c.courseCurrentNum ?? 0;
-    const isFull = capacity > 0 && current >= capacity;
+    const rawCapacity = Number(c.courseMaxCount ?? c.courseMaxNum);
+    const capacity = Number.isInteger(rawCapacity) && rawCapacity > 0 ? rawCapacity : null;
+    const rawCurrent = Number(c.courseCurrentCount ?? c.courseCurrentNum);
+    const current = Number.isInteger(rawCurrent) && rawCurrent >= 0 ? rawCurrent : null;
+    const isFull = capacity === null || current === null || current >= capacity;
     const isPast = isCoursePast(c);
-    const isSigned = (c.signStatus === 1 || c.courseSignStatus === 1 || c.signInStatus === 1);
-    const isSignedOut = (c.signOutStatus === 1 || c.courseSignOutStatus === 1);
+    const isSigned = c.signed_in === true;
+    const isSignedOut = c.signed_out === true;
     const attInfo = getCourseAttendanceInfo(c);
     const examInfo = getCourseExamInfo(c);
     const finalPassed = isCourseFinalPassed(c);
@@ -812,8 +783,8 @@ function renderBoyaFeed() {
               <span class="feed-badge ${hasAutonomousSign ? 'badge-green' : 'badge-amber'}">
                 ${hasAutonomousSign ? '🛰️ 线上自主打卡' : '🏫 现场刷卡考勤'}
               </span>
-              <span class="feed-badge badge-purple">${category}</span>
-              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current}/${capacity} (余${Math.max(0, capacity - current)})</span>` : ''}
+              <span class="feed-badge badge-purple">${escapeHtml(category)}</span>
+              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current ?? "未知"}/${capacity ?? "未知"} (余${Math.max(0, capacity - current)})</span>` : ''}
             </div>
           </div>
         </div>
@@ -835,7 +806,7 @@ function renderBoyaFeed() {
 
         <div class="feed-card-footer">
           ${isSelected ? (
-            isPast ? `
+            (isPast && !c.can_sign_in && !c.can_sign_out) ? `
               <div class="history-outcome-row" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:6px;">
                 <div style="display:flex;gap:6px;align-items:center;">
                   <span class="feed-badge ${attInfo.badge}">${escapeHtml(attInfo.text)}</span>
@@ -852,19 +823,19 @@ function renderBoyaFeed() {
                 ${isSigned ? `
                   <button class="origin-btn origin-btn-danger-ghost" disabled style="opacity:0.35;cursor:not-allowed;" title="已签到课程不可退选">退选</button>
                 ` : `
-                  <button class="origin-btn origin-btn-danger-ghost" onclick="dropBoyaCourse('${courseId}')">退选</button>
+                  <button class="origin-btn origin-btn-danger-ghost" ${actionAttributes("drop", courseId)}>退选</button>
                 `}
 
                 ${isSignedOut ? `
                   <button class="origin-btn origin-btn-info-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签退">🏁 已签退</button>
                 ` : `
-                  <button class="origin-btn origin-btn-secondary" onclick="boyaSign('${courseId}', 2)">定位签退</button>
+                  <button class="origin-btn origin-btn-secondary" ${c.can_sign_out === true ? "" : "disabled"} ${actionAttributes("signout", courseId)}>定位签退</button>
                 `}
 
                 ${isSigned ? `
                   <button class="origin-btn origin-btn-success-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签到">✅ 已签到</button>
                 ` : `
-                  <button class="origin-btn origin-btn-primary" onclick="boyaSign('${courseId}', 1)">定位签到</button>
+                  <button class="origin-btn origin-btn-primary" ${c.can_sign_in === true ? "" : "disabled"} ${actionAttributes("sign", courseId)}>定位签到</button>
                 `}
               </div>
             `
@@ -887,9 +858,9 @@ function renderBoyaFeed() {
             } else if (isFull) {
               btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.45;">⚠️ 名额已满</button>`;
             } else if (hasAutonomousSign) {
-              btnHtml = `<button class="origin-btn origin-btn-primary" onclick="selectBoyaCourse('${courseId}')">立即抢课</button>`;
+              btnHtml = `<button class="origin-btn origin-btn-primary" ${actionAttributes("select", courseId)}>立即抢课</button>`;
             } else {
-              btnHtml = `<button class="origin-btn origin-btn-secondary" onclick="selectBoyaCourse('${courseId}')" title="该课程支持线上选课，上课时赴现场刷卡考勤">选课 (现场考勤)</button>`;
+              btnHtml = `<button class="origin-btn origin-btn-secondary" ${actionAttributes("select", courseId)} title="该课程支持线上选课，上课时赴现场刷卡考勤">选课 (现场考勤)</button>`;
             }
 
             return `
@@ -908,14 +879,14 @@ function renderBoyaFeed() {
 async function selectBoyaCourse(id) {
   showToast(`正在发送抢选请求: [ID:${id}]...`, "info");
   try {
-    const res = await fetch("/api/boya/select", {
+    const res = await apiFetch("/api/boya/select", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_id: parseInt(id, 10) || id }),
     });
     const d = await res.json();
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
-      showToast("抢课成功！已加入已选修课表", "success");
+      showToast(d.pending_verification ? "选课请求已处理，官方已选记录待同步；不会重复提交" : "官方已选记录已确认", d.pending_verification ? "info" : "success");
       fetchBoyaData();
     } else {
       showToast(`抢选提示: ${d.message || d.msg || "未能选上"}`, "error");
@@ -929,14 +900,14 @@ async function dropBoyaCourse(id) {
   if (!confirm("确定要退选该博雅课程吗？")) return;
   showToast(`正在发送退选请求: [ID:${id}]...`, "info");
   try {
-    const res = await fetch("/api/boya/drop", {
+    const res = await apiFetch("/api/boya/drop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_id: parseInt(id, 10) || id }),
     });
     const d = await res.json();
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
-      showToast("已成功退选该课程", "success");
+      showToast(d.pending_verification ? "退选请求已处理，官方状态待同步；不会重复提交" : "官方退选状态已确认", d.pending_verification ? "info" : "success");
       fetchBoyaData();
     } else {
       showToast(`退选失败: ${d.message || d.msg || ""}`, "error");
@@ -948,16 +919,16 @@ async function dropBoyaCourse(id) {
 
 async function boyaSign(id, signType) {
   const typeText = signType === 1 ? "签到" : "签退";
-  showToast(`正在执行高斯微扰定位${typeText}...`, "info");
+  showToast(`正在核对官方窗口并提交${typeText}...`, "info");
   try {
-    const res = await fetch("/api/boya/sign", {
+    const res = await apiFetch("/api/boya/sign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_id: parseInt(id, 10) || id, sign_type: signType }),
     });
     const d = await res.json();
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
-      showToast(`博雅${typeText}成功！`, "success");
+      showToast(d.pending_verification ? `博雅${typeText}请求已处理，官方考勤待同步；不会重复提交` : `官方${typeText}记录已确认，最终考核以学校为准`, d.pending_verification ? "info" : "success");
       fetchBoyaData();
     } else {
       showToast(`打卡提示: ${d.message || d.msg || "未成功"}`, "error");
@@ -967,51 +938,31 @@ async function boyaSign(id, signType) {
   }
 }
 
-async function toggleBoyaAutoSelect(enabled) {
-  if (appState.activeUser) appState.activeUser.boya_auto_select = enabled;
-  if (appState.boyaStatus) appState.boyaStatus.boya_auto_select = enabled;
+async function updateBoyaPreferences(body) {
+  const username = appState.activeUsername, generation = viewGeneration;
   try {
-    const res = await fetch("/api/boya/toggle_auto", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ auto_select: enabled }),
-    });
-    const d = await res.json();
-    if (d && d.status === "ok" && appState.activeUser) {
-      appState.activeUser.boya_auto_select = d.boya_auto_select;
-    }
-    showToast(`博雅自动秒抢已${enabled ? "开启守护" : "关闭"}`, "info");
-  } catch (e) {}
-}
-
-async function toggleBoyaAutoSign(enabled) {
-  if (appState.activeUser) appState.activeUser.boya_auto_sign = enabled;
-  if (appState.boyaStatus) appState.boyaStatus.boya_auto_sign = enabled;
-  try {
-    const res = await fetch("/api/boya/toggle_auto", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ auto_sign: enabled }),
-    });
-    const d = await res.json();
-    if (d && d.status === "ok" && appState.activeUser) {
-      appState.activeUser.boya_auto_sign = d.boya_auto_sign;
-    }
-    showToast(`博雅微扰自动打卡已${enabled ? "开启守护" : "关闭"}`, "info");
-  } catch (e) {}
-}
-
-
-async function changeBoyaCampus(campus) {
-  try {
-    await fetch("/api/boya/toggle_auto", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ campus: campus }),
-    });
-    showToast(`生源校区偏好已更新为: ${campus}`, "info");
+    const res = await apiFetch("/api/boya/toggle_auto", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data = await res.json();
+    if (!viewStillCurrent(username,generation)) return;
+    if (!res.ok || data.status !== "ok") throw new Error("配置未保存");
+    if (appState.activeUser) Object.assign(appState.activeUser, data);
+    updateUIElements();
+    showToast("博雅配置已保存", "success");
     fetchBoyaData();
-  } catch (e) {}
+  } catch (error) {
+    if (!viewStillCurrent(username,generation)) return;
+    updateUIElements();
+    showToast("博雅配置未保存，请检查登录与连接状态", "error");
+  }
+}
+async function toggleBoyaAutoSelect(enabled) { await updateBoyaPreferences({auto_select:enabled}); }
+async function toggleBoyaAutoSign(enabled) { await updateBoyaPreferences({auto_sign:enabled}); }
+async function changeBoyaCampus(campus) { await updateBoyaPreferences({campus}); }
+async function saveBoyaTargets(event) {
+  event.preventDefault();
+  const targets = {};
+  for (const [category,id] of Object.entries({"德育":"Moral","劳育":"Labor","美育":"Art","安全健康":"Security"})) targets[category] = Number(document.getElementById("boyaTarget"+id).value);
+  await updateBoyaPreferences({targets});
 }
 
 // ==================== 3. 运行终端日志逻辑 ====================
@@ -1034,6 +985,8 @@ function startLogsPolling() {
 }
 
 async function fetchLogs() {
+  const requestedUsername = appState.activeUsername;
+  const requestedGeneration = viewGeneration;
   const container = document.getElementById("logsContainer");
   if (!container) return;
 
@@ -1056,8 +1009,10 @@ async function fetchLogs() {
       params.append("category", "all");
     }
     const url = `/api/logs?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     const data = await res.json();
+    if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
+
     const logs = data.logs || [];
 
     const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 40;
@@ -1130,7 +1085,7 @@ async function clearLogs() {
       params.append("category", "all");
     }
     const url = `/api/logs/clear?${params.toString()}`;
-    await fetch(url, { method: "POST" });
+    await apiFetch(url, { method: "POST" });
     const c = document.getElementById("logsContainer");
     if (c) c.innerHTML = "";
     showToast("当前视板块日志已清空", "info");
@@ -1160,14 +1115,14 @@ function renderAccountsModal() {
     const initial = (acc.name || acc.username).slice(0, 1);
 
     return `
-      <div class="origin-user-capsule" style="padding:12px;margin-bottom:8px;border-color:${isActive ? 'var(--accent-cyan)' : 'var(--border)'}" onclick="switchStudentAccount('${acc.username}')">
+      <div class="origin-user-capsule" style="padding:12px;margin-bottom:8px;border-color:${isActive ? 'var(--accent-cyan)' : 'var(--border)'}" ${actionAttributes("switchAccount", acc.username)}>
         <div class="origin-avatar">${escapeHtml(initial)}</div>
         <div class="origin-user-info">
           <div class="origin-user-name">${escapeHtml(acc.name || acc.username)} ${isActive ? '<span class="origin-tag">当前活跃</span>' : ''}</div>
           <div class="origin-user-id">学号: ${escapeHtml(acc.username)} · 模式: ${acc.mode === 'webvpn' ? 'WebVPN' : '直连'}</div>
         </div>
         <div>
-          <button class="origin-btn origin-btn-danger-ghost" onclick="event.stopPropagation(); deleteAccount('${acc.username}')">删除</button>
+          <button class="origin-btn origin-btn-danger-ghost" ${actionAttributes("deleteAccount", acc.username)}>删除</button>
         </div>
       </div>
     `;
@@ -1175,9 +1130,16 @@ function renderAccountsModal() {
 }
 
 async function switchStudentAccount(username) {
+  const switchGeneration = ++viewGeneration;
   try {
     appState.activeUsername = username;
     appState.activeUser = appState.accounts.find(a => a.username === username);
+    appState.classes = [];
+    appState.boyaCourses = [];
+    appState.boyaSelected = [];
+    appState.boyaStatistics = {};
+    renderBoyaFeed();
+    renderBoyaStatistics({});
     updateUIElements();
     closeAccountCardsModal();
 
@@ -1192,12 +1154,13 @@ async function switchStudentAccount(username) {
       `;
     }
 
-    const res = await fetch("/api/accounts/switch", {
+    const res = await apiFetch("/api/accounts/switch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: username }),
     });
     const d = await res.json();
+    if (viewGeneration !== switchGeneration || appState.activeUsername !== username) return;
     if (d.status === "ok") {
       if (d.classes && d.classes.length > 0) {
         appState.classes = d.classes;
@@ -1225,10 +1188,12 @@ async function switchStudentAccount(username) {
 async function deleteAccount(username) {
   if (!confirm(`确定删除学号 ${username} 的账号配置吗？`)) return;
   try {
-    const res = await fetch(`/api/accounts/${username}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/accounts/${encodeURIComponent(username)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     appState.accounts = appState.accounts.filter(a => a.username !== username);
     if (appState.activeUsername === username) {
+      viewGeneration++;
+      appState.classes = []; appState.boyaCourses = []; appState.boyaSelected = []; appState.boyaStatistics = {};
       appState.activeUsername = data.active_username || (appState.accounts.length > 0 ? appState.accounts[0].username : "");
       appState.activeUser = appState.accounts.find(a => a.username === appState.activeUsername) || null;
       fetchClasses();
@@ -1269,7 +1234,7 @@ async function handleLogin(e) {
   showToast("正在连接北航统一身份认证...", "info");
 
   try {
-    const res = await fetch("/api/login", {
+    const res = await apiFetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: u, password: p, mode: m, remember: rem }),
@@ -1308,18 +1273,21 @@ async function handleManualSignSubmit(e) {
 
 // 切换网络模式 (直连 vs WebVPN)
 async function toggleMode() {
+  const username = appState.activeUsername, generation = ++viewGeneration;
   const nextMode = appState.mode === "direct" ? "webvpn" : "direct";
   showToast(`正在切换至 ${nextMode === "webvpn" ? "WebVPN 外网" : "校园网直连"}...`, "info");
   try {
-    const res = await fetch("/api/mode", {
+    const res = await apiFetch("/api/mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode: nextMode }),
     });
     const data = await res.json();
+    if (!viewStillCurrent(username, generation)) return;
+    if (!res.ok || data.status !== "ok") throw new Error("模式切换失败");
     appState.mode = data.mode;
     updateUIElements();
-    showToast(`已成功切换至: ${data.mode === "webvpn" ? "WebVPN 外网通道" : "校园网直连"}`, "success");
+    showToast(`已切换至${data.mode === "webvpn" ? "WebVPN 外网通道" : "校园网直连"}，${data.reconnecting ? "正在重新认证" : "请确认登录状态"}`, "info");
   } catch (e) {
     showToast("切换网络通道失败", "error");
   }
@@ -1329,7 +1297,7 @@ async function toggleMode() {
 
 async function checkDisclaimerStatus() {
   try {
-    const res = await fetch("/api/system/disclaimer");
+    const res = await apiFetch("/api/system/disclaimer");
     const data = await res.json();
     const modal = document.getElementById("disclaimerModal");
     if (modal) {
@@ -1351,7 +1319,7 @@ async function handleDisclaimerAccept() {
   const modal = document.getElementById("disclaimerModal");
   if (modal) modal.classList.add("hidden");
   try {
-    const res = await fetch("/api/system/disclaimer/accept", { method: "POST" });
+    const res = await apiFetch("/api/system/disclaimer/accept", { method: "POST" });
     const data = await res.json();
     if (data.accepted) {
       showToast("欢迎使用 BUAA 课程独立签到助手！", "success");
@@ -1367,7 +1335,7 @@ function handleDisclaimerDecline() {
 
 async function initAutostartWidget() {
   try {
-    const res = await fetch("/api/system/autostart");
+    const res = await apiFetch("/api/system/autostart");
     const data = await res.json();
     const checkbox = document.getElementById("autostartCheckbox");
     if (checkbox) checkbox.checked = !!data.enabled;
@@ -1376,7 +1344,7 @@ async function initAutostartWidget() {
 
 async function toggleAutostart(enabled) {
   try {
-    const res = await fetch("/api/system/autostart", {
+    const res = await apiFetch("/api/system/autostart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: enabled }),
@@ -1397,7 +1365,7 @@ async function requestAppExit() {
   }
   showToast("正在安全关闭后台服务进程...", "info");
   try {
-    await fetch("/api/exit", { method: "POST" });
+    await apiFetch("/api/exit", { method: "POST" });
   } catch (e) {}
   setTimeout(() => {
     window.close();
@@ -1607,4 +1575,3 @@ function updateGlassOpacity(val, save = true) {
     localStorage.setItem("origin_glass_opacity", numVal.toString());
   }
 }
-

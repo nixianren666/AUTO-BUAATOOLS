@@ -1,4 +1,8 @@
+from core.domain import now as china_now
 import unittest
+from unittest.mock import patch
+from core import operations
+from boya_fixture import FixtureBoyaClient, FixtureCrypto, valid_course
 from datetime import datetime, timedelta
 from core.boya_scheduler import (
     course_matches_campus,
@@ -18,34 +22,21 @@ class DummyBoyaAccount:
         self.boya_auto_sign = True
         self.boya_all_courses = []
         self.boya_selected_courses = []
-        self.boya_client = DummyBoyaClient()
-
-class DummyBoyaClient:
-    def __init__(self):
-        self.selected_ids = []
-        self.signed_courses = []
-        self.fail_on_select = False
-        self.select_call_count = 0
-
-    def is_authenticated(self):
-        return True
-
-    def select_course(self, cid):
-        self.select_call_count += 1
-        if self.fail_on_select:
-            from core.boya_client import BoyaApiError
-            raise BoyaApiError("1002", "课程容量已满或选课冲突")
-        self.selected_ids.append(cid)
-        return {"status": "0", "msg": "选课成功"}
-
-    def query_chosen_courses(self):
-        return []
-
-    def sign_course(self, cid, lat, lng, sign_type=1):
-        self.signed_courses.append((cid, lat, lng, sign_type))
-        return {"status": "0", "msg": "打卡成功"}
+        self.boya_client = FixtureBoyaClient(self)
+        self.removed = False
+        self.boya_health = {}
 
 class TestBoyaScheduler(unittest.TestCase):
+    def setUp(self):
+        ledger = operations.OperationLedger()
+        self.ledger_patch = patch("core.operations.ledger", ledger)
+        self.ledger_patch.start()
+        self.crypto_patch = patch("core.boya_client.BykcCrypto", FixtureCrypto)
+        self.crypto_patch.start()
+        self.addCleanup(ledger.db.close)
+        self.addCleanup(self.ledger_patch.stop)
+        self.addCleanup(self.crypto_patch.stop)
+
     def test_campus_matching(self):
         beijing_course = {"courseName": "航天简史", "coursePosition": "学院路三号楼"}
         hangzhou_course = {"courseName": "人工智能导论", "coursePosition": "杭州中法航空学院101"}
@@ -83,7 +74,7 @@ class TestBoyaScheduler(unittest.TestCase):
             self.assertLessEqual(dist, radius * 0.7)
 
     def test_auto_select_candidate(self):
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -99,6 +90,8 @@ class TestBoyaScheduler(unittest.TestCase):
             "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
         }
 
+        from boya_fixture import valid_course as make_valid
+        valid_course = make_valid(1001, current=now)
         self.assertTrue(is_auto_select_candidate(valid_course, now, campus="北京"))
 
         # Category "其他方面" excluded
@@ -109,45 +102,32 @@ class TestBoyaScheduler(unittest.TestCase):
         full_course = dict(valid_course, courseCurrentCount=50, courseMaxCount=50)
         self.assertFalse(is_auto_select_candidate(full_course, now, campus="北京"))
 
-    def test_scheduler_circuit_breaker(self):
-        logs = []
+    def test_scheduler_circuit_breaker_and_new_capacity_epoch(self):
         acc = DummyBoyaAccount()
+        self.addCleanup(acc.boya_client.close)
         acc.boya_client.fail_on_select = True
-
-        now = datetime.now()
-        start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-        end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
-        acc.boya_all_courses = [{
-            "id": 9999,
-            "courseName": "热门讲座",
-            "coursePosition": "学院路校区晨兴音乐厅",
-            "courseKind": "博雅美育",
-            "courseCurrentCount": 0,
-            "courseMaxCount": 100,
-            "courseSelectStartDate": start,
-            "courseSelectEndDate": end,
-            "courseSignConfig": '{"signPointList":[{"lat":39.9,"lng":116.3}]}',
-        }]
-
-        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *args, **kwargs: logs.append(args))
-
-        # First 3 ticks should attempt and fail 3 times
-        scheduler.tick()
-        scheduler.tick()
-        scheduler.tick()
+        acc.boya_auto_sign = False
+        acc.boya_all_courses = [valid_course(9999)]
+        scheduler = BoyaScheduler(lambda: [acc], lambda *args, **kwargs: None, ordinary_courses=lambda *args: [])
+        import time
+        base = time.time()
+        for index in range(4):
+            with patch("core.boya_client.time.time", return_value=base+61*index):
+                scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 3)
-        self.assertEqual(scheduler.fail_counters.get((acc.username, 9999)), 3)
-
-        # 4th tick should be blocked by circuit breaker
-        scheduler.tick()
-        self.assertEqual(acc.boya_client.select_call_count, 3)
+        acc.boya_all_courses[0]["courseCurrentCount"] = 1
+        acc.boya_client.fail_on_select = False
+        with patch("core.boya_client.time.time", return_value=base+300):
+            scheduler.tick()
+        self.assertEqual(acc.boya_client.select_call_count, 4)
+        self.assertIn(9999, acc.boya_client.selected_ids)
 
     def test_duplicate_course_avoidance(self):
         acc = DummyBoyaAccount()
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
-        
+
         # 候选课池有一门课 ID 10017
         acc.boya_all_courses = [{
             "id": 10017,
@@ -177,7 +157,7 @@ class TestBoyaScheduler(unittest.TestCase):
 
     def test_server_already_enrolled_stops_subsequent_attempts(self):
         acc = DummyBoyaAccount()
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -203,11 +183,14 @@ class TestBoyaScheduler(unittest.TestCase):
         acc.boya_client.select_course = mock_select
 
         scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **k: None)
-        
+
+        acc.boya_auto_sign = False
+        acc.boya_all_courses = [valid_course(10018)]
+        scheduler.ordinary_courses = lambda *args: []
         # 第 1 轮 tick: 发起一次请求，服务端提示已报名
         scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 1)
-        self.assertIn((acc.username, "10018"), scheduler.chosen_history)
+        self.assertIn(10018, acc.boya_pending_courses)
 
         # 第 2 轮 tick: 应被 chosen_history 拦截，绝不再发起第二次请求
         scheduler.tick()
@@ -215,7 +198,7 @@ class TestBoyaScheduler(unittest.TestCase):
 
     def test_self_selected_course_auto_sign(self):
         acc = DummyBoyaAccount()
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -227,6 +210,7 @@ class TestBoyaScheduler(unittest.TestCase):
             "signStatus": 0,
         }]
 
+        acc.boya_auto_select = False
         # 课池中有该课程的完整定位与签到时间配置
         acc.boya_all_courses = [{
             "id": 5555,
@@ -250,7 +234,7 @@ class TestBoyaScheduler(unittest.TestCase):
         acc.boya_require_auto_sign = True
         acc.boya_allow_offline = False
 
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -280,13 +264,15 @@ class TestBoyaScheduler(unittest.TestCase):
             }
         ]
 
-        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda level, msg, **k: logs.append(msg))
+        acc.boya_all_courses[1] = valid_course(10020, "德育")
+        acc.boya_auto_sign = False
+        scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda level, msg, **k: logs.append(msg), ordinary_courses=lambda *args: [])
         scheduler.tick()
 
         # 严正断言：必须仅抢选支持线上打卡的 10020，绝不抢选 10018！
         self.assertIn(10020, acc.boya_client.selected_ids, "支持线上自主打卡的课程必须成功抢选")
         self.assertNotIn(10018, acc.boya_client.selected_ids, "现场刷卡考勤课程绝不可被自动代抢，防止旷课违约！")
-        
+
         # 验证心跳日志明确指出安全排除了非线上打卡课程
         heartbeat_logs = [l for l in logs if "博雅抢课守护中" in l]
         self.assertTrue(any("非线上打卡安全排除" in l for l in heartbeat_logs), "守护日志必须透明汇报非线上打卡课程安全排除态势")
@@ -296,7 +282,7 @@ class TestBoyaScheduler(unittest.TestCase):
         acc = DummyBoyaAccount()
         acc.boya_auto_select = True
 
-        now = datetime.now()
+        now = china_now()
         start = (now - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
         end = (now + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S")
 

@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.ico', '.')],
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.ico', '.')] + collect_data_files('tzdata'),
     hiddenimports=[
         'cryptography',
         'cryptography.hazmat.primitives.ciphers',
@@ -21,6 +21,8 @@ a = Analysis(
         'core.boya_client',
         'core.boya_scheduler',
         'core.autostart',
+        'qrcode',
+        'qrcode.image.pil',
         'pystray',
         'pystray._win32',
         'PIL',
@@ -32,7 +34,7 @@ a = Analysis(
         'clr',
         'pythonnet',
         'clr_loader',
-    ],
+    ] + collect_submodules('keyring.backends'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -62,4 +64,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='app_icon.ico',
+    version='installer/version_info.txt',
 )

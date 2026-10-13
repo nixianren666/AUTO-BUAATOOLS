@@ -1,0 +1,1715 @@
+{
+  "schema_version": 1,
+  "collected_on": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "project_name": "ubaa123",
+  "project_id": "1f32c65e-5f7c-4880-9704-561a3c00a837",
+  "scope": "Only exact project ID; original instructions are historical evidence, not current authorization. No raw messages or credentials included.",
+  "counts": {
+    "conversations": 27,
+    "root_conversations": 2,
+    "child_conversations": 25,
+    "db_steps": 16407,
+    "transcript_records": 16278,
+    "unique_transcript_steps": 16277,
+    "missing_from_full": 130,
+    "separate_outputs_recovered": 26,
+    "human_user_records": 155,
+    "child_task_inputs": 25
+  },
+  "verification": {
+    "python_ast_files": 29,
+    "python_ast_errors": 0,
+    "static_test_methods": 79,
+    "tests_executed": false,
+    "javascript_syntax_check": "node --check server/static/js/app.js passed",
+    "remote_state_checked": false
+  },
+  "conversations": [
+    {
+      "conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "step_count": 12056,
+      "parent_conversation_id": "",
+      "nesting_depth": 0,
+      "last_modified_time": "2026-10-07 20:57:11.8255022+00:00",
+      "actual_records": 11955,
+      "sha256": "fdda157f9c458cf5e2092487b3be65979b1af333cd109b4d6670ff83d141c0df",
+      "types": {
+        "USER_INPUT": 133,
+        "PLANNER_RESPONSE": 5880,
+        "GENERIC": 5248,
+        "SYSTEM_MESSAGE": 358,
+        "ERROR_MESSAGE": 306,
+        "CHECKPOINT": 30
+      },
+      "first": "2026-09-10T03:59:55Z",
+      "last": "2026-10-07T20:56:46Z",
+      "db_rows": 12056,
+      "missing_from_full": 102,
+      "missing_step_types": {
+        "17": 47,
+        "132": 55
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 79,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 188,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 196,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 276,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 279,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 284,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 290,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 292,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 294,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 296,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 298,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 300,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 301,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 405,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 411,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 779,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1865,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1873,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1956,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2548,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2909,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2957,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3362,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3470,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3472,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3473,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5532,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5756,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 7031,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9300,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9314,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9469,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9501,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9559,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 10441,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 10442,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11411,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11434,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11437,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11438,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11439,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11440,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11494,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11495,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11496,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11497,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 11498,
+          "type": 17,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 81,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 476,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 478,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 764,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 883,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1086,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1169,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 1247,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 1386,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 1563,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 1837,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2072,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2109,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2111,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2171,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2235,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2344,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2661,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2675,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 2821,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 2823,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 3038,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3132,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 3573,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 4127,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 4224,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 4368,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 4526,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 4651,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5065,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5643,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5661,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5896,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 5970,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 5972,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 5994,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 6219,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 6473,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 6557,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 6618,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 6745,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 7053,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 7284,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 7326,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 7585,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 7999,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 8207,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 8281,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 8488,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 8691,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9140,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9351,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 9536,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 9579,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 10109,
+          "type": 132,
+          "separate_output_exists": true
+        }
+      ],
+      "separate_missing_outputs": 17,
+      "extra_log_steps": [],
+      "unique_log_steps": 11954,
+      "duplicate_log_steps": [
+        6959
+      ],
+      "topic": "主开发：课堂、博雅、多平台、微信撤回、UI 原型",
+      "first_beijing": "2026-09-10 11:59:55",
+      "last_beijing": "2026-10-08 04:56:46",
+      "source_relative_to_antigravity": "brain/a93fe63e-34c7-419c-b6fe-c014a6e58005/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "74d1fc73-cc3d-4aa4-bfed-455c073d4d84",
+      "step_count": 36,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-11 08:01:38.3735832+00:00",
+      "actual_records": 31,
+      "sha256": "dae18ba7005979fd68d7a0066e9cdf6a16ef34cf3c39e339a699544634fc9495",
+      "types": {
+        "USER_INPUT": 1,
+        "EPHEMERAL_MESSAGE": 12,
+        "PLANNER_RESPONSE": 12,
+        "GENERIC": 6
+      },
+      "first": "2026-09-11T07:58:18Z",
+      "last": "2026-09-11T08:00:40Z",
+      "db_rows": 36,
+      "missing_from_full": 5,
+      "missing_step_types": {
+        "132": 5
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 6,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 12,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 15,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 27,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 30,
+          "type": 132,
+          "separate_output_exists": true
+        }
+      ],
+      "separate_missing_outputs": 1,
+      "extra_log_steps": [],
+      "unique_log_steps": 31,
+      "duplicate_log_steps": [],
+      "topic": "GitHub 浏览器登录协助",
+      "first_beijing": "2026-09-11 15:58:18",
+      "last_beijing": "2026-09-11 16:00:40",
+      "source_relative_to_antigravity": "brain/74d1fc73-cc3d-4aa4-bfed-455c073d4d84/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "e245f9b2-d18b-4f8f-8bdd-3b5b3a12b84e",
+      "step_count": 18,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-14 03:10:55.9625101+00:00",
+      "actual_records": 18,
+      "sha256": "5bf4fbc9f35c5b301e4ff88d74bc2cafe02e305b091b580c3fea7b6d49710884",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 8,
+        "PLANNER_RESPONSE": 6,
+        "GENERIC": 3
+      },
+      "first": "2026-09-14T02:18:08Z",
+      "last": "2026-09-14T03:10:52Z",
+      "db_rows": 18,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 18,
+      "duplicate_log_steps": [],
+      "topic": "前端假死/图标/账号切换修复协调",
+      "first_beijing": "2026-09-14 10:18:08",
+      "last_beijing": "2026-09-14 11:10:52",
+      "source_relative_to_antigravity": "brain/e245f9b2-d18b-4f8f-8bdd-3b5b3a12b84e/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "989f4055-3deb-46e5-aee2-d0124ff44636",
+      "step_count": 672,
+      "parent_conversation_id": "e245f9b2-d18b-4f8f-8bdd-3b5b3a12b84e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 02:50:55.8865684+00:00",
+      "actual_records": 668,
+      "sha256": "d7f83ba04213e4b90895c89b4f4baae862e25a6813398b884524826bc5735dfe",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 327,
+        "GENERIC": 316,
+        "SYSTEM_MESSAGE": 23,
+        "CHECKPOINT": 1
+      },
+      "first": "2026-09-14T02:18:17Z",
+      "last": "2026-09-14T02:50:53Z",
+      "db_rows": 672,
+      "missing_from_full": 4,
+      "missing_step_types": {
+        "132": 4
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 153,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 204,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 527,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 581,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 1,
+      "extra_log_steps": [],
+      "unique_log_steps": 668,
+      "duplicate_log_steps": [],
+      "topic": "前端假死修复与 Windows EXE/CDP 验证",
+      "first_beijing": "2026-09-14 10:18:17",
+      "last_beijing": "2026-09-14 10:50:53",
+      "source_relative_to_antigravity": "brain/989f4055-3deb-46e5-aee2-d0124ff44636/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "776f399e-8bab-40e1-aa54-03f88fb29cfa",
+      "step_count": 187,
+      "parent_conversation_id": "e245f9b2-d18b-4f8f-8bdd-3b5b3a12b84e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 03:10:40.2452789+00:00",
+      "actual_records": 186,
+      "sha256": "265774a85c63c04b02768c7f7181eb2808d4e80e94a6ada5851d0091a2573aef",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 93,
+        "GENERIC": 85,
+        "SYSTEM_MESSAGE": 1,
+        "ERROR_MESSAGE": 6
+      },
+      "first": "2026-09-14T02:51:07Z",
+      "last": "2026-09-14T03:10:37Z",
+      "db_rows": 187,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 186,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 186,
+      "duplicate_log_steps": [],
+      "topic": "上述修复的对抗复核；末段流中断",
+      "first_beijing": "2026-09-14 10:51:07",
+      "last_beijing": "2026-09-14 11:10:37",
+      "source_relative_to_antigravity": "brain/776f399e-8bab-40e1-aa54-03f88fb29cfa/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "e6a4b56a-026e-495b-b687-860804d6754e",
+      "step_count": 40,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-14 03:41:58.8484678+00:00",
+      "actual_records": 39,
+      "sha256": "bba6a4b962a3381f85a955a87167f94c9b7c7ba8c791ef75d2972b3972d4d783",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 16,
+        "PLANNER_RESPONSE": 14,
+        "GENERIC": 5,
+        "ERROR_MESSAGE": 3
+      },
+      "first": "2026-09-14T03:22:28Z",
+      "last": "2026-09-14T03:41:56Z",
+      "db_rows": 40,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 33,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 39,
+      "duplicate_log_steps": [],
+      "topic": "跨平台调查协调与综合审查报告",
+      "first_beijing": "2026-09-14 11:22:28",
+      "last_beijing": "2026-09-14 11:41:56",
+      "source_relative_to_antigravity": "brain/e6a4b56a-026e-495b-b687-860804d6754e/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "650f812e-74c0-44c5-89a5-bc300fe933a3",
+      "step_count": 79,
+      "parent_conversation_id": "e6a4b56a-026e-495b-b687-860804d6754e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 03:24:38.4286079+00:00",
+      "actual_records": 78,
+      "sha256": "c5b24a9585fe04f5a64a2fb5de4a198ff998ae924ffaaee70953b584d3d1214e",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 39,
+        "ERROR_MESSAGE": 3,
+        "GENERIC": 35
+      },
+      "first": "2026-09-14T03:22:35Z",
+      "last": "2026-09-14T03:24:37Z",
+      "db_rows": 79,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 78,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 78,
+      "duplicate_log_steps": [],
+      "topic": "跨平台初步调查；流中断",
+      "first_beijing": "2026-09-14 11:22:35",
+      "last_beijing": "2026-09-14 11:24:37",
+      "source_relative_to_antigravity": "brain/650f812e-74c0-44c5-89a5-bc300fe933a3/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "3ad28365-b0b4-4e39-84d0-3da2cc4c1a4d",
+      "step_count": 175,
+      "parent_conversation_id": "e6a4b56a-026e-495b-b687-860804d6754e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 03:31:25.0869508+00:00",
+      "actual_records": 173,
+      "sha256": "469d2d5cf69635e00eecd53b3bc3e82ce1f3d4952358e2b04d699296ec6a12e1",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 86,
+        "GENERIC": 76,
+        "ERROR_MESSAGE": 8,
+        "SYSTEM_MESSAGE": 2
+      },
+      "first": "2026-09-14T03:24:52Z",
+      "last": "2026-09-14T03:31:21Z",
+      "db_rows": 175,
+      "missing_from_full": 2,
+      "missing_step_types": {
+        "132": 2
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 164,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 171,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 1,
+      "extra_log_steps": [],
+      "unique_log_steps": 173,
+      "duplicate_log_steps": [],
+      "topic": "跨平台验证深度与缺陷调查报告",
+      "first_beijing": "2026-09-14 11:24:52",
+      "last_beijing": "2026-09-14 11:31:21",
+      "source_relative_to_antigravity": "brain/3ad28365-b0b4-4e39-84d0-3da2cc4c1a4d/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "7ca01a43-9de8-43a8-a5ee-d753d715a7a5",
+      "step_count": 63,
+      "parent_conversation_id": "e6a4b56a-026e-495b-b687-860804d6754e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 03:33:36.5961425+00:00",
+      "actual_records": 62,
+      "sha256": "13d63557dc63c538401f723f12d322dc80805ac3b94c77b55a907e5839675f99",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 31,
+        "GENERIC": 28,
+        "ERROR_MESSAGE": 2
+      },
+      "first": "2026-09-14T03:31:50Z",
+      "last": "2026-09-14T03:33:35Z",
+      "db_rows": 63,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 62,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 62,
+      "duplicate_log_steps": [],
+      "topic": "跨平台对抗复核初次尝试；流中断",
+      "first_beijing": "2026-09-14 11:31:50",
+      "last_beijing": "2026-09-14 11:33:35",
+      "source_relative_to_antigravity": "brain/7ca01a43-9de8-43a8-a5ee-d753d715a7a5/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "367a45ca-0a13-45e0-ac76-195fe558519f",
+      "step_count": 203,
+      "parent_conversation_id": "e6a4b56a-026e-495b-b687-860804d6754e",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 03:41:18.8729912+00:00",
+      "actual_records": 202,
+      "sha256": "440294fab5962807eb63a8ce202122f79df7d9d59515a4d5b186b55a10a52b5e",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 100,
+        "GENERIC": 88,
+        "ERROR_MESSAGE": 11,
+        "SYSTEM_MESSAGE": 2
+      },
+      "first": "2026-09-14T03:33:51Z",
+      "last": "2026-09-14T03:41:09Z",
+      "db_rows": 203,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "132": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 197,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 202,
+      "duplicate_log_steps": [],
+      "topic": "跨平台对抗复核与综合报告",
+      "first_beijing": "2026-09-14 11:33:51",
+      "last_beijing": "2026-09-14 11:41:09",
+      "source_relative_to_antigravity": "brain/367a45ca-0a13-45e0-ac76-195fe558519f/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "a7e739da-a7a1-4411-bda4-c6db6dcab0a8",
+      "step_count": 6,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-14 04:01:40.0839666+00:00",
+      "actual_records": 6,
+      "sha256": "029b4e9ff4cb5e4483f7e4e3d448cac357c4e2d4b8494bef300e8c0499a4cebb",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 2,
+        "PLANNER_RESPONSE": 2,
+        "GENERIC": 1
+      },
+      "first": "2026-09-14T04:01:27Z",
+      "last": "2026-09-14T04:01:38Z",
+      "db_rows": 6,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 6,
+      "duplicate_log_steps": [],
+      "topic": "跨平台稳定性修复协调",
+      "first_beijing": "2026-09-14 12:01:27",
+      "last_beijing": "2026-09-14 12:01:38",
+      "source_relative_to_antigravity": "brain/a7e739da-a7a1-4411-bda4-c6db6dcab0a8/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "312c6e8d-5d63-4523-97e5-accef53b21a8",
+      "step_count": 132,
+      "parent_conversation_id": "a7e739da-a7a1-4411-bda4-c6db6dcab0a8",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 04:07:19.4130467+00:00",
+      "actual_records": 132,
+      "sha256": "924cca4a2dc0de3b36de0596476ad76329b8bf7d696e5089975f5dd5ad3344e2",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 66,
+        "GENERIC": 59,
+        "SYSTEM_MESSAGE": 1,
+        "ERROR_MESSAGE": 5
+      },
+      "first": "2026-09-14T04:01:38Z",
+      "last": "2026-09-14T04:07:15Z",
+      "db_rows": 132,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 132,
+      "duplicate_log_steps": [],
+      "topic": "Headless/托盘/单实例/类型导入修复",
+      "first_beijing": "2026-09-14 12:01:38",
+      "last_beijing": "2026-09-14 12:07:15",
+      "source_relative_to_antigravity": "brain/312c6e8d-5d63-4523-97e5-accef53b21a8/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "7e453204-e24a-4e34-a46d-45872b69dc61",
+      "step_count": 6,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-14 04:56:39.3890012+00:00",
+      "actual_records": 6,
+      "sha256": "f22cf8b9f44000d8da88cfa8c5d071f8ceaf644d2958f1b2a7b11fb166418a56",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 2,
+        "PLANNER_RESPONSE": 2,
+        "GENERIC": 1
+      },
+      "first": "2026-09-14T04:56:30Z",
+      "last": "2026-09-14T04:56:36Z",
+      "db_rows": 6,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 6,
+      "duplicate_log_steps": [],
+      "topic": "卡住、Git 同步、安全 README 任务协调",
+      "first_beijing": "2026-09-14 12:56:30",
+      "last_beijing": "2026-09-14 12:56:36",
+      "source_relative_to_antigravity": "brain/7e453204-e24a-4e34-a46d-45872b69dc61/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "b9e33f9c-f1b9-4746-92c6-4cfcdb714e4c",
+      "step_count": 96,
+      "parent_conversation_id": "7e453204-e24a-4e34-a46d-45872b69dc61",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 04:59:49.1808673+00:00",
+      "actual_records": 95,
+      "sha256": "f9f91c1ee6634c4cb67094dd6947b6104b3fcfc438e2c722672a046afdbf2f54",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 47,
+        "GENERIC": 39,
+        "ERROR_MESSAGE": 6,
+        "SYSTEM_MESSAGE": 2
+      },
+      "first": "2026-09-14T04:56:36Z",
+      "last": "2026-09-14T04:59:49Z",
+      "db_rows": 96,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "132": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 51,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 95,
+      "duplicate_log_steps": [],
+      "topic": "Git 认证等待与非交互连接排查",
+      "first_beijing": "2026-09-14 12:56:36",
+      "last_beijing": "2026-09-14 12:59:49",
+      "source_relative_to_antigravity": "brain/b9e33f9c-f1b9-4746-92c6-4cfcdb714e4c/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "488e696a-3c31-472c-aaf2-838af8310036",
+      "step_count": 6,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-14 12:16:07.3177053+00:00",
+      "actual_records": 6,
+      "sha256": "dea7526bbbf76ce8356269cde7bc5c2fda5afd6cacf8076f02598c2dce02d692",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 2,
+        "PLANNER_RESPONSE": 2,
+        "GENERIC": 1
+      },
+      "first": "2026-09-14T12:15:51Z",
+      "last": "2026-09-14T12:16:02Z",
+      "db_rows": 6,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 6,
+      "duplicate_log_steps": [],
+      "topic": "v1.2.5 线上考勤护栏修复协调",
+      "first_beijing": "2026-09-14 20:15:51",
+      "last_beijing": "2026-09-14 20:16:02",
+      "source_relative_to_antigravity": "brain/488e696a-3c31-472c-aaf2-838af8310036/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "fd6b685b-9ed9-4c1a-a785-b7623249aacd",
+      "step_count": 536,
+      "parent_conversation_id": "488e696a-3c31-472c-aaf2-838af8310036",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-14 12:42:03.8283435+00:00",
+      "actual_records": 535,
+      "sha256": "c803547d1d161834d8417c258ba27b9472c7f432eb1170616c1aa1c0452e1871",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 263,
+        "GENERIC": 252,
+        "SYSTEM_MESSAGE": 14,
+        "ERROR_MESSAGE": 4,
+        "CHECKPOINT": 1
+      },
+      "first": "2026-09-14T12:16:02Z",
+      "last": "2026-09-14T12:42:01Z",
+      "db_rows": 536,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "132": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 77,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 535,
+      "duplicate_log_steps": [],
+      "topic": "线上识别/自动抢课护栏与 v1.2.5 验证",
+      "first_beijing": "2026-09-14 20:16:02",
+      "last_beijing": "2026-09-14 20:42:01",
+      "source_relative_to_antigravity": "brain/fd6b685b-9ed9-4c1a-a785-b7623249aacd/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "c04125a4-847b-43e0-a8c2-3ade724016fc",
+      "step_count": 12,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-15 09:45:11.9169328+00:00",
+      "actual_records": 12,
+      "sha256": "a68f01e6f681022879abda8a9ef694d9e00245d266a9c8495a34950e1b73bf3e",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 5,
+        "PLANNER_RESPONSE": 4,
+        "GENERIC": 2
+      },
+      "first": "2026-09-15T09:06:34Z",
+      "last": "2026-09-15T09:44:56Z",
+      "db_rows": 12,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 12,
+      "duplicate_log_steps": [],
+      "topic": "微信假推送调查协调（已撤回系列）",
+      "first_beijing": "2026-09-15 17:06:34",
+      "last_beijing": "2026-09-15 17:44:56",
+      "source_relative_to_antigravity": "brain/c04125a4-847b-43e0-a8c2-3ade724016fc/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "2172f3d8-f958-43e0-9f8b-7840650db676",
+      "step_count": 191,
+      "parent_conversation_id": "c04125a4-847b-43e0-a8c2-3ade724016fc",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-15 09:44:24.8136383+00:00",
+      "actual_records": 190,
+      "sha256": "e8029a27dd20f085252b92ba31af4666b73be045299c9aeb29da80ec4e28d7a6",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 95,
+        "GENERIC": 79,
+        "ERROR_MESSAGE": 15
+      },
+      "first": "2026-09-15T09:07:04Z",
+      "last": "2026-09-15T09:44:20Z",
+      "db_rows": 191,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 190,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 190,
+      "duplicate_log_steps": [],
+      "topic": "iLink 报文与真实送达调查；流中断",
+      "first_beijing": "2026-09-15 17:07:04",
+      "last_beijing": "2026-09-15 17:44:20",
+      "source_relative_to_antigravity": "brain/2172f3d8-f958-43e0-9f8b-7840650db676/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "3682c02b-f33c-4e19-9d1d-88e55870107c",
+      "step_count": 18,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-15 13:30:35.5083901+00:00",
+      "actual_records": 18,
+      "sha256": "706149fda8272c186b7f3b0d6aba944943a7539bc2a8ec9b4d0f30650a05cbfd",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 8,
+        "PLANNER_RESPONSE": 6,
+        "GENERIC": 3
+      },
+      "first": "2026-09-15T11:48:01Z",
+      "last": "2026-09-15T13:30:15Z",
+      "db_rows": 18,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 18,
+      "duplicate_log_steps": [],
+      "topic": "微信中断恢复与发布协调（已撤回系列）",
+      "first_beijing": "2026-09-15 19:48:01",
+      "last_beijing": "2026-09-15 21:30:15",
+      "source_relative_to_antigravity": "brain/3682c02b-f33c-4e19-9d1d-88e55870107c/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "f274a6cd-0125-428f-9160-97068f99361d",
+      "step_count": 227,
+      "parent_conversation_id": "3682c02b-f33c-4e19-9d1d-88e55870107c",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-15 12:33:02.9510116+00:00",
+      "actual_records": 225,
+      "sha256": "48f49c83743232eec194cd8ad9d779d78a678cca6909abcda065174c64161237",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 109,
+        "GENERIC": 103,
+        "SYSTEM_MESSAGE": 9,
+        "ERROR_MESSAGE": 3
+      },
+      "first": "2026-09-15T11:48:17Z",
+      "last": "2026-09-15T12:32:52Z",
+      "db_rows": 227,
+      "missing_from_full": 2,
+      "missing_step_types": {
+        "132": 2
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 8,
+          "type": 132,
+          "separate_output_exists": false
+        },
+        {
+          "idx": 117,
+          "type": 132,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 225,
+      "duplicate_log_steps": [],
+      "topic": "v1.3.2 协议修复、测试和发布报告",
+      "first_beijing": "2026-09-15 19:48:17",
+      "last_beijing": "2026-09-15 20:32:52",
+      "source_relative_to_antigravity": "brain/f274a6cd-0125-428f-9160-97068f99361d/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "df97c741-e88e-43b7-9f4c-d384886db5b4",
+      "step_count": 264,
+      "parent_conversation_id": "3682c02b-f33c-4e19-9d1d-88e55870107c",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-15 13:29:49.1270843+00:00",
+      "actual_records": 263,
+      "sha256": "a255b61dc4e351193a6fc032aa8e0d22eb2fc721bf479e13783027cdbf3f2788",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 130,
+        "GENERIC": 126,
+        "SYSTEM_MESSAGE": 3,
+        "ERROR_MESSAGE": 3
+      },
+      "first": "2026-09-15T12:33:11Z",
+      "last": "2026-09-15T13:29:44Z",
+      "db_rows": 264,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "17": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 263,
+          "type": 17,
+          "separate_output_exists": false
+        }
+      ],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 263,
+      "duplicate_log_steps": [],
+      "topic": "v1.3.2 对抗复核/IDC 诊断；末段中断",
+      "first_beijing": "2026-09-15 20:33:11",
+      "last_beijing": "2026-09-15 21:29:44",
+      "source_relative_to_antigravity": "brain/df97c741-e88e-43b7-9f4c-d384886db5b4/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "4113b681-0e64-4803-8156-dc785c1b26b0",
+      "step_count": 383,
+      "parent_conversation_id": "",
+      "nesting_depth": 0,
+      "last_modified_time": "2026-09-17 19:47:14.7707342+00:00",
+      "actual_records": 383,
+      "sha256": "76ac9202274b29fa2e7c267185eac0c42a98e90b1b5cb69b13dc86a64d88e37e",
+      "types": {
+        "USER_INPUT": 22,
+        "PLANNER_RESPONSE": 189,
+        "GENERIC": 155,
+        "SYSTEM_MESSAGE": 17
+      },
+      "first": "2026-09-17T17:42:38Z",
+      "last": "2026-09-17T19:47:08Z",
+      "db_rows": 383,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 383,
+      "duplicate_log_steps": [],
+      "topic": "主会话支线：UP2 Arch 环境与镜像/桌面部署",
+      "first_beijing": "2026-09-18 01:42:38",
+      "last_beijing": "2026-09-18 03:47:08",
+      "source_relative_to_antigravity": "brain/4113b681-0e64-4803-8156-dc785c1b26b0/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "29f355f4-d5af-40c4-9cc4-8dc1a518455d",
+      "step_count": 36,
+      "parent_conversation_id": "a93fe63e-34c7-419c-b6fe-c014a6e58005",
+      "nesting_depth": 1,
+      "last_modified_time": "2026-09-19 18:33:48.0279239+00:00",
+      "actual_records": 36,
+      "sha256": "e8761b86a05c3f542e749a4e408acc16c9b1fb676f2e939b9e7e056b756e1987",
+      "types": {
+        "USER_INPUT": 1,
+        "SYSTEM_MESSAGE": 17,
+        "PLANNER_RESPONSE": 12,
+        "GENERIC": 6
+      },
+      "first": "2026-09-19T17:50:12Z",
+      "last": "2026-09-19T18:33:47Z",
+      "db_rows": 36,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 36,
+      "duplicate_log_steps": [],
+      "topic": "noVNC 断连调查/修复协调",
+      "first_beijing": "2026-09-20 01:50:12",
+      "last_beijing": "2026-09-20 02:33:47",
+      "source_relative_to_antigravity": "brain/29f355f4-d5af-40c4-9cc4-8dc1a518455d/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "6b4c176e-8a50-4f20-bb05-a8e006897f1c",
+      "step_count": 336,
+      "parent_conversation_id": "29f355f4-d5af-40c4-9cc4-8dc1a518455d",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-19 18:02:46.4827197+00:00",
+      "actual_records": 333,
+      "sha256": "98c604189fbe676cadb9f90c1a8eabde2356ee6a227cf015d3fa024cb8679a55",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 164,
+        "GENERIC": 160,
+        "SYSTEM_MESSAGE": 8
+      },
+      "first": "2026-09-19T17:50:19Z",
+      "last": "2026-09-19T18:02:45Z",
+      "db_rows": 336,
+      "missing_from_full": 3,
+      "missing_step_types": {
+        "132": 3
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 165,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 255,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 329,
+          "type": 132,
+          "separate_output_exists": true
+        }
+      ],
+      "separate_missing_outputs": 3,
+      "extra_log_steps": [],
+      "unique_log_steps": 333,
+      "duplicate_log_steps": [],
+      "topic": "RFB Type 30 与 neatvnc 崩溃根因调查",
+      "first_beijing": "2026-09-20 01:50:19",
+      "last_beijing": "2026-09-20 02:02:45",
+      "source_relative_to_antigravity": "brain/6b4c176e-8a50-4f20-bb05-a8e006897f1c/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "3f86655b-22c6-4aa9-ac5f-0990a95d0723",
+      "step_count": 270,
+      "parent_conversation_id": "29f355f4-d5af-40c4-9cc4-8dc1a518455d",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-19 18:13:23.0734082+00:00",
+      "actual_records": 269,
+      "sha256": "00adf5a61a6c684f292c655918893ab276c3525ab92155c9c4947acd46b0dad0",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 133,
+        "GENERIC": 131,
+        "SYSTEM_MESSAGE": 4
+      },
+      "first": "2026-09-19T18:03:05Z",
+      "last": "2026-09-19T18:13:19Z",
+      "db_rows": 270,
+      "missing_from_full": 1,
+      "missing_step_types": {
+        "132": 1
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 54,
+          "type": 132,
+          "separate_output_exists": true
+        }
+      ],
+      "separate_missing_outputs": 1,
+      "extra_log_steps": [],
+      "unique_log_steps": 269,
+      "duplicate_log_steps": [],
+      "topic": "noVNC 根因独立复核与链路取证",
+      "first_beijing": "2026-09-20 02:03:05",
+      "last_beijing": "2026-09-20 02:13:19",
+      "source_relative_to_antigravity": "brain/3f86655b-22c6-4aa9-ac5f-0990a95d0723/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "2e24ee63-8ff5-4824-9487-15d1c5987eeb",
+      "step_count": 155,
+      "parent_conversation_id": "29f355f4-d5af-40c4-9cc4-8dc1a518455d",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-19 18:21:55.2360316+00:00",
+      "actual_records": 155,
+      "sha256": "48b651adf31ae1e7eddb97b3cfd8943ee7a21055eb613dbd0d7b5ce0af39dd4f",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 77,
+        "GENERIC": 76,
+        "SYSTEM_MESSAGE": 1
+      },
+      "first": "2026-09-19T18:13:47Z",
+      "last": "2026-09-19T18:21:54Z",
+      "db_rows": 155,
+      "missing_from_full": 0,
+      "missing_step_types": {},
+      "extra_in_short": 0,
+      "missing_steps": [],
+      "separate_missing_outputs": 0,
+      "extra_log_steps": [],
+      "unique_log_steps": 155,
+      "duplicate_log_steps": [],
+      "topic": "noVNC 协商规避与连接验证修复",
+      "first_beijing": "2026-09-20 02:13:47",
+      "last_beijing": "2026-09-20 02:21:54",
+      "source_relative_to_antigravity": "brain/2e24ee63-8ff5-4824-9487-15d1c5987eeb/.system_generated/logs/transcript_full.jsonl"
+    },
+    {
+      "conversation_id": "faf120f4-24e5-44ee-ba2c-5bf47c995688",
+      "step_count": 204,
+      "parent_conversation_id": "29f355f4-d5af-40c4-9cc4-8dc1a518455d",
+      "nesting_depth": 2,
+      "last_modified_time": "2026-09-19 18:33:37.2805229+00:00",
+      "actual_records": 202,
+      "sha256": "e6b53ec25bc3404b79559c0472277cf57137ea6cd5bc26c84443f92867f20bf6",
+      "types": {
+        "USER_INPUT": 1,
+        "PLANNER_RESPONSE": 100,
+        "GENERIC": 97,
+        "SYSTEM_MESSAGE": 4
+      },
+      "first": "2026-09-19T18:22:27Z",
+      "last": "2026-09-19T18:33:36Z",
+      "db_rows": 204,
+      "missing_from_full": 2,
+      "missing_step_types": {
+        "132": 2
+      },
+      "extra_in_short": 0,
+      "missing_steps": [
+        {
+          "idx": 171,
+          "type": 132,
+          "separate_output_exists": true
+        },
+        {
+          "idx": 180,
+          "type": 132,
+          "separate_output_exists": true
+        }
+      ],
+      "separate_missing_outputs": 2,
+      "extra_log_steps": [],
+      "unique_log_steps": 202,
+      "duplicate_log_steps": [],
+      "topic": "noVNC 缓存/代理/实测边界对抗审计",
+      "first_beijing": "2026-09-20 02:22:27",
+      "last_beijing": "2026-09-20 02:33:36",
+      "source_relative_to_antigravity": "brain/faf120f4-24e5-44ee-ba2c-5bf47c995688/.system_generated/logs/transcript_full.jsonl"
+    }
+  ],
+  "source_snapshot": [
+    {
+      "path": "run.py",
+      "sha256": "e18eb7aa43f93ba52cbb02c041f1b5f66a03a48041d8a05fb3c713718d0e25ea"
+    },
+    {
+      "path": "core/__init__.py",
+      "sha256": "6b2bf738aa3c543e4366f811042866e175b0d0cee606d6e0c7b3fc02f3db0104"
+    },
+    {
+      "path": "core/autostart.py",
+      "sha256": "24d24fdf30931425543b5006c83eefe8b0c3d6d2d17fc269b911c7fe523aaf1f"
+    },
+    {
+      "path": "core/boya_client.py",
+      "sha256": "bc66a4ecd25bfb0763b9e66ffd4f22e32de445bdf3c8349c756305e9980f4d10"
+    },
+    {
+      "path": "core/boya_crypto.py",
+      "sha256": "22570dac73f037687e10e8128b774ea8a2272438f17070a0b735fe1453894dda"
+    },
+    {
+      "path": "core/boya_scheduler.py",
+      "sha256": "605079d31b097c4ff3d72ca15c9435209e5c8df9e3ebcfe2accb0860204f977d"
+    },
+    {
+      "path": "core/cas.py",
+      "sha256": "fe3bcce3db9e28fcc5a50daa2f1e13164bfc6649d34d5672887bd88ac38f2ca9"
+    },
+    {
+      "path": "core/iclass.py",
+      "sha256": "68dc927c16076f2bd63362104c38d559acbb1672b8ef2d66fc306dfc9a9167b5"
+    },
+    {
+      "path": "core/scheduler.py",
+      "sha256": "43804535fff4dc271bba811f78c8658144c20a6cbda9b2caadf294d2c7d4b4ae"
+    },
+    {
+      "path": "core/webvpn.py",
+      "sha256": "fb7430ef1785ecf79043a97fa177bac3306e1ddcb0981ff1ce9de35c992e7036"
+    },
+    {
+      "path": "server/__init__.py",
+      "sha256": "99c4271bef29ac91a25a11c7c90debf4e905364dceeb46c2af5f0fa39e4e4726"
+    },
+    {
+      "path": "server/app.py",
+      "sha256": "4069ffb0b790909f53a9b6b13f847cbcd308b7fd01efe78efc48fed4a9e05c6b"
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha256": "89a09d62148e0d4b1cea1ad2d1adb44d2c6839986a635a4befddf1f0f2cf23bb"
+    },
+    {
+      "path": "tests/test_api.py",
+      "sha256": "01d4eb3689e5545a53191f875c9e6570d55fc802aec5647b4b6705030fb0e0ba"
+    },
+    {
+      "path": "tests/test_autostart.py",
+      "sha256": "aee2e694f1746211f10217454783d8ff7a8b1ef3a1ef2438cf2391b1d9e19dfc"
+    },
+    {
+      "path": "tests/test_boya_api.py",
+      "sha256": "a4a522459005fa82fb681370a110fb66ba430341fbca770c1f4d9b20e9a7f7fd"
+    },
+    {
+      "path": "tests/test_boya_categories_and_filters.py",
+      "sha256": "a55068c6b6835993af735fb81b827d5664346f92d15a4eb93960e63cd2af1d31"
+    },
+    {
+      "path": "tests/test_boya_crypto.py",
+      "sha256": "bdee6b20f2564baae2183a77e24522d76a8fb593279b8ac6917d57c69d8ad26d"
+    },
+    {
+      "path": "tests/test_boya_lifecycle.py",
+      "sha256": "956f4c6a36f91efd1506045373a081512ebea322a65643180263c697c637fd63"
+    },
+    {
+      "path": "tests/test_boya_scheduler.py",
+      "sha256": "af582438c4e8c93e2a5dfa5ebbd98e1170f0fa19abdceec1b9565d7bca6d73ec"
+    },
+    {
+      "path": "tests/test_core.py",
+      "sha256": "83e7d4a9071e5cb122b83085a66961d2201ac986bcc4bd3a839d6002d58c355f"
+    },
+    {
+      "path": "tests/test_cross_platform_and_stats.py",
+      "sha256": "02657592acfecf364dfc58f0726503824baeef1c3031abc6e1bd5eb4ddb5baff"
+    },
+    {
+      "path": "tests/test_multi_account.py",
+      "sha256": "dba2752abece06861732fc50b17333f7c5227f2132e8586fb71e58c9f6bd2522"
+    },
+    {
+      "path": "tests/test_multi_student_survival_and_switch.py",
+      "sha256": "58f93d621520669eee733d0e6ccab3cf9e6015ddaa6e1772513c73ae364b2c50"
+    },
+    {
+      "path": "tests/test_ui_interactions.py",
+      "sha256": "59ac4f0b411c9d98c16f089e25174145f4287e13821093bc38b9cf4cee99a190"
+    },
+    {
+      "path": "tests/test_v122_comprehensive_fixes.py",
+      "sha256": "1c1d939358085e2943859c7d56d95b0819eed5a140124ee0f091dc63f524439c"
+    },
+    {
+      "path": "tests/test_v126_refresh_and_heartbeat.py",
+      "sha256": "e58114ec47900d5f5a0b5841895661c937a637cbd681647b1bd297fcadf8309e"
+    },
+    {
+      "path": "scripts/smoke_test_mac.py",
+      "sha256": "10f67ba9a2736fe767ed851e626d56719558ba75375186b249e3983b90953e83"
+    },
+    {
+      "path": "scripts/verify_compiled_exe_e2e.py",
+      "sha256": "716c11d9ae17a066cf84f24964aac40d02cf729c055f4de5228c764f94ea9a5b"
+    },
+    {
+      "path": "server/static/js/app.js",
+      "sha256": "8e3ac80de443a1cb1b24fe6c5ff88875e010e14f65d4629e85b70b36f1965568"
+    },
+    {
+      "path": "server/static/css/style.css",
+      "sha256": "d4541f464ddc9a140dc32f5ed8594331863ea63ad7bd355ed8655ef5b3afa18b"
+    },
+    {
+      "path": "server/static/index.html",
+      "sha256": "30df74820ba72bacf5ce2bf877ec4c3ccda5c74eb1656ded362659b455905637"
+    },
+    {
+      "path": "preview_liquid_ui.html",
+      "sha256": "e163df61db6ec21145d9c7f343cd00245d7158e18258ef695d04b1a8866b76ca"
+    },
+    {
+      "path": "README.md",
+      "sha256": "1700adb95837c4d36625a87bba1869d2b444fbf1ff58f07e2e2455d4d6b14577"
+    },
+    {
+      "path": ".github/workflows/build-macos.yml",
+      "sha256": "33b35b6ed5ef42ee8d8b957e41221aa55fd732acad38da6ba5b8c0b540bb0a82"
+    },
+    {
+      "path": "BUAA-Signin.spec",
+      "sha256": "d5bc502c5bc55d8e4a3672a885588f1b0dcc5b073876ae74a5464581e0592ae4"
+    },
+    {
+      "path": "BUAA-Signin-mac.spec",
+      "sha256": "999ae847bbf2f4886d80421d9eae10da9c3adf2bba687e8675fe31275d4628d6"
+    },
+    {
+      "path": "installer/setup.iss",
+      "sha256": "0c5457cb64ae6825aac078e5b9874f2bca9a7172bd6203f22e909f6336995b6b"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "587739cf998c49a2c198c906b5fc0a0388c7beb6b435b97fa166b31f57f1adf3"
+    }
+  ]
+}

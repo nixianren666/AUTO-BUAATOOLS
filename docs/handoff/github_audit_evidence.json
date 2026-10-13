@@ -1,0 +1,2912 @@
+{
+  "schema_version": 1,
+  "completed_date": "2026-10-13",
+  "timezone": "Asia/Shanghai",
+  "scope": "Repository takeover audit; read-only GitHub and source examination. No production business changes or release operations. No raw credentials, author contact details or personal screenshots included.",
+  "repository": {
+    "full_name": "nixianren666/AUTO-BUAATOOLS",
+    "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS",
+    "default_branch": "main",
+    "private": false,
+    "archived": false,
+    "pushed_at": "2026-09-15T14:48:25Z"
+  },
+  "head": "fcc513140798211d55dd0db98e54a5e168f80b10",
+  "business_baseline": "v1.2.6",
+  "branches": [
+    {
+      "name": "main",
+      "sha": "fcc513140798211d55dd0db98e54a5e168f80b10",
+      "protected": false
+    }
+  ],
+  "tags": [
+    {
+      "name": "v1.3.2",
+      "sha": "fcc513140798211d55dd0db98e54a5e168f80b10"
+    },
+    {
+      "name": "v1.3.1",
+      "sha": "f523da2bd576863104d9f5c5a210757ecde957a8"
+    },
+    {
+      "name": "v1.2.6",
+      "sha": "5158df8da851ce53d64e8ea3a55438aad96aeef0"
+    },
+    {
+      "name": "v1.2.5",
+      "sha": "c2d9f3c580544fea23e4873c6645c09ddd31cb86"
+    },
+    {
+      "name": "v1.2.2",
+      "sha": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b"
+    },
+    {
+      "name": "v1.2.0",
+      "sha": "284e8fcb6be79c49e3e425a136f35a89f628d85d"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "fcc513140798211d55dd0db98e54a5e168f80b10",
+      "date": "2026-09-15T14:05:38Z",
+      "subject": "fix(wechat): enhance context renewal diagnostics and IDC redirect support",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/fcc513140798211d55dd0db98e54a5e168f80b10"
+    },
+    {
+      "sha": "8f2555b2f0468cb43a072ca027b2ae5fe2cb7a59",
+      "date": "2026-09-15T12:23:17Z",
+      "subject": "feat(wechat): release v1.3.2 aligning with official WeChat iLink protocol and fixing message delivery",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/8f2555b2f0468cb43a072ca027b2ae5fe2cb7a59"
+    },
+    {
+      "sha": "f523da2bd576863104d9f5c5a210757ecde957a8",
+      "date": "2026-09-15T08:33:48Z",
+      "subject": "fix(wechat): fix QR code generation via qrcode PNG base64, long poll async worker, and global hidden CSS style",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/f523da2bd576863104d9f5c5a210757ecde957a8"
+    },
+    {
+      "sha": "702011daf79c0f9ab03fc49d088dc4c604bf520b",
+      "date": "2026-09-15T07:27:21Z",
+      "subject": "feat: release v1.3.1 with WeChat ClawBot real-time log push and replay buffer",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/702011daf79c0f9ab03fc49d088dc4c604bf520b"
+    },
+    {
+      "sha": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "date": "2026-09-15T07:05:20Z",
+      "subject": "feat: release v1.2.6 with immediate schedule refresh and quiet boya heartbeat",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/5158df8da851ce53d64e8ea3a55438aad96aeef0"
+    },
+    {
+      "sha": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+      "date": "2026-09-14T17:07:08Z",
+      "subject": "fix(tests): ensure clean process tree termination for browser and uvicorn in UI test",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/c2d9f3c580544fea23e4873c6645c09ddd31cb86"
+    },
+    {
+      "sha": "ae7acde604f949133f4add3a909a5cf81807f426",
+      "date": "2026-09-14T16:37:36Z",
+      "subject": "test: enhance verify_compiled_exe_e2e resilience to cold-start browser delays",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/ae7acde604f949133f4add3a909a5cf81807f426"
+    },
+    {
+      "sha": "2fbf7f39b785c58d42986c259a8458435844de3c",
+      "date": "2026-09-14T15:56:20Z",
+      "subject": "fix: fix drop course API parameter, remove redundant online-only toggle, enforce 100% autonomous sign-in",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/2fbf7f39b785c58d42986c259a8458435844de3c"
+    },
+    {
+      "sha": "e60310b776e0ba4053d3856d335c7ee428318a74",
+      "date": "2026-09-14T13:19:35Z",
+      "subject": "fix: bump frontend script asset cache-buster to v1.2.5 and bundle freshly verified binaries",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/e60310b776e0ba4053d3856d335c7ee428318a74"
+    },
+    {
+      "sha": "29b7e55f97caf3bcf20c9cb1e55e837de7f76a65",
+      "date": "2026-09-14T13:00:19Z",
+      "subject": "feat: release v1.2.5 with strict online autonomous checkin safety guardrails",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/29b7e55f97caf3bcf20c9cb1e55e837de7f76a65"
+    },
+    {
+      "sha": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+      "date": "2026-09-14T05:00:54Z",
+      "subject": "docs: add comprehensive five-dimensional security and anti-ban guard section to README",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/41ae89e5e164db7f20948a8eef1feb6f48ce2a0b"
+    },
+    {
+      "sha": "7dc0334f17772e16e299a97fb49e3bd5b2ccb656",
+      "date": "2026-09-14T04:44:28Z",
+      "subject": "fix(cross-platform): complete multi-platform parity, headless pystray fallback, macOS tray deadlock resolution, and CI robustness",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/7dc0334f17772e16e299a97fb49e3bd5b2ccb656"
+    },
+    {
+      "sha": "2778d1bb130982f5f1488ee313e2bbf577f3363b",
+      "date": "2026-09-14T02:50:15Z",
+      "subject": "fix: resolve fatal frontend syntax error, missing logger, student switching cache hydration, and installer shortcut icons",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/2778d1bb130982f5f1488ee313e2bbf577f3363b"
+    },
+    {
+      "sha": "6f518a438691887b62df1504024f032cf6edd676",
+      "date": "2026-09-13T20:35:41Z",
+      "subject": "feat: modernize app icons across all platforms, harden auto-select and auto-sign safety mechanisms, and enhance anti-ban jitter",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/6f518a438691887b62df1504024f032cf6edd676"
+    },
+    {
+      "sha": "3e5200516d7123d53d2c6269ed8e280d2fbcda20",
+      "date": "2026-09-13T20:13:58Z",
+      "subject": "fix(boya): isolate semester stats from all-time audit, enable offline course selection, and add cross-platform tests",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/3e5200516d7123d53d2c6269ed8e280d2fbcda20"
+    },
+    {
+      "sha": "fa48637d9fc4764500188db482fd4eeceb9cb961",
+      "date": "2026-09-13T19:45:14Z",
+      "subject": "docs: add AGENTS.md engineering standards and dual-persona guidelines",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/fa48637d9fc4764500188db482fd4eeceb9cb961"
+    },
+    {
+      "sha": "f907d5d3f08ea0571c872e3db265f106cf0d3d6d",
+      "date": "2026-09-13T19:23:45Z",
+      "subject": "fix(boya): scope semester stats to academic calendar, exclude past years, and add background pool sync",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/f907d5d3f08ea0571c872e3db265f106cf0d3d6d"
+    },
+    {
+      "sha": "0236dcad7a30d8f4d0e5df48cc7494a2a9479fd2",
+      "date": "2026-09-13T19:04:48Z",
+      "subject": "fix(cross-platform): add Unix fcntl single-instance lock and ensure timezone-safe is_ended course evaluation",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/0236dcad7a30d8f4d0e5df48cc7494a2a9479fd2"
+    },
+    {
+      "sha": "7a6e8562419f169ca6617f4597184097e40dc668",
+      "date": "2026-09-13T18:32:51Z",
+      "subject": "fix(robustness): carpet-bombing quality audit fixes - courseSchedId sign param, aes-128 password vault, empty vs demo state, session cleanup and modal UX",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/7a6e8562419f169ca6617f4597184097e40dc668"
+    },
+    {
+      "sha": "0ee8416310ad42bf570eabbdecc49ca626ae5bcd",
+      "date": "2026-09-13T18:09:26Z",
+      "subject": "fix(v1.2.2): resolve course metadata extraction, real name display, boya outcome evaluation, personal logging and win32 single instance mutex",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/0ee8416310ad42bf570eabbdecc49ca626ae5bcd"
+    },
+    {
+      "sha": "917ed58c7f0e8b272153f2cfbba49d0ae1aa7863",
+      "date": "2026-09-13T17:28:47Z",
+      "subject": "ci: add release-windows job to automate Windows asset uploads to GitHub release",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/917ed58c7f0e8b272153f2cfbba49d0ae1aa7863"
+    },
+    {
+      "sha": "62482afe160dfdf55b1343792525c4387086dc1b",
+      "date": "2026-09-13T17:13:53Z",
+      "subject": "feat: release v1.2.2 with boya lifecycle fixes, semester assessment revamp, 24/7 daemons, and gatekeeper solutions",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/62482afe160dfdf55b1343792525c4387086dc1b"
+    },
+    {
+      "sha": "b936292069dc0343a19358f721c17a8b6e31bdda",
+      "date": "2026-09-12T08:17:44Z",
+      "subject": "feat(boya): support auto-sign for self-selected courses with periodic background sync and fallback coordinates",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/b936292069dc0343a19358f721c17a8b6e31bdda"
+    },
+    {
+      "sha": "7b6b681a89718db9ab164fa7d144b4fe50ad5d68",
+      "date": "2026-09-12T07:51:14Z",
+      "subject": "fix(boya): prevent duplicate course grabbing and isolate student logs by category (all/regular/boya)",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/7b6b681a89718db9ab164fa7d144b4fe50ad5d68"
+    },
+    {
+      "sha": "7dd710fda0611c27d0e7e03898ca8f5a25c19044",
+      "date": "2026-09-12T06:19:32Z",
+      "subject": "fix(client): enhance direct mode reliability and terminal stdout encoding",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/7dd710fda0611c27d0e7e03898ca8f5a25c19044"
+    },
+    {
+      "sha": "d16b3673501894e3e5af880044c2d4bca30f9d20",
+      "date": "2026-09-12T05:52:49Z",
+      "subject": "fix(auth): modernize iclass login endpoints, decouple boya and sso, and fix schedule fetch blocking",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/d16b3673501894e3e5af880044c2d4bca30f9d20"
+    },
+    {
+      "sha": "37d14b9058bb4b7fe2c56405d0623b776538c5cb",
+      "date": "2026-09-11T10:30:11Z",
+      "subject": "feat(linux): add Linux headless web service, Docker compose support, and update multiplatform docs",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/37d14b9058bb4b7fe2c56405d0623b776538c5cb"
+    },
+    {
+      "sha": "565b09a193b0af47aec545705918bfd155c1e40c",
+      "date": "2026-09-11T10:02:29Z",
+      "subject": "feat(macos): add DMG disk image packaging support",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/565b09a193b0af47aec545705918bfd155c1e40c"
+    },
+    {
+      "sha": "d82bc8050f3d3f52daee0a1510a43d2d3819dc9e",
+      "date": "2026-09-11T09:58:04Z",
+      "subject": "chore: enable contents write permission in build workflow",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/d82bc8050f3d3f52daee0a1510a43d2d3819dc9e"
+    },
+    {
+      "sha": "91b5e537eb2d14f75bf81bcd4136e9308684c88f",
+      "date": "2026-09-11T09:52:56Z",
+      "subject": "fix(macos): add PYTHONPATH and sys.path in smoke test",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/91b5e537eb2d14f75bf81bcd4136e9308684c88f"
+    },
+    {
+      "sha": "2cba8420b7e15f63c93b7b6cd552a2d43e43a86e",
+      "date": "2026-09-11T09:50:07Z",
+      "subject": "feat(macos): add macOS support and GitHub Actions automated build workflow",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/2cba8420b7e15f63c93b7b6cd552a2d43e43a86e"
+    },
+    {
+      "sha": "284e8fcb6be79c49e3e425a136f35a89f628d85d",
+      "date": "2026-09-11T07:42:16Z",
+      "subject": "feat: release AUTO-BUAA v1.2.0-beta complete package",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/commit/284e8fcb6be79c49e3e425a136f35a89f628d85d"
+    }
+  ],
+  "tracked_blobs": [
+    {
+      "path": ".github/workflows/build-macos.yml",
+      "sha": "094566fc6a2df92117cfb8676b5370c5bb9ff2fe",
+      "size": 3916
+    },
+    {
+      "path": ".gitignore",
+      "sha": "b2bb4031f42a642a32358017a6f8e240b9e31791",
+      "size": 359
+    },
+    {
+      "path": "AGENTS.md",
+      "sha": "c8a34bc7cd7893c5e2315c15f128caabefe6f525",
+      "size": 4464
+    },
+    {
+      "path": "BUAA-Signin-Setup-v1.2.5.exe",
+      "sha": "a550e7ea4257b49072b1ec7323687efa2e0e9f5a",
+      "size": 32740094
+    },
+    {
+      "path": "BUAA-Signin-Setup-v1.2.6.exe",
+      "sha": "b36b97b263926da8c95b8fd59e6eebfd44a5fdbf",
+      "size": 32741258
+    },
+    {
+      "path": "BUAA-Signin-Setup-v1.3.1.exe",
+      "sha": "c4dfd1db5a3d1fdbdb6b9b02a30cc95fe3f9c140",
+      "size": 32819407
+    },
+    {
+      "path": "BUAA-Signin-Setup-v1.3.2.exe",
+      "sha": "e5b23d5341f676efe8eaac1f112769f39ed08b65",
+      "size": 32825035
+    },
+    {
+      "path": "BUAA-Signin-mac.spec",
+      "sha": "0fae277a1ee0a4b6d408fb27f6523ff27a0c6356",
+      "size": 1764
+    },
+    {
+      "path": "BUAA-Signin-v1.2.5-portable.exe",
+      "sha": "41c2f36196f9129332339082ec1c0151347f6412",
+      "size": 31140480
+    },
+    {
+      "path": "BUAA-Signin-v1.2.6-portable.exe",
+      "sha": "d56cd7a938ac2cb240eb37cc4a96cf2d2a472923",
+      "size": 31141664
+    },
+    {
+      "path": "BUAA-Signin-v1.3.1-portable.exe",
+      "sha": "b1c8a137323822f72595ddf62be8d69efddd4190",
+      "size": 31220903
+    },
+    {
+      "path": "BUAA-Signin-v1.3.2-portable.exe",
+      "sha": "91b1ad5936a5c19389bbdeef21d7f8fb28ebdf81",
+      "size": 31227074
+    },
+    {
+      "path": "BUAA-Signin.exe",
+      "sha": "91b1ad5936a5c19389bbdeef21d7f8fb28ebdf81",
+      "size": 31227074
+    },
+    {
+      "path": "BUAA-Signin.spec",
+      "sha": "3b1e08a0de8981a66b44317bbd8b79e8eddf755e",
+      "size": 1672
+    },
+    {
+      "path": "Dockerfile",
+      "sha": "ac67331a289f91e19bf1bc4991569c08169e4b64",
+      "size": 993
+    },
+    {
+      "path": "LICENSE",
+      "sha": "e04c7e3775c930aeb9a9b172d1f07141b886a208",
+      "size": 1077
+    },
+    {
+      "path": "README.md",
+      "sha": "1fbc16fa59fd5c7f71bf7731252823885ccb6f56",
+      "size": 26834
+    },
+    {
+      "path": "app_icon.icns",
+      "sha": "2ea9717c5d44e2f58207bc5ffc45e020f1b95941",
+      "size": 1202495
+    },
+    {
+      "path": "app_icon.ico",
+      "sha": "fe83354dc7ebbb762642dd37942da6c1508200bb",
+      "size": 103884
+    },
+    {
+      "path": "config.json",
+      "sha": "e2a14fb52443e68f3c7a579975baacca9b95b5ff",
+      "size": 193
+    },
+    {
+      "path": "core/__init__.py",
+      "sha": "63fd1396b55318ed60753ce4681f90ad0dec4e4e",
+      "size": 31
+    },
+    {
+      "path": "core/autostart.py",
+      "sha": "4c34582c2af9154a0bfe0a396a0a4620549fb4f9",
+      "size": 8101
+    },
+    {
+      "path": "core/boya_client.py",
+      "sha": "030a71fdec47588370907c439ee5dd3b07533449",
+      "size": 11904
+    },
+    {
+      "path": "core/boya_crypto.py",
+      "sha": "1ded3798e90f13bd83423e90e6db281ee7a88448",
+      "size": 4710
+    },
+    {
+      "path": "core/boya_scheduler.py",
+      "sha": "96a6ab82ff1d6c68b9c16176e7d5fe93231f56f6",
+      "size": 41844
+    },
+    {
+      "path": "core/cas.py",
+      "sha": "039475df32d770231da20382cfaff20aa0ff2ff7",
+      "size": 4689
+    },
+    {
+      "path": "core/iclass.py",
+      "sha": "a05c19cd3b6f7136969d6d455f81e91e16fa8bc2",
+      "size": 23047
+    },
+    {
+      "path": "core/scheduler.py",
+      "sha": "b52cf57c83e2befd556da82537465fb2d4378b93",
+      "size": 12164
+    },
+    {
+      "path": "core/webvpn.py",
+      "sha": "33b78c34ab135b4f8a3f428c7d797d66559bc6df",
+      "size": 4193
+    },
+    {
+      "path": "core/wechat_clawbot.py",
+      "sha": "f7b56db99112a2083d7ab45cfd30c776a09887c6",
+      "size": 38987
+    },
+    {
+      "path": "docker-compose.yml",
+      "sha": "220bd6f136156838db6d1344e1125962b0462e16",
+      "size": 285
+    },
+    {
+      "path": "installer/setup.iss",
+      "sha": "250a500dd61e2a73c2e7f59c6c5560e469266194",
+      "size": 3177
+    },
+    {
+      "path": "requirements.txt",
+      "sha": "2851e0cfb07afdf1143347260b91e0fedd518d9c",
+      "size": 288
+    },
+    {
+      "path": "run.py",
+      "sha": "317dd28c799ff34613fae56363c64e01bf375180",
+      "size": 16701
+    },
+    {
+      "path": "scripts/build_macos.sh",
+      "sha": "5076f862e9921f8da502e2eb13a1d01365a05d5f",
+      "size": 2348
+    },
+    {
+      "path": "scripts/fix_macos_gatekeeper.sh",
+      "sha": "8a983337c1b8f83d7333d2392b5f940e54526a99",
+      "size": 1997
+    },
+    {
+      "path": "scripts/install_linux_service.sh",
+      "sha": "af23fd92fdbbcfb8a6a1639666d75b181328a88f",
+      "size": 6255
+    },
+    {
+      "path": "scripts/install_macos_service.sh",
+      "sha": "f3a1ee89ea0bf731b6560d684cf904dd47903769",
+      "size": 7057
+    },
+    {
+      "path": "scripts/smoke_test_mac.py",
+      "sha": "88ed9189ea6af25a9520aa684e9a853ccd3da72e",
+      "size": 2635
+    },
+    {
+      "path": "scripts/verify_compiled_exe_e2e.py",
+      "sha": "07401ea26c0202810376088ecdfe8af1804c2be1",
+      "size": 9335
+    },
+    {
+      "path": "server/__init__.py",
+      "sha": "51631b57b2a2b41f7a4031b7dde17d1fbe83e1a3",
+      "size": 33
+    },
+    {
+      "path": "server/app.py",
+      "sha": "bb520b0ae43e530f3d886ac60b7f9b609174a3aa",
+      "size": 94304
+    },
+    {
+      "path": "server/static/css/style.css",
+      "sha": "053e5a980e0243548eb947c6bdd5555180f9ce7d",
+      "size": 46196
+    },
+    {
+      "path": "server/static/favicon.ico",
+      "sha": "adc49d8130f450ef5096506a9f6764dd07378691",
+      "size": 5310
+    },
+    {
+      "path": "server/static/images/app_logo.png",
+      "sha": "6f9d53bb8e9149a7c24fceac8c9ffeb2e1747d2e",
+      "size": 67190
+    },
+    {
+      "path": "server/static/images/buaa_logo.svg",
+      "sha": "ad66f94f41670b9000db32c907c9d198e8a2e2b2",
+      "size": 55436
+    },
+    {
+      "path": "server/static/index.html",
+      "sha": "24b0579d8c544173c90cdd68ce98c05111b7c351",
+      "size": 35642
+    },
+    {
+      "path": "server/static/js/app.js",
+      "sha": "bf56a6ba149e78335356cdedef73660b91274bc8",
+      "size": 75153
+    },
+    {
+      "path": "start-server.sh",
+      "sha": "b7ec9a155f241090bb4bea11f7f11c34f5b8b459",
+      "size": 892
+    },
+    {
+      "path": "start.bat",
+      "sha": "ad0fceb9b879c38dc70683c1a334611762119039",
+      "size": 452
+    },
+    {
+      "path": "systemd/auto-buaa.service",
+      "sha": "cfbebbbc4b7f41af0e4e0f8037ba94d834054860",
+      "size": 342
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha": "9ef4a7518f7966ce2b01de928ed122aa999cada9",
+      "size": 40
+    },
+    {
+      "path": "tests/test_api.py",
+      "sha": "51eb9d4734541026cf26fae7a0b5aa6a15a7a7a0",
+      "size": 6538
+    },
+    {
+      "path": "tests/test_autostart.py",
+      "sha": "b3fec3f2ee8590e9abd15303d605885698343f2f",
+      "size": 2548
+    },
+    {
+      "path": "tests/test_boya_api.py",
+      "sha": "6bde179cc4a29150d0eb929d35f03ec41e430d64",
+      "size": 3708
+    },
+    {
+      "path": "tests/test_boya_categories_and_filters.py",
+      "sha": "44b50d5b13d6d020d8484334cfcd18f39cefc2cc",
+      "size": 2493
+    },
+    {
+      "path": "tests/test_boya_crypto.py",
+      "sha": "11afded4490dade5bb6442cd6f7c5a8f0fd4aed7",
+      "size": 1628
+    },
+    {
+      "path": "tests/test_boya_lifecycle.py",
+      "sha": "b887675dfc33f28bd9bdaa1f553f43242875922a",
+      "size": 4642
+    },
+    {
+      "path": "tests/test_boya_scheduler.py",
+      "sha": "5dae87f1f2a782953c83465815b15684156a6a7b",
+      "size": 13488
+    },
+    {
+      "path": "tests/test_core.py",
+      "sha": "288576ce09a7197f616fbb6b9740ebff8282ff11",
+      "size": 3465
+    },
+    {
+      "path": "tests/test_cross_platform_and_stats.py",
+      "sha": "74eceb2182661bf2a08e573a11b4809db8b3f768",
+      "size": 15928
+    },
+    {
+      "path": "tests/test_multi_account.py",
+      "sha": "716ab842c86c8a8a92ea4aa9813a68f0dcec368c",
+      "size": 6597
+    },
+    {
+      "path": "tests/test_multi_student_survival_and_switch.py",
+      "sha": "80625c4c80052b162b1dd3089af1bf1cb36f3290",
+      "size": 3501
+    },
+    {
+      "path": "tests/test_ui_interactions.py",
+      "sha": "da06b35f6d97be0885517e1abf794a17181c95cf",
+      "size": 16447
+    },
+    {
+      "path": "tests/test_v122_comprehensive_fixes.py",
+      "sha": "126518cb13f3de18f15a36dcb8c84cab212f1921",
+      "size": 13665
+    },
+    {
+      "path": "tests/test_v126_refresh_and_heartbeat.py",
+      "sha": "0247f1750ec50af6e1595f4f64b9ba26dd569928",
+      "size": 4566
+    },
+    {
+      "path": "tests/test_wechat_clawbot.py",
+      "sha": "4808c56814ad9e9b89074cc76412e2d6716c773e",
+      "size": 14675
+    },
+    {
+      "path": "tray_icon.png",
+      "sha": "6f9d53bb8e9149a7c24fceac8c9ffeb2e1747d2e",
+      "size": 67190
+    },
+    {
+      "path": "启动签到软件.bat",
+      "sha": "ad0fceb9b879c38dc70683c1a334611762119039",
+      "size": 452
+    }
+  ],
+  "remote_to_local_blob_comparison": {
+    "count": 69,
+    "mismatches": []
+  },
+  "issues": {
+    "count": 1,
+    "open_count": 1,
+    "comments": 0,
+    "urls": [
+      "https://github.com/nixianren666/AUTO-BUAATOOLS/issues/1"
+    ]
+  },
+  "pull_requests": {
+    "count": 0
+  },
+  "releases": [
+    {
+      "tag": "v1.3.2",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.2",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-15T12:25:26Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267976,
+          "updated_at": "2026-09-15T15:50:29Z",
+          "digest": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.2/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26823492,
+          "updated_at": "2026-09-15T15:50:07Z",
+          "digest": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.2/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.3.2.exe",
+          "size": 32824621,
+          "updated_at": "2026-09-15T14:54:58Z",
+          "digest": "sha256:9ac685ab77c0893d0fd76ec49f61ce6ec81254743a9febb46bf2151ccbfe1b1d",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.2/BUAA-Signin-Setup-v1.3.2.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.2-portable.exe",
+          "size": 31226935,
+          "updated_at": "2026-09-15T15:07:19Z",
+          "digest": "sha256:2bc3c6d6dcef58fe72e8d49339b50ab45c73dc6eaeb4f13419904fcbdee0ec95",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.2/BUAA-Signin-v1.3.2-portable.exe"
+        }
+      ]
+    },
+    {
+      "tag": "v1.3.1",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.1",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-15T07:29:04Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267976,
+          "updated_at": "2026-09-15T08:39:59Z",
+          "digest": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.1/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26823492,
+          "updated_at": "2026-09-15T08:40:21Z",
+          "digest": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.1/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.3.1.exe",
+          "size": 32819407,
+          "updated_at": "2026-09-15T08:38:44Z",
+          "digest": "sha256:2c74777e0e20a2f6242f22109c8384178fb924950c22351e47f5a9ccd1d46ccd",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.1/BUAA-Signin-Setup-v1.3.1.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.1-portable.exe",
+          "size": 31220903,
+          "updated_at": "2026-09-15T08:39:21Z",
+          "digest": "sha256:25d142e37fe405e015136792e73d16ef0d51f13c64b3fe3bfa8b4b7309d9c6d6",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.3.1/BUAA-Signin-v1.3.1-portable.exe"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.6",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.6",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-15T07:06:48Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267976,
+          "updated_at": "2026-09-15T07:07:45Z",
+          "digest": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.6/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26823492,
+          "updated_at": "2026-09-15T07:07:47Z",
+          "digest": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.6/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.6.exe",
+          "size": 32741258,
+          "updated_at": "2026-09-15T07:07:48Z",
+          "digest": "sha256:c6a3adce95302698e2d741cbb31bf0baa68eda57786632b4f1be0fccee65a2ab",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.6/BUAA-Signin-Setup-v1.2.6.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.6-portable.exe",
+          "size": 31141664,
+          "updated_at": "2026-09-15T07:09:03Z",
+          "digest": "sha256:fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.6/BUAA-Signin-v1.2.6-portable.exe"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.5",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.5",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-14T13:04:15Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267496,
+          "updated_at": "2026-09-14T17:08:32Z",
+          "digest": "sha256:fad0ce5ffa8a9e5906faf0b540f348c6c0badb9f017a2b655a1ae0d102fedadf",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.5/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26822072,
+          "updated_at": "2026-09-14T17:08:35Z",
+          "digest": "sha256:ff41a8c6761f677d8743eed6d030259b199881d6e39ecc66c5fae067ecb6f22e",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.5/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.5.exe",
+          "size": 32740094,
+          "updated_at": "2026-09-14T16:01:38Z",
+          "digest": "sha256:e329f3a20c510992c432e35ef2cbf147ad99363517c6dc2a46e7486cc0484fd4",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.5/BUAA-Signin-Setup-v1.2.5.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.5-portable.exe",
+          "size": 31140480,
+          "updated_at": "2026-09-14T16:04:22Z",
+          "digest": "sha256:3ff24474659e62dfc8c41af8e8fd18e1c4af83d5c830b3a30930f75be916c2c9",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.5/BUAA-Signin-v1.2.5-portable.exe"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.2",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.2",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-13T17:18:00Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29296446,
+          "updated_at": "2026-09-15T14:50:20Z",
+          "digest": "sha256:307331e5852d5a9e3ca3fcc4ebdc8764ce25fb11659e3213664dcec31854be33",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.2/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26855340,
+          "updated_at": "2026-09-15T14:50:22Z",
+          "digest": "sha256:6c67a27e8f0f93225020d65b64555cbd1fbb9dbb1759491670966d552e141dfd",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.2/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.2.exe",
+          "size": 32730600,
+          "updated_at": "2026-09-14T05:01:39Z",
+          "digest": "sha256:6bb26ea525091b04ba1a445699cc4c18bada41ada97adcae8f3ec74b38f93a32",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.2/BUAA-Signin-Setup-v1.2.2.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.2-portable.exe",
+          "size": 31133799,
+          "updated_at": "2026-09-14T05:01:41Z",
+          "digest": "sha256:94ceb31f755047209666fb80c68008799721fc504f92f97a3a4155ed7283a629",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.2/BUAA-Signin-v1.2.2-portable.exe"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.0",
+      "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.0",
+      "draft": false,
+      "prerelease": true,
+      "published_at": "2026-09-11T08:57:50Z",
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 28074464,
+          "updated_at": "2026-09-12T08:19:08Z",
+          "digest": "sha256:116dd99f9da7bb66945633f1ba43b9e7d0aef088fff62b59bcf86015d77aaf04",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.0/BUAA-Signin-macOS-arm64.dmg"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 25508183,
+          "updated_at": "2026-09-12T08:19:10Z",
+          "digest": "sha256:21d8f8bd7173dde4c8a1a25b93c9bbf32e924445999d7ab174be7cba41806344",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.0/BUAA-Signin-macOS-arm64.zip"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.0.exe",
+          "size": 32465072,
+          "updated_at": "2026-09-12T08:19:43Z",
+          "digest": "sha256:988df6b6eb07f0baaa9fbfcccc5051fe58faf360593c83f6e40172073f11786d",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.0/BUAA-Signin-Setup-v1.2.0.exe"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.0-portable.exe",
+          "size": 30823548,
+          "updated_at": "2026-09-12T08:19:52Z",
+          "digest": "sha256:44f20fd0e119187f2dd4e6d5bf7db69fb345c0a24ec43f64a98bdb14fc5da5d7",
+          "browser_download_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/v1.2.0/BUAA-Signin-v1.2.0-portable.exe"
+        }
+      ]
+    }
+  ],
+  "actions": {
+    "total_count": 52,
+    "conclusion_counts": {
+      "cancelled": 43,
+      "failure": 9
+    },
+    "runs": [
+      {
+        "id": 34984132106,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34984132106",
+        "head_sha": "fcc513140798211d55dd0db98e54a5e168f80b10",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T14:48:27Z",
+        "updated_at": "2026-09-16T14:48:29Z"
+      },
+      {
+        "id": 34984132072,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34984132072",
+        "head_sha": "fcc513140798211d55dd0db98e54a5e168f80b10",
+        "head_branch": "v1.3.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T14:48:27Z",
+        "updated_at": "2026-09-16T14:48:29Z"
+      },
+      {
+        "id": 34968719730,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34968719730",
+        "head_sha": "8f2555b2f0468cb43a072ca027b2ae5fe2cb7a59",
+        "head_branch": "v1.3.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T12:25:03Z",
+        "updated_at": "2026-09-16T12:25:05Z"
+      },
+      {
+        "id": 34968715415,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34968715415",
+        "head_sha": "8f2555b2f0468cb43a072ca027b2ae5fe2cb7a59",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T12:25:01Z",
+        "updated_at": "2026-09-16T12:25:03Z"
+      },
+      {
+        "id": 34947984461,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34947984461",
+        "head_sha": "f523da2bd576863104d9f5c5a210757ecde957a8",
+        "head_branch": "v1.3.1",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T08:37:30Z",
+        "updated_at": "2026-09-16T08:37:32Z"
+      },
+      {
+        "id": 34947964910,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34947964910",
+        "head_sha": "f523da2bd576863104d9f5c5a210757ecde957a8",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T08:37:17Z",
+        "updated_at": "2026-09-16T08:37:20Z"
+      },
+      {
+        "id": 34941906753,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34941906753",
+        "head_sha": "702011daf79c0f9ab03fc49d088dc4c604bf520b",
+        "head_branch": "v1.3.1",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T07:28:50Z",
+        "updated_at": "2026-09-16T07:28:52Z"
+      },
+      {
+        "id": 34941901721,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34941901721",
+        "head_sha": "702011daf79c0f9ab03fc49d088dc4c604bf520b",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T07:28:46Z",
+        "updated_at": "2026-09-16T07:28:48Z"
+      },
+      {
+        "id": 34940056443,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34940056443",
+        "head_sha": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+        "head_branch": "v1.2.6",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T07:06:37Z",
+        "updated_at": "2026-09-16T07:06:40Z"
+      },
+      {
+        "id": 34940050960,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34940050960",
+        "head_sha": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-15T07:06:34Z",
+        "updated_at": "2026-09-16T07:06:35Z"
+      },
+      {
+        "id": 34872797337,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34872797337",
+        "head_sha": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+        "head_branch": "v1.2.5",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T17:07:17Z",
+        "updated_at": "2026-09-15T17:07:19Z"
+      },
+      {
+        "id": 34872793649,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34872793649",
+        "head_sha": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T17:07:15Z",
+        "updated_at": "2026-09-15T17:07:16Z"
+      },
+      {
+        "id": 34869804798,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34869804798",
+        "head_sha": "ae7acde604f949133f4add3a909a5cf81807f426",
+        "head_branch": "v1.2.5",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T16:37:52Z",
+        "updated_at": "2026-09-15T16:37:54Z"
+      },
+      {
+        "id": 34869795896,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34869795896",
+        "head_sha": "ae7acde604f949133f4add3a909a5cf81807f426",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T16:37:47Z",
+        "updated_at": "2026-09-15T16:37:49Z"
+      },
+      {
+        "id": 34865689259,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34865689259",
+        "head_sha": "2fbf7f39b785c58d42986c259a8458435844de3c",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T15:58:52Z",
+        "updated_at": "2026-09-15T15:58:54Z"
+      },
+      {
+        "id": 34865639398,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34865639398",
+        "head_sha": "2fbf7f39b785c58d42986c259a8458435844de3c",
+        "head_branch": "v1.2.5",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T15:58:24Z",
+        "updated_at": "2026-09-15T15:58:26Z"
+      },
+      {
+        "id": 34848846380,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34848846380",
+        "head_sha": "e60310b776e0ba4053d3856d335c7ee428318a74",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T13:22:30Z",
+        "updated_at": "2026-09-15T13:22:32Z"
+      },
+      {
+        "id": 34848659664,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34848659664",
+        "head_sha": "e60310b776e0ba4053d3856d335c7ee428318a74",
+        "head_branch": "v1.2.5",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T13:20:41Z",
+        "updated_at": "2026-09-15T13:20:43Z"
+      },
+      {
+        "id": 34847064155,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34847064155",
+        "head_sha": "29b7e55f97caf3bcf20c9cb1e55e837de7f76a65",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T13:05:14Z",
+        "updated_at": "2026-09-15T13:05:17Z"
+      },
+      {
+        "id": 34846965987,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34846965987",
+        "head_sha": "29b7e55f97caf3bcf20c9cb1e55e837de7f76a65",
+        "head_branch": "v1.2.5",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T13:04:15Z",
+        "updated_at": "2026-09-15T13:04:17Z"
+      },
+      {
+        "id": 34808117370,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34808117370",
+        "head_sha": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T05:01:29Z",
+        "updated_at": "2026-09-15T05:01:35Z"
+      },
+      {
+        "id": 34808097159,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34808097159",
+        "head_sha": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T05:01:07Z",
+        "updated_at": "2026-09-15T05:01:09Z"
+      },
+      {
+        "id": 34807237263,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34807237263",
+        "head_sha": "7dc0334f17772e16e299a97fb49e3bd5b2ccb656",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T04:45:55Z",
+        "updated_at": "2026-09-15T04:45:57Z"
+      },
+      {
+        "id": 34807233745,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34807233745",
+        "head_sha": "7dc0334f17772e16e299a97fb49e3bd5b2ccb656",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-14T04:45:52Z",
+        "updated_at": "2026-09-15T04:45:53Z"
+      },
+      {
+        "id": 34801858502,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34801858502",
+        "head_sha": "2778d1bb130982f5f1488ee313e2bbf577f3363b",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-14T03:13:30Z",
+        "updated_at": "2026-09-15T03:13:32Z"
+      },
+      {
+        "id": 34801855393,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34801855393",
+        "head_sha": "2778d1bb130982f5f1488ee313e2bbf577f3363b",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-14T03:13:27Z",
+        "updated_at": "2026-09-15T03:13:29Z"
+      },
+      {
+        "id": 34801841956,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34801841956",
+        "head_sha": "2778d1bb130982f5f1488ee313e2bbf577f3363b",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-14T03:13:15Z",
+        "updated_at": "2026-09-15T03:13:17Z"
+      },
+      {
+        "id": 34781321696,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34781321696",
+        "head_sha": "6f518a438691887b62df1504024f032cf6edd676",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-13T20:37:00Z",
+        "updated_at": "2026-09-14T20:37:01Z"
+      },
+      {
+        "id": 34781319532,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34781319532",
+        "head_sha": "6f518a438691887b62df1504024f032cf6edd676",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-13T20:36:57Z",
+        "updated_at": "2026-09-14T20:36:59Z"
+      },
+      {
+        "id": 34780186452,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34780186452",
+        "head_sha": "3e5200516d7123d53d2c6269ed8e280d2fbcda20",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-13T20:15:12Z",
+        "updated_at": "2026-09-14T20:15:14Z"
+      },
+      {
+        "id": 34780183374,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34780183374",
+        "head_sha": "3e5200516d7123d53d2c6269ed8e280d2fbcda20",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-13T20:15:09Z",
+        "updated_at": "2026-09-14T20:15:11Z"
+      },
+      {
+        "id": 34777622883,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34777622883",
+        "head_sha": "254e51d2cfcacc08c7faf3eb877c97d16754fea4",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T19:24:59Z",
+        "updated_at": "2026-09-14T19:25:01Z"
+      },
+      {
+        "id": 34777621253,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34777621253",
+        "head_sha": "254e51d2cfcacc08c7faf3eb877c97d16754fea4",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T19:24:57Z",
+        "updated_at": "2026-09-13T19:32:39Z"
+      },
+      {
+        "id": 34776715942,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34776715942",
+        "head_sha": "edffa3f1acc421c6131301cbe280863c5bf97ece",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T19:07:19Z",
+        "updated_at": "2026-09-13T19:32:40Z"
+      },
+      {
+        "id": 34776714623,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34776714623",
+        "head_sha": "edffa3f1acc421c6131301cbe280863c5bf97ece",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T19:07:18Z",
+        "updated_at": "2026-09-13T19:08:43Z"
+      },
+      {
+        "id": 34776198568,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34776198568",
+        "head_sha": "7a6e8562419f169ca6617f4597184097e40dc668",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T18:57:21Z",
+        "updated_at": "2026-09-13T19:08:13Z"
+      },
+      {
+        "id": 34775056203,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34775056203",
+        "head_sha": "7a6e8562419f169ca6617f4597184097e40dc668",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T18:34:41Z",
+        "updated_at": "2026-09-13T18:58:04Z"
+      },
+      {
+        "id": 34773768874,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34773768874",
+        "head_sha": "0ee8416310ad42bf570eabbdecc49ca626ae5bcd",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T18:09:44Z",
+        "updated_at": "2026-09-13T18:56:51Z"
+      },
+      {
+        "id": 34771732574,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34771732574",
+        "head_sha": "917ed58c7f0e8b272153f2cfbba49d0ae1aa7863",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T17:29:16Z",
+        "updated_at": "2026-09-13T18:56:52Z"
+      },
+      {
+        "id": 34771730043,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34771730043",
+        "head_sha": "917ed58c7f0e8b272153f2cfbba49d0ae1aa7863",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T17:29:12Z",
+        "updated_at": "2026-09-13T18:56:53Z"
+      },
+      {
+        "id": 34771131577,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34771131577",
+        "head_sha": "62482afe160dfdf55b1343792525c4387086dc1b",
+        "head_branch": "v1.2.2",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T17:17:14Z",
+        "updated_at": "2026-09-13T18:56:54Z"
+      },
+      {
+        "id": 34771128199,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34771128199",
+        "head_sha": "62482afe160dfdf55b1343792525c4387086dc1b",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-13T17:17:10Z",
+        "updated_at": "2026-09-13T18:56:56Z"
+      },
+      {
+        "id": 34682908759,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34682908759",
+        "head_sha": "b936292069dc0343a19358f721c17a8b6e31bdda",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-12T08:17:58Z",
+        "updated_at": "2026-09-13T08:17:59Z"
+      },
+      {
+        "id": 34681817023,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34681817023",
+        "head_sha": "7b6b681a89718db9ab164fa7d144b4fe50ad5d68",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-12T07:51:53Z",
+        "updated_at": "2026-09-13T07:51:55Z"
+      },
+      {
+        "id": 34677851470,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34677851470",
+        "head_sha": "7dd710fda0611c27d0e7e03898ca8f5a25c19044",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-12T06:20:02Z",
+        "updated_at": "2026-09-13T06:20:03Z"
+      },
+      {
+        "id": 34676712315,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34676712315",
+        "head_sha": "d16b3673501894e3e5af880044c2d4bca30f9d20",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-12T05:53:03Z",
+        "updated_at": "2026-09-13T05:53:05Z"
+      },
+      {
+        "id": 34589555794,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34589555794",
+        "head_sha": "37d14b9058bb4b7fe2c56405d0623b776538c5cb",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-11T10:30:31Z",
+        "updated_at": "2026-09-12T10:30:33Z"
+      },
+      {
+        "id": 34587233454,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34587233454",
+        "head_sha": "565b09a193b0af47aec545705918bfd155c1e40c",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-11T10:02:37Z",
+        "updated_at": "2026-09-12T10:02:39Z"
+      },
+      {
+        "id": 34586857844,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34586857844",
+        "head_sha": "d82bc8050f3d3f52daee0a1510a43d2d3819dc9e",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-11T09:58:09Z",
+        "updated_at": "2026-09-12T09:58:11Z"
+      },
+      {
+        "id": 34586449856,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34586449856",
+        "head_sha": "91b5e537eb2d14f75bf81bcd4136e9308684c88f",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-11T09:53:05Z",
+        "updated_at": "2026-09-12T09:53:07Z"
+      },
+      {
+        "id": 34586449463,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34586449463",
+        "head_sha": "91b5e537eb2d14f75bf81bcd4136e9308684c88f",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-11T09:53:05Z",
+        "updated_at": "2026-09-12T09:53:07Z"
+      },
+      {
+        "id": 34586211728,
+        "html_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/34586211728",
+        "head_sha": "2cba8420b7e15f63c93b7b6cd552a2d43e43a86e",
+        "head_branch": "main",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-11T09:50:16Z",
+        "updated_at": "2026-09-12T09:50:18Z"
+      }
+    ],
+    "jobs_sample": [
+      {
+        "run_id": 34801858502,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103845948914,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-14T03:13:36Z",
+            "completed_at": "2026-09-14T03:14:03Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103845948989,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-14T03:13:33Z",
+            "completed_at": "2026-09-14T03:13:47Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103845949085,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-14T03:13:31Z",
+            "completed_at": "2026-09-15T03:13:31Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34801855393,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103845940229,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-14T03:13:29Z",
+            "completed_at": "2026-09-14T03:13:40Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103845940323,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-14T03:13:34Z",
+            "completed_at": "2026-09-14T03:13:59Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103845940442,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-14T03:13:28Z",
+            "completed_at": "2026-09-15T03:13:28Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34801841956,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103845903218,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-14T03:13:19Z",
+            "completed_at": "2026-09-14T03:13:32Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103845903328,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-14T03:13:15Z",
+            "completed_at": "2026-09-15T03:13:16Z",
+            "steps": []
+          },
+          {
+            "id": 103845903405,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-14T03:13:22Z",
+            "completed_at": "2026-09-14T03:13:46Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": 34781321696,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103788743837,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-13T20:37:00Z",
+            "completed_at": "2026-09-14T20:37:01Z",
+            "steps": []
+          },
+          {
+            "id": 103788744000,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-13T20:37:02Z",
+            "completed_at": "2026-09-13T20:37:16Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103788744029,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-13T20:37:07Z",
+            "completed_at": "2026-09-13T20:37:32Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": 34781319532,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103788737991,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-13T20:37:00Z",
+            "completed_at": "2026-09-13T20:37:13Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103788738097,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-13T20:37:04Z",
+            "completed_at": "2026-09-13T20:37:29Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103788738240,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-13T20:36:58Z",
+            "completed_at": "2026-09-14T20:36:58Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34780186452,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103785656886,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-13T20:15:13Z",
+            "completed_at": "2026-09-14T20:15:13Z",
+            "steps": []
+          },
+          {
+            "id": 103785657004,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-13T20:15:15Z",
+            "completed_at": "2026-09-13T20:15:28Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103785657008,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-13T20:15:20Z",
+            "completed_at": "2026-09-13T20:15:37Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": 34780183374,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103785648683,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-13T20:15:12Z",
+            "completed_at": "2026-09-13T20:15:25Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103785648823,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-13T20:15:09Z",
+            "completed_at": "2026-09-14T20:15:10Z",
+            "steps": []
+          },
+          {
+            "id": 103785648885,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-13T20:15:18Z",
+            "completed_at": "2026-09-13T20:15:43Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": 34677851470,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103510826626,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-12T06:20:09Z",
+            "completed_at": "2026-09-12T06:21:04Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "success"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 103510826695,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-12T06:20:02Z",
+            "completed_at": "2026-09-13T06:20:03Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34586211728,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 103220916109,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-11T09:50:17Z",
+            "completed_at": "2026-09-12T09:50:17Z",
+            "steps": []
+          },
+          {
+            "id": 103220916451,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "failure",
+            "started_at": "2026-09-11T09:50:22Z",
+            "completed_at": "2026-09-11T09:50:53Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "failure"
+              },
+              {
+                "name": "Archive .app into portable zip",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload Build Artifact",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "skipped"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "run_id": 34984132106,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 104431751582,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-15T14:48:30Z",
+            "completed_at": "2026-09-15T14:48:52Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104431751763,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "success",
+            "started_at": "2026-09-15T14:48:37Z",
+            "completed_at": "2026-09-15T14:50:26Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "success"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104431751800,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-15T14:48:28Z",
+            "completed_at": "2026-09-16T14:48:28Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34984132072,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 104431750597,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "success",
+            "started_at": "2026-09-15T14:48:34Z",
+            "completed_at": "2026-09-15T14:50:03Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "success"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104431750657,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-15T14:48:30Z",
+            "completed_at": "2026-09-15T14:48:47Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104431750773,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-15T14:48:28Z",
+            "completed_at": "2026-09-16T14:48:28Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34968719730,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 104379410423,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-15T12:25:07Z",
+            "completed_at": "2026-09-15T12:25:31Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104379410803,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "success",
+            "started_at": "2026-09-15T12:25:11Z",
+            "completed_at": "2026-09-15T12:26:35Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "success"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104379410839,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-15T12:25:04Z",
+            "completed_at": "2026-09-16T12:25:04Z",
+            "steps": []
+          }
+        ]
+      },
+      {
+        "run_id": 34968715415,
+        "unavailable": null,
+        "jobs": [
+          {
+            "id": 104379397259,
+            "name": "release-windows",
+            "conclusion": "success",
+            "started_at": "2026-09-15T12:25:04Z",
+            "completed_at": "2026-09-15T12:25:24Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Windows Binaries to Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          },
+          {
+            "id": 104379397672,
+            "name": "build-macos (macos-13, x86_64, x86_64)",
+            "conclusion": "cancelled",
+            "started_at": "2026-09-15T12:25:01Z",
+            "completed_at": "2026-09-16T12:25:02Z",
+            "steps": []
+          },
+          {
+            "id": 104379397701,
+            "name": "build-macos (macos-14, arm64, arm64)",
+            "conclusion": "success",
+            "started_at": "2026-09-15T12:25:08Z",
+            "completed_at": "2026-09-15T12:26:39Z",
+            "steps": [
+              {
+                "name": "Set up job",
+                "conclusion": "success"
+              },
+              {
+                "name": "Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Install dependencies",
+                "conclusion": "success"
+              },
+              {
+                "name": "Run unit test suite",
+                "conclusion": "success"
+              },
+              {
+                "name": "Build macOS .app with PyInstaller",
+                "conclusion": "success"
+              },
+              {
+                "name": "Execute live smoke test",
+                "conclusion": "success"
+              },
+              {
+                "name": "Create DMG Disk Image and Zip Archive",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload Build Artifacts",
+                "conclusion": "success"
+              },
+              {
+                "name": "Upload to GitHub Release",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Set up Python",
+                "conclusion": "success"
+              },
+              {
+                "name": "Post Checkout repository",
+                "conclusion": "success"
+              },
+              {
+                "name": "Complete job",
+                "conclusion": "success"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "existing_tests": {
+    "source": "remote main fcc5131 (69 Git blob IDs matched)",
+    "tests_run": 86,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "success": true,
+    "elapsed_seconds": 22.27,
+    "blocked_non_loopback_attempts": 13,
+    "failure_names": [],
+    "error_names": []
+  },
+  "backend_mock_probes": {
+    "source": "remote main fcc5131 isolated fixture",
+    "scenarios": [
+      {
+        "scenario": "missing_course_date_counts_as_current_semester",
+        "observed": 1,
+        "expected": 0,
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "empty_signIn_key_counts_as_attendance_pass",
+        "observed": 1,
+        "expected": 0,
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "empty_gps_point_is_auto_select_candidate",
+        "observed": true,
+        "expected": false,
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "invalid_capacity_is_auto_select_candidate",
+        "observed": true,
+        "expected": false,
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "schedule_network_failure_returns_empty_courses",
+        "observed": 0,
+        "expected": "explicit network error or stale-state marker",
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "three_sign_attempts_can_send_more_than_three_posts",
+        "observed": 6,
+        "expected": "clarify/enforce total request budget",
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "slow_refresh_allows_sign_submission_after_class_start",
+        "observed": [
+          "2026-09-14T09:00:30"
+        ],
+        "expected": "no submission after 09:00:00",
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "wechat_missing_ret_is_treated_as_success",
+        "observed": true,
+        "expected": false,
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "wechat_failed_replay_drops_queue_and_increments_success",
+        "observed": {
+          "pending": 0,
+          "reported_replayed": 2
+        },
+        "expected": {
+          "pending": 2,
+          "reported_replayed": 0
+        },
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "management_routes_accept_requests_without_auth",
+        "observed": {
+          "accounts": 200,
+          "accept_disclaimer": 200
+        },
+        "expected": "authenticated/trusted management boundary",
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "remove_account_does_not_close_actual_boya_client_or_stop_wechat_worker",
+        "observed": {
+          "boya_http_closed": false,
+          "wechat_worker_stop_calls": 0
+        },
+        "expected": {
+          "boya_http_closed": true,
+          "wechat_worker_stop_calls": 1
+        },
+        "issue_confirmed": true
+      },
+      {
+        "scenario": "malformed_first_account_prevents_later_account_processing",
+        "observed": {
+          "exception": "TypeError",
+          "next_account_pool_queries": 0
+        },
+        "expected": "isolate per-account failures",
+        "issue_confirmed": true
+      }
+    ],
+    "confirmed": 12,
+    "external_network_used": false
+  },
+  "frontend_vm_probe": {
+    "scenario": "old_account_response_overwrites_new_account_view",
+    "activeAccount": "fixture-B",
+    "displayedCourse": "fixture-A-course",
+    "issueConfirmed": true
+  },
+  "privacy": {
+    "scope": "All blobs reachable from local Git refs; current main blob IDs matched remote",
+    "objects": 454,
+    "blobs_scanned": 250,
+    "bytes_scanned": 707668054,
+    "sensitive_pattern_findings": [],
+    "nonempty_config_fields": [],
+    "limits": [
+      "Pattern/known-value scan; not OCR of historical images",
+      "Opaque binary strings scan does not prove absence of secrets in compressed archive payloads",
+      "Unreachable remote Git objects and deleted server-side refs not covered"
+    ]
+  },
+  "artifact_inspection": {
+    "release_mac_digest_reuse": {
+      "BUAA-Signin-macOS-arm64.dmg": {
+        "digests": {
+          "v1.3.2": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de",
+          "v1.3.1": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de",
+          "v1.2.6": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de"
+        },
+        "identical": true
+      },
+      "BUAA-Signin-macOS-arm64.zip": {
+        "digests": {
+          "v1.3.2": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6",
+          "v1.3.1": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6",
+          "v1.2.6": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6"
+        },
+        "identical": true
+      }
+    },
+    "mac_zip": {
+      "entries": 244,
+      "config_files": [],
+      "plist_version": "1.2.5",
+      "embedded_wechat_module": false,
+      "run_has_1_2_6": true,
+      "boya_quiet_heartbeat_marker": true
+    },
+    "windows_generic": {
+      "path": "BUAA-Signin.exe",
+      "sha256": "a59f72e236a055199d19d24cfc61491ece283cf52de1e81dc795e9c914149dac",
+      "embedded_wechat_module": true,
+      "run_version_marker": "1.3.2"
+    },
+    "windows_v126_portable": {
+      "path": "BUAA-Signin-v1.2.6-portable.exe",
+      "sha256": "fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632",
+      "embedded_wechat_module": false,
+      "run_version_marker": "1.2.6"
+    }
+  },
+  "evidence_file_fingerprints": [
+    {
+      "temporary_source_file": "job-log-103845948914.txt",
+      "sha256": "290cf52301b096700b922c584173dffae3f06c54da69d09bdcd6a6f0a497d211"
+    },
+    {
+      "temporary_source_file": "job-log-104431751763.txt",
+      "sha256": "5abc78955d1fd3d0214c4355885d2354df492880785509fda679601f517ad316"
+    },
+    {
+      "temporary_source_file": "run_isolated_tests.py",
+      "sha256": "8ceff5464ee7f5ca7220f137f423e6c094ca03b4a4da80d9590de02887df9375"
+    },
+    {
+      "temporary_source_file": "run_probes.py",
+      "sha256": "c6a63913c405b0d8dae38afc31016768bdec0c77be7336f21441d78460a55f35"
+    },
+    {
+      "temporary_source_file": "frontend_probe.js",
+      "sha256": "ffcc4fede8c1570b1e263b9726b82f4323ca9a6045bc72a3aad533ebefe89309"
+    },
+    {
+      "temporary_source_file": "scan_git.py",
+      "sha256": "426ab3ff22b0f1f6ac3cd949674ef91439441107e443c50d9b25d5d6db4e62f2"
+    },
+    {
+      "temporary_source_file": "test-output.txt",
+      "sha256": "9f2828ebfcc09d05505a00af8f56aba588526e3c3e7c5b740d5ccddb85ffea9e"
+    }
+  ],
+  "verification_limits": [
+    "No live university sign-in/select/drop actions",
+    "No physical macOS or Linux/Docker execution during this audit",
+    "No OCR of historical screenshots or exhaustive inspection of every compressed installer",
+    "No write-permission or token-expiry assurance from successful read authentication"
+  ]
+}

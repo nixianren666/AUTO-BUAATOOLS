@@ -3,14 +3,14 @@
 
 #define MyAppName "BUAA 课程独立签到助手"
 #define MyAppEnglishName "BUAA-Signin"
-#define MyAppVersion "1.2.6"
+#define MyAppVersion "1.2.7"
 #define MyAppPublisher "BUAA Open Source Community"
-#define MyAppURL "https://github.com/BUAASubnet/UBAA"
+#define MyAppURL "https://github.com/nixianren666/AUTO-BUAATOOLS"
 #define MyAppExeName "BUAA-Signin.exe"
 
 [Setup]
 ; 基础应用信息
-AppId={{C8E2B548-7391-497B-95DC-8A2F226D1E3A}
+AppId={code:GetApplicationId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} v{#MyAppVersion}
@@ -25,7 +25,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=
 OutputDir=..\dist_installer
-OutputBaseFilename=BUAA-Signin-Setup-v1.2.6
+OutputBaseFilename=BUAA-Signin-Setup-v1.2.7
 SetupIconFile=..\app_icon.ico
 
 ; 压缩配置 (采用超高 LZMA2 压缩)
@@ -39,7 +39,7 @@ DisableProgramGroupPage=auto
 
 ; 自动检测并关闭运行中的应用
 CloseApplications=yes
-CloseApplicationsFilter=BUAA-Signin.exe
+CloseApplicationsFilter=*.exe
 RestartApplications=no
 
 ; 权限与架构
@@ -60,9 +60,6 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [UninstallDelete]
-Type: files; Name: "{app}\config.json"
-Type: files; Name: "{app}\*.log"
-Type: filesandordirs; Name: "{app}\*"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"
@@ -73,23 +70,14 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "立即启动 {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
-[Code]
-// 在安装前自动终止任何正在运行的 BUAA-Signin.exe，防止文件锁定导致无法覆盖安装旧版本
-function InitializeSetup(): Boolean;
-var
-  ResultCode: Integer;
-begin
-  Exec('taskkill.exe', '/F /IM BUAA-Signin.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(400);
-  Result := True;
-end;
+; Restart Manager only considers files that this installer updates.
+; No process-name-wide taskkill and no recursive deletion of user data.
 
-// 在卸载前自动终止任何正在运行的 BUAA-Signin.exe，彻底杜绝“卸载报错：文件正在被占用”
-function InitializeUninstall(): Boolean;
-var
-  ResultCode: Integer;
+[Code]
+function GetApplicationId(Param: String): String;
 begin
-  Exec('taskkill.exe', '/F /IM BUAA-Signin.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(400);
-  Result := True;
+  if ExpandConstant('{param:BUAA-ACCEPTANCE|0}') = '1' then
+    Result := '{D925D39B-16C2-4FAA-BB5C-9B5725290B88}'
+  else
+    Result := '{C8E2B548-7391-497B-95DC-8A2F226D1E3A}';
 end;
