@@ -50,7 +50,7 @@ def main():
         if name=="config.json" or name.endswith((".sqlite",".log")) or '.vault-key' in name or '__pycache__' in name:
             forbidden.append(name)
         counts["working_files"]+=1;scan(path.read_bytes(),"working:"+name)
-    result={"passed":not findings and not forbidden,"findings":findings,"forbidden_public_files":forbidden,"counts":counts,"known_values_supplied":len(values),"limitations":["No OCR of historical images","Compiled/archive inspection is a separate gate","Only objects reachable from local Git refs; deleted/unreachable server objects excluded"]}
+    result={"passed":not findings and not forbidden,"head_commit":git("rev-parse","HEAD").decode().strip(),"findings":findings,"forbidden_public_files":forbidden,"counts":counts,"known_values_supplied":len(values),"limitations":["No OCR of historical images","Compiled/archive inspection is a separate gate","Only objects reachable from local Git refs; deleted/unreachable server objects excluded"]}
     Path(args.report).write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps({"passed":result['passed'],"findings":len(findings),"forbidden_files":len(forbidden),"counts":counts}))
     return 0 if result['passed'] else 1
