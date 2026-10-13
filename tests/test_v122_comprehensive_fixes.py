@@ -1,3 +1,4 @@
+from core.domain import now as china_now
 import unittest
 from datetime import datetime
 from core.iclass import IclassClient
@@ -69,7 +70,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
                 "teacherName": teacher,
                 "signStatus": c.get("signStatus", 0),
             })
-        
+
         item = mapped[0]
         self.assertEqual(item["courseSchedId"], "2479439")
         self.assertEqual(item["startTime"], "09:50")
@@ -168,7 +169,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         from core.scheduler import SigninScheduler
 
         call_log = []
-        now = datetime.now()
+        now = china_now()
         class_time = (now + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
 
         class MockIclassClient:
@@ -185,7 +186,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
                     "signStatus": 0,
                 }]
 
-            async def perform_signin(self, course_sched_id):
+            async def perform_signin(self, course_sched_id, guard=None):
                 call_log.append(course_sched_id)
                 return True, "签到成功"
 
@@ -202,7 +203,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         )
 
         asyncio.run(scheduler.tick())
-        sched_key = ("23370002", "2479439")
+        sched_key = ("23370002", "2479439", scheduler.clock().date().isoformat())
         if sched_key in scheduler.planned_targets:
             scheduler.planned_targets[sched_key] = now - timedelta(seconds=10)
         asyncio.run(scheduler.tick())
@@ -210,33 +211,28 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         # 必须使用 courseSchedId (2479439) 而非 courseId (96037)
         self.assertEqual(call_log, ["2479439"])
 
-    def test_academic_calendar_semester_range(self):
-        # 9月属于秋季学期
-        s, e, name = get_current_semester_range(datetime(2026, 9, 14))
-        self.assertIn("秋季", name)
-        self.assertEqual(s.month, 8)
-        self.assertEqual(s.day, 25)
-        self.assertEqual(e.month, 1)
-
-        # 4月属于春季学期
-        s, e, name = get_current_semester_range(datetime(2026, 4, 15))
-        self.assertIn("春季", name)
-        self.assertEqual(s.month, 2)
-        self.assertEqual(e.month, 7)
+    def test_academic_calendar_requires_official_dates(self):
+        info = {"semesterStartDate": "2026-08-31", "semesterEndDate": "2027-01-03", "semesterName": "synthetic semester"}
+        start, end, name = get_current_semester_range(datetime(2026, 9, 14), info)
+        self.assertEqual(start.day, 31)
+        self.assertEqual(end.day, 3)
+        self.assertEqual(name, "synthetic semester")
+        with self.assertRaises(ValueError):
+            get_current_semester_range(datetime(2026, 8, 30))
 
     def test_semester_stats_excludes_past_years(self):
         # 构造包含往届历史学年（2024、2025、2026春）与当前学年（2026秋）的已选课程
         courses = [
             # 2024 历史课 (通过)
-            {"id": 1, "courseName": "2024老课", "courseKind": "德育", "courseStartDate": "2024-10-10", "final_passed": True},
-            {"id": 2, "courseName": "2024老课2", "courseKind": "德育", "courseStartDate": "2024-10-12", "final_passed": True},
+            {"id": 1, "courseName": "2024老课", "courseKind": "德育", "courseStartDate": "2024-10-10", "final_passed": True, "checkin": 1, "pass": 1},
+            {"id": 2, "courseName": "2024老课2", "courseKind": "德育", "courseStartDate": "2024-10-12", "final_passed": True, "checkin": 1, "pass": 1},
             # 2025 历史课 (通过)
-            {"id": 3, "courseName": "2025老课", "courseKind": "劳育", "courseStartDate": "2025-06-10", "final_passed": True},
-            {"id": 4, "courseName": "2025老课2", "courseKind": "安全健康", "courseStartDate": "2025-06-12", "final_passed": True},
+            {"id": 3, "courseName": "2025老课", "courseKind": "劳育", "courseStartDate": "2025-06-10", "final_passed": True, "checkin": 1, "pass": 1},
+            {"id": 4, "courseName": "2025老课2", "courseKind": "安全健康", "courseStartDate": "2025-06-12", "final_passed": True, "checkin": 1, "pass": 1},
             # 2026 春季课 (通过)
-            {"id": 5, "courseName": "2026春课", "courseKind": "劳育", "courseStartDate": "2026-06-15", "final_passed": True},
+            {"id": 5, "courseName": "2026春课", "courseKind": "劳育", "courseStartDate": "2026-06-15", "final_passed": True, "checkin": 1, "pass": 1},
             # 2026 秋季本学期课 (通过)
-            {"id": 6, "courseName": "北京一号", "courseKind": "美育", "courseStartDate": "2026-09-13 19:00:00", "final_passed": True},
+            {"id": 6, "courseName": "北京一号", "courseKind": "美育", "courseStartDate": "2026-09-13 19:00:00", "final_passed": True, "checkin": 1, "pass": 1},
         ]
         sso_stats = {
             "semesterInfo": {
@@ -254,6 +250,8 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
                 }
             }
         }
+        for course in courses:
+            course["courseEndDate"] = course["courseStartDate"]
         res = compute_semester_statistics(courses, sso_stats)
         # 严格限定本学期：只有《北京一号》1 门美育通过，历史学年课程严禁计入！
         self.assertEqual(res["art_completed"], 1)
@@ -297,6 +295,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
             boya_auto_sign=True,
             campus="北京",
         )
+        acc.boya_client.semester_info = {"semesterStartDate": "2026-08-31", "semesterEndDate": "2027-01-03"}
         acc.boya_client.token = "mock_token"
         acc.boya_client.query_courses = lambda max_pages=3: [offline_course]
         acc.boya_client.query_chosen_courses = lambda: []
@@ -312,4 +311,3 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -13,6 +13,8 @@ from core.boya_scheduler import BoyaScheduler
 class TestMultiStudentSurvivalAndSwitch(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        csrf = self.client.get("/api/session").json()["csrf"]
+        self.client.headers["X-BUAA-CSRF"] = csrf
         accounts.clear()
 
     def test_switch_account_returns_cached_data_and_triggers_connect(self):

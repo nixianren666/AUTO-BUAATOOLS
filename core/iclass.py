@@ -4,6 +4,7 @@ BUAA 课程签到 (iclass) 核心服务模块
 """
 
 import base64
+import asyncio
 import datetime
 import logging
 import urllib.parse
@@ -12,6 +13,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from core.cas import CasParser
+from core.domain import now as china_now, trusted_url, regular_allowed, CHINA
+from core import operations
 from core.webvpn import from_webvpn_url, to_webvpn_url
 
 logger = logging.getLogger("buaa_signin")
@@ -40,14 +43,14 @@ def resolve_redirect_url(current_url: str, location: str) -> str:
     """处理相对路径或绝对路径的重定向目标 URL"""
     loc = location.strip()
     if loc.startswith("http://") or loc.startswith("https://"):
-        return loc
+        return trusted_url(loc)
     if loc.startswith("//"):
         parsed = urllib.parse.urlsplit(current_url)
-        return f"{parsed.scheme}:{loc}"
+        return trusted_url(f"{parsed.scheme}:{loc}")
     # WebVPN 网关返回的相对路径（如 /https-8346/encryptedHost/path）
     if any(loc.startswith(p) for p in ("/https-", "/http-", "/wss-", "/ws-")):
-        return f"https://d.buaa.edu.cn{loc}"
-    return urllib.parse.urljoin(current_url, loc)
+        return trusted_url(f"https://d.buaa.edu.cn{loc}")
+    return trusted_url(urllib.parse.urljoin(current_url, loc))
 
 
 def sanitize_signin_message(success: bool, raw_message: Optional[str]) -> str:
@@ -85,6 +88,11 @@ class IclassClient:
         self.session_id: Optional[str] = None
         self.login_name: Optional[str] = None
         self.last_error: Optional[str] = None
+        self.request_guard = lambda: True
+        self.operation_user = None
+        self.clock = china_now
+        self._signin_lock = asyncio.Lock()
+        self.actual_sign_posts = 0
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -99,7 +107,8 @@ class IclassClient:
                     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
                 },
                 cookies=self._cookies,
-                verify=False,
+                verify=True,
+                trust_env=False,
                 timeout=httpx.Timeout(timeout=20.0, connect=4.0),
                 follow_redirects=False,
             )
@@ -194,14 +203,14 @@ class IclassClient:
             redirect_target = resolve_redirect_url(str(curr_resp.url), loc)
             if self.mode == "webvpn":
                 redirect_target = self.wrap_url(from_webvpn_url(redirect_target))
-            curr_resp = await self.client.get(redirect_target)
+            curr_resp = await self.client.get(trusted_url(redirect_target))
 
         final_html = curr_resp.text
         # 检查是否有跳过密码风险提示页面
         if CasParser.is_ignorable_password_expiry(final_html):
             execution = CasParser.extract_execution(final_html)
             if execution:
-                curr_url = str(curr_resp.url).split("?")[0]
+                curr_url = trusted_url(str(curr_resp.url).split("?")[0])
                 cont_resp = await self.client.post(
                     curr_url,
                     data={"execution": execution, "_eventId": "ignoreAndContinue"},
@@ -218,37 +227,30 @@ class IclassClient:
 
         return await self._finish_sso_login(username)
 
-    async def _finish_sso_login(self, username: str) -> Dict[str, Any]:
-        """激活统一用户中心并拉取用户信息"""
-        try:
-            # 激活 UC 登录
-            uc_login_url = self.wrap_url(
-                "https://uc.buaa.edu.cn/api/login?target=https%3A%2F%2Fuc.buaa.edu.cn%2F%23%2Fuser%2Flogin"
-            )
-            await self.client.get(uc_login_url)
-
-            # 查询用户信息
-            user_status_url = self.wrap_url("https://uc.buaa.edu.cn/api/user/info")
-            info_resp = await self.client.get(user_status_url)
-            if info_resp.status_code == 200:
-                try:
-                    data = info_resp.json()
-                    user_data = data.get("data") or {}
-                    self.user_info = {
-                        "name": user_data.get("name") or user_data.get("realName") or username,
-                        "schoolid": user_data.get("schoolid") or user_data.get("username") or username,
-                        "department": user_data.get("department") or "",
-                    }
-                except Exception:
-                    self.user_info = {"name": username, "schoolid": username}
-            else:
-                self.user_info = {"name": username, "schoolid": username}
-
-            return {"status": "success", "user": self.user_info}
-        except Exception as e:
-            logger.warning(f"Failed to fetch UC user info: {e}")
-            self.user_info = {"name": username, "schoolid": username}
-            return {"status": "success", "user": self.user_info}
+    async def _finish_sso_login(self, username):
+        activation = await self.client.get(self.wrap_url("https://uc.buaa.edu.cn/api/login?target=https%3A%2F%2Fuc.buaa.edu.cn%2F%23%2Fuser%2Flogin"))
+        for _ in range(10):
+            if activation.status_code not in (301, 302, 303, 307, 308):
+                break
+            location = activation.headers.get("location")
+            if not location:
+                raise ValueError("用户中心认证跳转不完整")
+            target = resolve_redirect_url(str(activation.url), location)
+            activation = await self.client.get(target)
+        else:
+            raise ValueError("用户中心认证跳转过多")
+        response = await self.client.get(self.wrap_url("https://uc.buaa.edu.cn/api/uc/status"))
+        response.raise_for_status()
+        payload = response.json()
+        data = payload.get("data")
+        if str(payload.get("code")) != "0" or not isinstance(data, dict) or not (data.get("schoolid") or data.get("username")):
+            self.user_info = {}
+            return {"status": "failed", "message": "官方未确认登录身份"}
+        if len(str(username)) == 8 and str(username).isdigit() and str(data.get("schoolid") or data.get("username")) != str(username):
+            self.user_info = {}
+            return {"status": "failed", "message": "官方登录身份与请求账号不一致"}
+        self.user_info = {"name": data.get("name") or data.get("realName") or username, "schoolid": data.get("schoolid") or data["username"], "department": data.get("department") or ""}
+        return {"status": "success", "user": self.user_info}
 
     async def resolve_login_name(self) -> Optional[str]:
         """
@@ -272,7 +274,7 @@ class IclassClient:
                 if self.mode == "webvpn":
                     final_url = from_webvpn_url(final_url)
 
-                name = extract_login_name_from_url(final_url)
+                name = extract_login_name_from_url(trusted_url(final_url))
                 if name:
                     self.login_name = name
                     return name
@@ -280,17 +282,13 @@ class IclassClient:
                 location = resp.headers.get("Location")
                 if location:
                     loc_unwrapped = from_webvpn_url(location) if self.mode == "webvpn" else location
+                    loc_unwrapped = trusted_url(urllib.parse.urljoin(final_url, loc_unwrapped))
                     name = extract_login_name_from_url(loc_unwrapped)
                     if name:
                         self.login_name = name
                         return name
 
                 if resp.status_code not in range(300, 400) or not location:
-                    # 检查响应 body 中是否包含 loginName
-                    name = extract_login_name_from_url(resp.text)
-                    if name:
-                        self.login_name = name
-                        return name
                     return None
 
                 resolved = resolve_redirect_url(final_url, loc_unwrapped)
@@ -301,8 +299,8 @@ class IclassClient:
 
                 curr_url = self.wrap_url(resolved)
         except Exception as e:
-            logger.warning(f"Error during resolve_login_name: {e}")
-            self.last_error = f"连接 iclass 服务失败: {e}"
+            logger.warning(f"Error during resolve_login_name: {type(e).__name__}")
+            self.last_error = f"连接 iclass 服务失败: {type(e).__name__}"
             return None
 
         return None
@@ -314,9 +312,7 @@ class IclassClient:
         """
         login_name = await self.resolve_login_name()
         if not login_name:
-            login_name = self.user_info.get("schoolid")
-            if login_name:
-                self.login_name = str(login_name)
+            self.last_error = "未取得可信课堂登录名，请重新认证"
         if not login_name:
             self.last_error = self.last_error or "无法从北航课堂系统中解析登录名 (loginName)"
             return False
@@ -342,15 +338,15 @@ class IclassClient:
                 meta = data.get("meta") or {}
                 if meta.get("code") == "0" or meta.get("success") is True:
                     result = data.get("data", {}).get("result", {})
-                    self.user_id = str(result.get("id", ""))
-                    self.session_id = str(result.get("sessionId", ""))
+                    self.user_id = str(result.get("id") or "")
+                    self.session_id = result.get("sessionId") if isinstance(result.get("sessionId"), str) else None
                     real_name = result.get("realName") or result.get("nickName")
                     if real_name:
                         self.user_info["name"] = real_name
                     if self.user_id and self.session_id:
                         return True
         except Exception as e:
-            logger.debug(f"8346 esp/auth/signIn attempt: {e}")
+            logger.debug(f"8346 esp/auth/signIn attempt: {type(e).__name__}")
 
         # 方案二：8347 端口 /app/user/login.action (旧版客户端接口降级兜底)
         app_login_url = self.wrap_url("https://iclass.buaa.edu.cn:8347/app/user/login.action")
@@ -371,8 +367,8 @@ class IclassClient:
                 status = str(data.get("STATUS", ""))
                 if status in ("0", "200", "success"):
                     result = data.get("result") or {}
-                    self.user_id = str(result.get("id", ""))
-                    self.session_id = str(result.get("sessionId", ""))
+                    self.user_id = str(result.get("id") or "")
+                    self.session_id = result.get("sessionId") if isinstance(result.get("sessionId"), str) else None
                     real_name = result.get("realName") or result.get("nickName")
                     if real_name:
                         self.user_info["name"] = real_name
@@ -380,7 +376,7 @@ class IclassClient:
                 else:
                     self.last_error = data.get("ERRMSG") or "iclass 登录失败"
         except Exception as e:
-            self.last_error = f"连接 iclass 接口失败: {e}"
+            self.last_error = f"连接 iclass 接口失败: {type(e).__name__}"
 
         return bool(self.user_id and self.session_id)
 
@@ -391,6 +387,9 @@ class IclassClient:
         return await self.login_iclass()
 
     async def get_today_classes(self) -> List[Dict[str, Any]]:
+        return await self.get_classes(self.clock().date())
+
+    async def get_classes(self, class_date) -> List[Dict[str, Any]]:
         """
         获取今日排课列表及签到状态
         对应 UBAA LocalSigninApiBackend.getTodayClasses
@@ -398,8 +397,7 @@ class IclassClient:
         if not await self.ensure_iclass_session():
             raise RuntimeError(self.last_error or "未登录课堂考勤系统或登录会话已失效")
 
-        now = datetime.datetime.now()
-        date_str = now.strftime("%Y%m%d")
+        date_str = class_date.strftime("%Y%m%d")
 
         headers = {"sessionId": self.session_id or ""}
         params = {"id": self.user_id or "", "dateStr": date_str}
@@ -409,6 +407,7 @@ class IclassClient:
             self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action"),
         ]
 
+        errors = []
         for url in candidate_urls:
             try:
                 resp = await self.client.get(
@@ -417,26 +416,32 @@ class IclassClient:
                     params=params,
                     timeout=httpx.Timeout(timeout=4.0, connect=2.5),
                 )
-                if resp.status_code != 200:
-                    continue
+                resp.raise_for_status()
 
                 data = resp.json()
                 status = str(data.get("STATUS", ""))
-                if "STATUS" in data and status not in ("0", "200", "success"):
-                    continue
+                if "STATUS" not in data or status not in ("0", "200", "success"):
+                    self.user_id = self.session_id = None
+                    raise RuntimeError("课堂会话失效，请重新认证")
+                if not isinstance(data.get("result"), list):
+                    raise RuntimeError("课堂课表响应不完整")
 
                 classes = []
                 for item in data.get("result") or []:
-                    raw_status = item.get("signStatus", 0)
+                    raw_status = item.get("signStatus")
                     try:
                         sign_status = int(raw_status)
                     except (ValueError, TypeError):
-                        sign_status = 0
+                        sign_status = None
 
                     c_sched_id = str(item.get("id") or item.get("courseSchedId") or "")
                     c_id = str(item.get("courseId") or c_sched_id)
                     begin_time = str(item.get("classBeginTime") or "")
                     end_time = str(item.get("classEndTime") or "")
+                    if len(begin_time) in (5, 8):
+                        begin_time = class_date.isoformat() + " " + begin_time
+                    if len(end_time) in (5, 8):
+                        end_time = class_date.isoformat() + " " + end_time
                     start_str = begin_time[11:16] if len(begin_time) >= 16 else (begin_time or "--")
                     end_str = end_time[11:16] if len(end_time) >= 16 else (end_time or "--")
                     room = str(item.get("classroomName") or item.get("classroom") or item.get("roomName") or "校内教室")
@@ -461,99 +466,71 @@ class IclassClient:
                     )
                 return classes
             except Exception as e:
-                logger.debug(f"Fetch sched from {url} error: {e}")
+                errors.append(type(e).__name__)
+                logger.debug("课表读取失败: %s", type(e).__name__)
                 continue
 
-        return []
+        raise RuntimeError("课表读取失败，保留上次数据，请检查网络与认证")
 
-    async def perform_signin(self, course_id: str) -> Tuple[bool, str]:
-        """
-        提交指定排课的课堂签到
-        对应 UBAA LocalSigninApiBackend.performSignin
-        """
-        if not await self.ensure_iclass_session():
-            return False, self.last_error or "未登录 iclass 系统"
-
-        # 1. 获取服务器时间戳
-        ts_candidates = [
-            self.wrap_url("https://iclass.buaa.edu.cn:8346/app/common/get_timestamp.action"),
-            self.wrap_url("https://iclass.buaa.edu.cn:8347/app/common/get_timestamp.action")
-            if self.mode == "webvpn"
-            else "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action",
-        ]
-        timestamp = None
-        for ts_url in ts_candidates:
+    async def perform_signin(self, course_id, guard=None):
+        """Manual and automatic callers share identity, window and actual POST budget."""
+        if not str(course_id).isdigit() or int(course_id) <= 0:
+            return False, "排课 ID 无效，未提交"
+        async with self._signin_lock:
+            if not await self.ensure_iclass_session():
+                return False, "课堂认证未完成"
+            user = self.operation_user or self.user_info.get("schoolid")
+            if not user:
+                return False, "未确认账号身份，未提交"
+            query_day = self.clock().date()
+            classes = await self.get_today_classes()
+            course = next((c for c in classes if str(c.get("courseSchedId") or c.get("id")) == str(course_id)), None)
+            if not course:
+                return False, "不属于此账号今日排课，未提交"
+            key = operations.ledger.key(user, "iclass-sign", course_id, self.clock().date())
+            if str(course.get("signStatus")) == "1":
+                operations.ledger.confirmed(key)
+                return True, "官方已确认签到，无需重复提交"
+            if not regular_allowed(course, self.clock()):
+                return False, "不在课前十分钟窗口或考勤状态未知，未提交"
+            response = await self.client.get(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/common/get_timestamp.action"))
+            response.raise_for_status()
+            timestamp = response.json().get("timestamp")
+            if not timestamp or not str(timestamp).isdigit() or len(str(timestamp)) not in (10, 13):
+                return False, "获取学校时间失败，未提交签到"
+            seconds = int(timestamp) / (1000 if len(str(timestamp)) == 13 else 1)
+            school_now = datetime.datetime.fromtimestamp(seconds, CHINA).replace(tzinfo=None)
+            if abs((school_now-self.clock()).total_seconds()) > 30 or not regular_allowed(course, school_now):
+                return False, "设备与学校时间偏差过大或学校窗口已关闭，未提交"
+            if self.clock().date() != query_day or not self.request_guard() or (guard is not None and not guard()) or not regular_allowed(course, self.clock()):
+                return False, "账号已暂停或已超过签到窗口，未提交"
             try:
-                ts_resp = await self.client.get(ts_url, timeout=httpx.Timeout(timeout=4.0, connect=2.5))
-                if ts_resp.status_code == 200:
-                    ts_data = ts_resp.json()
-                    timestamp = ts_data.get("timestamp")
-                    if timestamp:
-                        break
-            except Exception:
-                continue
-
-        if not timestamp:
-            timestamp = int(datetime.datetime.now().timestamp() * 1000)
-
-        # 2. 提交扫码签到
-        sign_candidates = [
-            self.wrap_url("https://iclass.buaa.edu.cn:8346/eschool/app/course/stu_scan_sign.action"),
-            self.wrap_url("https://iclass.buaa.edu.cn:8347/eschool/app/course/stu_scan_sign.action")
-            if self.mode == "webvpn"
-            else "http://iclass.buaa.edu.cn:8081/eschool/app/course/stu_scan_sign.action",
-        ]
-
-        headers = {"sessionId": self.session_id or ""}
-        params = {"courseSchedId": course_id, "timestamp": str(timestamp)}
-        form_data = {"id": self.user_id or ""}
-
-        for sign_url in sign_candidates:
+                claimed = operations.ledger.claim(key)
+            except operations.OperationBusy as exc:
+                return False, str(exc)
+            if not claimed:
+                return True, "请求已被接受，等待官方状态同步，不再重发"
             try:
-                resp = await self.client.post(
-                    sign_url,
-                    headers=headers,
-                    params=params,
-                    data=form_data,
-                    timeout=httpx.Timeout(timeout=5.0, connect=3.0),
-                )
-                if resp.status_code != 200:
-                    continue
-
-                data = resp.json()
-                status = str(data.get("STATUS", ""))
-                raw_msg = data.get("ERRMSG")
-                result = data.get("result") or {}
-                stu_status = str(result.get("stuSignStatus", ""))
-
-                is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
-
-                # 若提示需要登录则重新登录后重试一次
-                if not is_ok and raw_msg and "登录" in raw_msg:
-                    self.user_id = None
-                    self.session_id = None
-                    if await self.login_iclass():
-                        headers["sessionId"] = self.session_id or ""
-                        form_data["id"] = self.user_id or ""
-                        resp = await self.client.post(
-                            sign_url,
-                            headers=headers,
-                            params=params,
-                            data=form_data,
-                            timeout=httpx.Timeout(timeout=5.0, connect=3.0),
-                        )
-                        data = resp.json()
-                        status = str(data.get("STATUS", ""))
-                        raw_msg = data.get("ERRMSG")
-                        result = data.get("result") or {}
-                        stu_status = str(result.get("stuSignStatus", ""))
-                        is_ok = (status in ("0", "200", "success")) and (stu_status == "1")
-
-                msg = sanitize_signin_message(is_ok, raw_msg)
-                return is_ok, msg
-            except Exception as e:
-                logger.debug(f"Sign attempt at {sign_url} failed: {e}")
-                continue
-
-        return False, "提交签到请求失败，网络连接超时"
-
+                self.actual_sign_posts += 1
+                response = await self.client.post(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/stu_scan_sign.action"), headers={"sessionId": self.session_id}, params={"courseSchedId": course_id, "timestamp": str(timestamp)}, data={"id": self.user_id})
+                if response.status_code in (401, 403):
+                    self.user_id = self.session_id = None
+                    operations.ledger.finish(key, "failed")
+                    return False, "课堂会话过期，请重新认证"
+                response.raise_for_status()
+                data = response.json()
+                if not isinstance(data, dict) or "STATUS" not in data:
+                    raise ValueError("签到返回缺少官方状态")
+                if str(data.get("STATUS")) in ("0", "200", "success") and not isinstance(data.get("result"), dict):
+                    raise ValueError("签到已接受但缺少动作结果，等待官方复核")
+                if str(data.get("STATUS")) in ("0", "200", "success") and str(data["result"].get("stuSignStatus")) not in ("0", "1"):
+                    raise ValueError("签到动作结果不明确，等待官方复核")
+                success = str(data.get("STATUS")) in ("0", "200", "success") and str((data.get("result") or {}).get("stuSignStatus")) == "1"
+                message = data.get("ERRMSG")
+                operations.ledger.finish(key, "success" if success else "failed")
+                if not success and message and "登录" in message:
+                    self.user_id = self.session_id = None
+                return success, sanitize_signin_message(success, message)
+            except BaseException:
+                operations.ledger.finish(key, "uncertain")
+                raise

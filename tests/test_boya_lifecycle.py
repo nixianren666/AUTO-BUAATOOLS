@@ -1,3 +1,4 @@
+from core.domain import now as china_now
 import unittest
 import datetime
 from server.app import (
@@ -30,8 +31,8 @@ class TestBoyaLifecycleAndSemesterStats(unittest.TestCase):
             "courseEndTime": "21:00",
             "signStatus": 1,
             "signOutStatus": 1,
-            "attendanceStatus": "合格",
-            "examStatus": "通过",
+            "attendanceStatus": "合格", "checkin": 1,
+            "examStatus": "通过", "pass": 1,
             "status": "已结课",
         }
         enriched = enrich_selected_courses([past_course], [])
@@ -46,7 +47,7 @@ class TestBoyaLifecycleAndSemesterStats(unittest.TestCase):
 
     def test_course_upcoming_and_ongoing(self):
         # 模拟未来开课的课程
-        future_date = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
+        future_date = (china_now() + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
         future_course = {
             "id": 10100,
             "courseName": "前沿人工智能与未来航空科技",
@@ -69,18 +70,21 @@ class TestBoyaLifecycleAndSemesterStats(unittest.TestCase):
         # 模拟学生修读并通过的课程列表
         selected = [
             # 德育 2 门均通过
-            {"courseKind": "德育", "final_passed": True},
-            {"courseKind": "德育", "final_passed": True},
+            {"courseKind": "德育", "final_passed": True, "checkin": 1, "pass": 1},
+            {"courseKind": "德育", "final_passed": True, "checkin": 1, "pass": 1},
             # 劳育 1 门通过，1 门待评定（未通过）
-            {"courseKind": "劳育", "final_passed": True},
-            {"courseKind": "劳育", "final_passed": False},
+            {"courseKind": "劳育", "final_passed": True, "checkin": 1, "pass": 1},
+            {"courseKind": "劳育", "final_passed": False, "checkin": 0, "pass": None},
             # 美育 1 门通过
-            {"courseKind": "美育", "final_passed": True},
+            {"courseKind": "美育", "final_passed": True, "checkin": 1, "pass": 1},
             # 安全健康 1 门通过
-            {"courseKind": "安全健康", "final_passed": True},
+            {"courseKind": "安全健康", "final_passed": True, "checkin": 1, "pass": 1},
         ]
 
-        stats = compute_semester_statistics(selected)
+        from core.domain import now
+        for index, course in enumerate(selected):
+            course.update({"id": index+1, "courseStartDate": (now()-datetime.timedelta(days=1)).isoformat(), "courseEndDate": (now()-datetime.timedelta(hours=1)).isoformat()})
+        stats = compute_semester_statistics(selected, {"semesterInfo": {"semesterStartDate": (now()-datetime.timedelta(days=30)).isoformat(), "semesterEndDate": (now()+datetime.timedelta(days=30)).isoformat()}})
         self.assertEqual(stats["moral_completed"], 2)
         self.assertEqual(stats["moral_required"], 2)
         self.assertEqual(stats["moral_effective"], 2)

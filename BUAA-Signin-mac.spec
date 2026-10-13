@@ -1,10 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.icns', '.')],
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.icns', '.')] + collect_data_files('tzdata'),
     hiddenimports=[
         'cryptography',
         'httpx',
@@ -15,6 +16,8 @@ a = Analysis(
         'core.boya_client',
         'core.boya_scheduler',
         'core.autostart',
+        'qrcode',
+        'qrcode.image.pil',
         'pystray',
         'pystray._darwin',
         'PIL',
@@ -26,7 +29,7 @@ a = Analysis(
         'WebKit',
         'Foundation',
         'objc',
-    ],
+    ] + collect_submodules('keyring.backends'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -72,8 +75,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleDisplayName': 'BUAA 课程独立签到助手',
         'CFBundleName': 'BUAA-Signin',
-        'CFBundleShortVersionString': '1.2.5',
-        'CFBundleVersion': '1.2.5',
+        'CFBundleShortVersionString': '1.2.7',
+        'CFBundleVersion': '1.2.7',
         'NSHighResolutionCapable': 'True',
         'LSUIElement': '0',
     },

@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-BUAA 课程独立签到助手 v1.2.6 - 原生独立应用入口
+BUAA 课程独立签到助手 v1.2.7 - 原生独立应用入口
 - 原生独立桌面窗口 (pywebview / Edge Chromium WebView2)
 - Windows 任务栏系统托盘常驻 (pystray)
 - 窗口右上角关闭拦截并最小化至托盘
@@ -53,152 +54,133 @@ except Exception:
 
 from PIL import Image, ImageDraw
 
-APP_TITLE = "BUAA 课程签到 Pro v1.2.6"
+from core.version import VERSION
+APP_TITLE = "BUAA 课程签到 Pro v" + VERSION
 DEFAULT_PORT = 18346
 
 window = None
 tray_icon = None
 is_exiting = False
+_exit_started = False
 _single_instance_mutex = None
 _open_lock_files = []
 
 
-def acquire_single_instance(port_or_name: Any = DEFAULT_PORT) -> bool:
-    """
-    确保全系统绝对单实例运行：
-    1. Windows 采用 Win32 Named Mutex (内核级互斥体)
-    2. Unix (macOS / Linux) 采用专属文件锁 (fcntl.flock)
-    3. 备用检查采用本地专用互斥端口占用检测
-    若已有实例在运行，则恢复并置顶已有主窗口，并返回 False（应立即退出）
-    """
+def _instance_identity(port_or_name):
+    import hashlib
+    from core.profile import resolve_config_path
+    profile = resolve_config_path().resolve()
+    identity = os.path.normcase(str(profile))
+    if isinstance(port_or_name, str) and not port_or_name.isdigit():
+        identity += ":" + port_or_name
+    digest = hashlib.sha256(identity.encode()).hexdigest()[:32]
+    return profile, digest
+
+def acquire_single_instance(port_or_name=DEFAULT_PORT):
+    """Fail closed; one configuration has one instance regardless of port."""
     global _single_instance_mutex, _open_lock_files
-
-    already_running = False
-
-    if isinstance(port_or_name, int):
-        port = port_or_name
-        mutex_tag = f"PORT_{port}"
-    elif isinstance(port_or_name, str) and port_or_name.isdigit():
-        port = int(port_or_name)
-        mutex_tag = f"PORT_{port}"
-    else:
-        port = DEFAULT_PORT
-        mutex_tag = str(port_or_name).replace("\\", "_")
-
+    import json
+    import pathlib
+    if isinstance(port_or_name, bool):
+        raise ValueError("无效监听端口")
+    port = port_or_name if isinstance(port_or_name, int) else int(port_or_name) if str(port_or_name).isdigit() else DEFAULT_PORT
+    if not 1 <= port <= 65535:
+        raise ValueError("监听端口必须在1至65535之间")
+    profile, digest = _instance_identity(port_or_name)
+    profile.parent.mkdir(parents=True, exist_ok=True)
+    metadata = profile.parent/(".instance-"+digest+".json")
+    already = False
     if sys.platform == "win32":
-        try:
-            import ctypes
-            MUTEX_NAME = f"Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122_{mutex_tag}" if mutex_tag != f"PORT_{DEFAULT_PORT}" else "Global\\BUAA_SIGNIN_PRO_SINGLE_INSTANCE_v122"
-            h_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
-            last_err = ctypes.windll.kernel32.GetLastError()
-            if last_err == 183:  # ERROR_ALREADY_EXISTS
-                already_running = True
-                if h_mutex:
-                    ctypes.windll.kernel32.CloseHandle(h_mutex)
-            else:
-                _single_instance_mutex = h_mutex
-        except Exception:
-            pass
+        import ctypes
+        from ctypes import wintypes
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+        kernel.CreateMutexW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel.CloseHandle.restype = wintypes.BOOL
+        handle = kernel.CreateMutexW(None, False, "Global\\BUAA_SIGNIN_"+digest)
+        if not handle:
+            raise OSError("无法创建系统互斥锁；已停止启动，避免重复守护")
+        if ctypes.get_last_error() == 183:
+            kernel.CloseHandle(handle)
+            already = True
+        else:
+            _single_instance_mutex = handle
     else:
+        import fcntl
+        lock_path = profile.parent/(".instance-"+digest+".lock")
+        handle = open(lock_path, "a+")
+        os.chmod(lock_path, 0o600)
         try:
-            import fcntl
-            import pathlib
-            lock_name = f".buaa_signin_v122_{mutex_tag}.lock" if mutex_tag != f"PORT_{DEFAULT_PORT}" else ".buaa_signin_v122.lock"
-            lock_path = pathlib.Path.home() / lock_name
-            f = open(lock_path, "a+")
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            _open_lock_files.append(f)
-        except (IOError, OSError):
-            already_running = True
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            handle.close()
+            already = True
+        except BaseException:
+            handle.close()
+            raise
+        else:
+            _open_lock_files.append(handle)
+    if already:
+        try:
+            record = json.loads(metadata.read_text(encoding="utf-8"))
+            existing_port = int(record["port"])
+            if 1 <= existing_port <= 65535:
+                check_and_wake_existing(existing_port)
         except Exception:
             pass
-
-    # 备用检查：测试本地端口是否已被前一个实例占用（仅针对有效网络端口）
-    if not already_running and isinstance(port, int) and port > 0:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as test_sock:
-                test_sock.settimeout(0.3)
-                if test_sock.connect_ex(("127.0.0.1", port)) == 0:
-                    already_running = True
-        except Exception:
-            pass
-
-    if already_running:
-        # 激活并前台化既有窗口
-        if sys.platform == "win32":
-            try:
-                import ctypes
-                hwnd = ctypes.windll.user32.FindWindowW(None, APP_TITLE)
-                if hwnd:
-                    ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                    ctypes.windll.user32.SetForegroundWindow(hwnd)
-            except Exception:
-                pass
-
-        # 发送本地 HTTP 唤醒信标（显式禁用系统代理，直连 127.0.0.1）
-        check_and_wake_existing(port)
         return False
-
+    # A foreign listener must not be mistaken for our application or silently bypassed.
+    with socket.socket() as probe:
+        probe.settimeout(0.3)
+        if probe.connect_ex(("127.0.0.1", port)) == 0:
+            release_single_instance()
+            raise RuntimeError("监听端口已被其他实例/服务占用，请先关闭原服务或选择其他端口")
+    try:
+        metadata.write_text(json.dumps({"pid": os.getpid(), "port": port}), encoding="utf-8")
+        os.chmod(metadata, 0o600)
+    except BaseException:
+        release_single_instance()
+        raise
     return True
 
-
-def release_single_instance(lock: Any = None) -> None:
-    """释放单实例互斥锁与文件句柄"""
+def release_single_instance(lock=None):
     global _single_instance_mutex, _open_lock_files
-    if sys.platform == "win32":
-        if _single_instance_mutex:
-            try:
-                import ctypes
-                ctypes.windll.kernel32.CloseHandle(_single_instance_mutex)
-            except Exception:
-                pass
-            _single_instance_mutex = None
-    for f in _open_lock_files:
-        try:
-            import fcntl
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-            f.close()
-        except Exception:
-            pass
+    if _single_instance_mutex:
+        import ctypes
+        from ctypes import wintypes
+        close = ctypes.WinDLL("kernel32").CloseHandle
+        close.argtypes = [wintypes.HANDLE]
+        close.restype = wintypes.BOOL
+        close(_single_instance_mutex)
+        _single_instance_mutex = None
+    for handle in _open_lock_files:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
     _open_lock_files = []
-    if lock is not None:
-        if hasattr(lock, "fileno"):
-            try:
-                import fcntl
-                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
-                lock.close()
-            except Exception:
-                pass
-        elif sys.platform == "win32" and isinstance(lock, int):
-            try:
-                import ctypes
-                ctypes.windll.kernel32.CloseHandle(lock)
-            except Exception:
-                pass
 
 
 # 注册退出时的互斥锁自动清理
 atexit.register(release_single_instance)
 
 
-def check_and_wake_existing(port: int = DEFAULT_PORT) -> bool:
-    """向已在运行的后台实例发送前台唤醒信标（直连本地回环，绕过任何系统代理）"""
+def check_and_wake_existing(port=DEFAULT_PORT):
+    """Verify application identity, establish a local session, then wake the window."""
     try:
-        import urllib.request
-        proxy_handler = urllib.request.ProxyHandler({})
-        opener = urllib.request.build_opener(proxy_handler)
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{port}/api/window/show",
-            data=b"{}",
-            headers={"Content-Type": "application/json", "User-Agent": "BUAA-Signin-Launcher"},
-            method="POST",
-        )
-        with opener.open(req, timeout=0.8) as resp:
-            if resp.status == 200:
-                return True
+        import httpx
+        with httpx.Client(trust_env=False, timeout=1) as client:
+            base = f"http://127.0.0.1:{port}"
+            health = client.get(base+"/api/health").json()
+            if health.get("application") != "AUTO-BUAATOOLS":
+                return False
+            session = client.get(base+"/api/session")
+            if session.status_code != 200:
+                return False
+            response = client.post(base+"/api/window/show", json={}, headers={"X-BUAA-CSRF":session.json()["csrf"]})
+            return response.status_code == 200
     except Exception:
-        pass
-    return False
+        return False
 
 
 def wait_for_server(port: int = DEFAULT_PORT, timeout: float = 3.5) -> bool:
@@ -276,9 +258,10 @@ def restore_window():
 
 def exit_all():
     """彻底终止所有后台服务并退出程序"""
-    global is_exiting, tray_icon, window
-    if is_exiting:
+    global is_exiting, _exit_started, tray_icon, window
+    if _exit_started:
         return
+    _exit_started = True
     is_exiting = True
     try:
         if tray_icon:
@@ -334,7 +317,7 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title="BUAA 课程独立签到助手 v1.2.6 (后台运行中)",
+            title="BUAA 课程独立签到助手 v1.2.7 (后台运行中)",
             menu=tray_menu,
         )
         if run_now:
@@ -352,7 +335,10 @@ def on_window_closing():
         return True  # 允许销毁
     if window:
         try:
-            window.hide()
+            if tray_icon is None:
+                window.minimize()
+            else:
+                window.hide()
         except Exception:
             pass
     return False  # 取消关闭事件
@@ -376,12 +362,15 @@ def run_server(port: int):
 
 def parse_arguments():
     import argparse
-    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.2.2")
+    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.2.7")
     parser.add_argument("--headless", action="store_true", help="无头模式：纯 Web 服务运行（适合 Linux 服务器、Docker 容器与后台驻留）")
-    parser.add_argument("--host", type=str, default=None, help="监听主机地址（桌面模式默认 127.0.0.1，无头模式默认 0.0.0.0）")
+    parser.add_argument("--host", type=str, default=None, help="监听主机地址（桌面模式默认 127.0.0.1，无头模式默认 127.0.0.1）")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"监听端口号（默认 {DEFAULT_PORT}）")
     parser.add_argument("--autostart", action="store_true", help="开机自启静默启动模式")
     parser.add_argument("--minimized", action="store_true", help="最小化启动模式")
+    parser.add_argument("--smoke-profile", action="store_true", help="内部验收：独立配置及合成学校接口")
+    parser.add_argument("--smoke-test", action="store_true", help="内部验收：原生窗口运行检查后退出")
+    parser.add_argument("--smoke-report", type=str, default=None)
     return parser.parse_args()
 
 
@@ -389,6 +378,16 @@ def main():
     global window, tray_icon
 
     args = parse_arguments()
+    smoke_directory = None
+    if args.smoke_profile or args.smoke_test:
+        import tempfile
+        import pathlib
+        smoke_directory = tempfile.TemporaryDirectory(prefix="buaa-native-smoke-")
+        profile = pathlib.Path(smoke_directory.name) / "config.json"
+        profile.write_text("{}", encoding="utf-8")
+        os.environ["BUAA_CONFIG_FILE"] = str(profile)
+        os.environ["TESTING"] = "1"
+        os.environ["BUAA_SMOKE_PROFILE"] = "1"
 
     # 自动识别环境：判定是否进入 Headless 纯 Web 服务模式
     is_linux = sys.platform.startswith("linux")
@@ -409,11 +408,13 @@ def main():
 
     # 2. 如果是无头服务模式（Linux 服务器 / Docker / 终端守护），直接启动主线程 Web 服务
     if is_headless:
-        host = args.host or "0.0.0.0"
+        host = args.host or "127.0.0.1"
+        if host not in ("127.0.0.1", "localhost", "::1") and (not os.environ.get("BUAA_ADMIN_PASSWORD") or not os.environ.get("BUAA_ALLOWED_HOSTS")):
+            raise RuntimeError("远程监听必须设置应用管理密码和 BUAA_ALLOWED_HOSTS")
         print("=" * 66)
         print("  [*] AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
         print("=" * 66)
-        print(f"  版本:     v1.2.2")
+        print(f"  版本:     v1.2.7")
         print(f"  监听地址: http://{host}:{port}")
         print(f"  本地访问: http://127.0.0.1:{port}")
         print(f"  网络访问: http://<你的服务器IP>:{port}")
@@ -438,7 +439,9 @@ def main():
     server_thread.start()
 
     # 等待服务端口就绪
-    wait_for_server(port, timeout=3.5)
+    if not wait_for_server(port, timeout=30):
+        release_single_instance()
+        raise RuntimeError("本地后台启动失败，未创建空白窗口")
 
     # 5. 创建桌面任务栏系统托盘（包含“显示主界面”与“退出应用”，彻底消除 macOS 死锁与无头报错）
     tray_icon = setup_tray()
@@ -459,8 +462,40 @@ def main():
         window.events.closing += on_window_closing
 
         # 启动主 GUI 事件循环（阻塞直到应用退出）
-        webview.start()
+        if args.smoke_test:
+            def native_smoke():
+                global is_exiting
+                import json
+                import pathlib
+                report = {"version": VERSION, "native_gui": True, "passed": False}
+                try:
+                    deadline = time.monotonic() + 60
+                    while time.monotonic() < deadline:
+                        try:
+                            state = window.evaluate_js("({ready:typeof appState==='object' && appState.accounts.length===2, title:document.title, bodyWidth:document.body.scrollWidth, viewport:window.innerWidth})")
+                            if state and state.get("ready"):
+                                report.update({"passed": "1.2.7" in state.get("title", "") and state["bodyWidth"] <= state["viewport"]+2, "state": state})
+                                break
+                        except Exception:
+                            pass
+                        time.sleep(0.25)
+                finally:
+                    if args.smoke_report:
+                        pathlib.Path(args.smoke_report).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+                    is_exiting = True
+                    window.destroy()
+                    if not report["passed"]:
+                        os._exit(1)
+            webview.start(native_smoke)
+        else:
+            webview.start()
     except Exception as e:
+        if args.smoke_test:
+            if args.smoke_report:
+                import json
+                import pathlib
+                pathlib.Path(args.smoke_report).write_text(json.dumps({"version": VERSION, "native_gui": False, "passed": False, "error_type": type(e).__name__}), encoding="utf-8")
+            raise
         # 回退模式（如无图形渲染驱动）：使用默认浏览器打开
         if not start_hidden:
             webbrowser.open(f"http://127.0.0.1:{port}")

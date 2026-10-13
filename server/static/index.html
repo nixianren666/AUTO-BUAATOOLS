@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BUAA 课程签到 Pro - Origin v1.2.6</title>
+  <title>BUAA 课程签到 Pro - Origin v1.2.7</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.2.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.2.7">
 </head>
 <body class="origin-theme">
   <!-- Gemini iOS 风格背景：底层流动光斑与星尘粒子 -->
@@ -18,7 +18,7 @@
   <div id="glassVeil" class="origin-glass-veil"></div>
 
   <div class="origin-app-layout">
-    
+
     <!-- ==================== LEFT NAVIGATION RAIL ==================== -->
     <aside class="origin-sidebar">
       <!-- 品牌标识 -->
@@ -29,7 +29,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.2.6</span>
+            <span class="origin-tag">v1.2.7</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -64,7 +64,6 @@
           <span class="nav-item-title">学生账号中心</span>
           <span class="nav-badge" id="navBadgeAccounts">0</span>
         </button>
-
         <button class="origin-nav-item" id="navBtnLogs" onclick="switchMainView('logs')">
           <span class="nav-item-icon">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
@@ -159,15 +158,16 @@
           <div class="origin-card hero-card">
             <div class="hero-card-left">
               <div class="hero-status-pill">
-                <span class="origin-status-dot green"></span>
-                <span>DAEMON ACTIVE · 智能考勤守护中</span>
+                <span class="origin-status-dot" id="regularDaemonDot"></span>
+                <span id="regularDaemonStatus">正在读取守护状态</span>
               </div>
               <h2 class="hero-headline">今日课程考勤</h2>
               <p class="hero-subtitle">
-                当前守护账号：<strong id="heroStudentName">--</strong> (<span id="heroStudentId">--</span>) · 上课前 10 分钟自动在合规窗口完成极速打卡
+                当前守护账号：<strong id="heroStudentName">--</strong> (<span id="heroStudentId">--</span>) · 仅在课前 10 分钟窗口提交签到
               </p>
+              <p class="hero-subtitle" id="regularHealthText">课表同步状态待确认</p>
             </div>
-            
+
             <div class="hero-metrics-strip">
               <div class="hero-metric-tile">
                 <span class="metric-label">今日总排课</span>
@@ -223,11 +223,12 @@
               <div class="boya-hero-info">
                 <div class="hero-status-pill purple">
                   <span class="origin-status-dot purple"></span>
-                  <span>AUTOBOYA INTEGRATED · 智能秒抢与微扰定位打卡</span>
+                  <span><span id="boyaDaemonStatus">博雅自动化状态待确认</span></span>
                 </div>
                 <h2 class="hero-headline">博雅课程守护</h2>
+                <p class="hero-subtitle" id="boyaHealthText">官方数据同步状态待确认</p>
                 <p class="hero-subtitle">
-                  全自动抢选与高斯微扰定位打卡 · 严选支持线上自主打卡之课程
+                  仅自动抢选自主考勤配置完整的课程；作业与考核以官方要求为准
                 </p>
               </div>
 
@@ -242,7 +243,7 @@
                 </div>
 
                 <div class="boya-ctrl-item">
-                  <span class="ctrl-caption">自动秒抢</span>
+                  <span class="ctrl-caption">自动抢选</span>
                   <label class="origin-toggle" title="开启后自动轮询抢选符合策略的博雅课程">
                     <input type="checkbox" id="boyaAutoSelectToggle" onchange="toggleBoyaAutoSelect(this.checked)">
                     <span class="origin-slider"></span>
@@ -261,6 +262,17 @@
             </div>
 
             <!-- 学期博雅素养达标要求与进度槽 -->
+            <details style="margin: 16px 0;">
+              <summary>自动抢选预约目标（不修改学校考核要求）</summary>
+              <form id="boyaTargetsForm" onsubmit="saveBoyaTargets(event)" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:12px;">
+                <label>德育 <input id="boyaTargetMoral" class="origin-input" type="number" min="0" max="20" value="2" required style="width:58px;"></label>
+                <label>劳育 <input id="boyaTargetLabor" class="origin-input" type="number" min="0" max="20" value="2" required style="width:58px;"></label>
+                <label>美育 <input id="boyaTargetArt" class="origin-input" type="number" min="0" max="20" value="1" required style="width:58px;"></label>
+                <label>安全健康 <input id="boyaTargetSecurity" class="origin-input" type="number" min="0" max="20" value="1" required style="width:58px;"></label>
+                <button class="origin-btn origin-btn-primary" type="submit">保存预约目标</button>
+                <span>已通过、已预约及待确认的名额均占用目标；0 表示不自动抢此类。</span>
+              </form>
+            </details>
             <div class="boya-progress-wrapper">
               <div class="boya-progress-header">
                 <div class="progress-title-col">
@@ -272,7 +284,7 @@
               <div class="origin-progress-bar">
                 <div class="origin-progress-fill" id="boyaProgressFill" style="width: 0%;"></div>
               </div>
-              
+
               <!-- 官方四大博雅课程类别学期达标微胶囊 -->
               <div class="boya-milestone-pills" id="boyaCategoryMilestones">
                 <div class="milestone-pill" id="pillMoralWrap"><span class="m-label">德育</span><span class="m-val" id="pillMoral">0 / 2 门</span></div>
@@ -287,11 +299,11 @@
           <div class="origin-toolbar boya-toolbar">
             <!-- 选项卡分段胶囊 (Segmented Pills) -->
             <div class="origin-segmented-control">
-              <button class="segmented-btn active" id="tabBoyaSelected" onclick="switchBoyaTab('selected')">
+              <button class="segmented-btn" id="tabBoyaSelected" onclick="switchBoyaTab('selected')">
                 <span>已选修课程</span>
                 <span class="seg-count" id="countBoyaSelected">0</span>
               </button>
-              <button class="segmented-btn" id="tabBoyaAll" onclick="switchBoyaTab('all')">
+              <button class="segmented-btn active" id="tabBoyaAll" onclick="switchBoyaTab('all')">
                 <span>全量选课池</span>
                 <span class="seg-count" id="countBoyaAll">0</span>
               </button>
@@ -371,7 +383,7 @@
                 <button class="origin-btn origin-btn-danger-ghost" onclick="clearLogs()">清空日志</button>
               </div>
             </div>
-            
+
             <div class="terminal-body" id="logsContainer">
               <!-- 实时日志流 -->
             </div>
@@ -428,7 +440,7 @@
             <div class="form-group">
               <label class="origin-checkbox-label">
                 <input type="checkbox" id="rememberMe" checked>
-                <span>记住凭据并在本地安全加密存储 (AES-128)</span>
+                <span>记住凭据并在本机受保护存储</span>
               </label>
             </div>
           </div>
@@ -471,13 +483,13 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.2.5</span>
+          <span class="origin-version">v1.2.7</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
             <strong>使用前必读：</strong>感谢您使用 BUAA 课程独立签到助手。在进入系统前，请您认真、完整阅读以下免责声明与风险告知条款。
           </div>
-          
+
           <div class="origin-disclaimer-text">
             <p><strong>1. 开源学习与学术研究定位</strong><br>
             本软件为开源个人学习交流、网络协议研究与课业日程辅助工具，完全免费且代码公开。严禁将本软件用于任何商业营利、代抢牟利或任何违反《北京航空航天大学学生违纪处分办法》及校规校纪之行为。</p>
@@ -488,8 +500,8 @@
             <p><strong>3. 用户最终自主核验与兜底义务</strong><br>
             本程序仅作为自动化辅助工具，<strong>不替代任何人工最终确认</strong>。用户有义务定期登录北京航空航天大学官方教务系统及博雅课堂管理系统，自主核验实际选课结果、签到记录及毕业学分达成进度。</p>
 
-            <p><strong>4. 账号凭证高强度安全与隐私承诺</strong><br>
-            本软件高度重视您的隐私与账号安全。所有统一身份认证账号、密码及会话凭证均仅存储于您当前的本地计算机中（采用 AES 加密保护），<strong>绝无任何向第三方服务器上报或收集的行为</strong>。请妥善保管个人计算机及凭证，切勿在公共设备上开启“记住凭据”。</p>
+            <p><strong>4. 账号凭证与隐私说明</strong><br>
+            本软件高度重视您的隐私与账号安全。所有统一身份认证账号、密码及会话凭证均仅存储于您当前的本地计算机中（Windows 使用系统用户保护，macOS/Linux 使用系统凭据库或仅当前用户可读的随机密钥），<strong>不会由本程序将学校凭据上传到项目仓库或第三方账号服务</strong>。请妥善保管个人计算机及凭证，切勿在公共设备上开启“记住凭据”。</p>
 
             <p><strong>5. 法律责任自愿承担</strong><br>
             您点击“同意并进入系统”即表明您已完全理解并自愿接受上述条款，自愿承担因使用本软件所产生的全部风险与使用后果。</p>
@@ -502,7 +514,7 @@
             </label>
           </div>
         </div>
-        
+
         <div class="modal-footer">
           <button type="button" class="origin-btn origin-btn-ghost" onclick="handleDisclaimerDecline()">退出软件</button>
           <button type="button" class="origin-btn origin-btn-primary" id="disclaimerAgreeBtn" disabled onclick="handleDisclaimerAccept()">同意并进入系统</button>
@@ -514,6 +526,6 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/app.js?v=1.2.6"></script>
+  <script src="/static/js/app.js?v=1.2.7"></script>
 </body>
 </html>

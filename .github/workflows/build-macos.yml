@@ -1,119 +1,88 @@
-name: Build and Release macOS App
-
+name: Native v1.2.7 verification and builds
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: native-v127-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  build-macos:
-    runs-on: ${{ matrix.os }}
+  native:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
-            arch: arm64
-            suffix: arm64
-          - os: macos-13
-            arch: x86_64
-            suffix: x86_64
-
+          - os: windows-2025
+            platform: Windows-x64
+          - os: ubuntu-24.04
+            platform: Linux-x86_64
+          - os: macos-15
+            platform: macOS-arm64
+          - os: macos-15-intel
+            platform: macOS-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      BUAA_TEST_REPORT_DIR: ${{ github.workspace }}/acceptance/source
+      BUAA_TEST_BROWSER: ""
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install declared dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: Run unit test suite
+          python -m pip install -r requirements-build.txt
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install chromium
+      - name: Linux native desktop and user-service environment
+        if: runner.os == 'Linux'
+        shell: bash
         run: |
-          python -m unittest discover -s tests
-
-      - name: Build macOS .app with PyInstaller
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 dbus-user-session libsecret-1-0
+          python -m pip install 'pywebview[qt6]==6.2.1'
+          npx playwright install-deps chromium
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+          echo "PYWEBVIEW_GUI=qt" >> "$GITHUB_ENV"
+      - name: Windows installer compiler
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          pyinstaller --noconfirm BUAA-Signin-mac.spec
-          # Ad-hoc codesign to avoid Gatekeeper "damaged app" false positives
-          codesign --force --deep -s - dist/BUAA-Signin.app || true
-
-      - name: Execute live smoke test
-        run: |
-          PYTHONPATH=. python scripts/smoke_test_mac.py
-
-      - name: Create DMG Disk Image and Zip Archive
-        run: |
-          # 1. Create elegant DMG with Applications symlink and Gatekeeper fix helper
-          mkdir -p dist/dmg_root
-          cp -R dist/BUAA-Signin.app dist/dmg_root/
-          ln -s /Applications dist/dmg_root/Applications
-          if [ -f "scripts/fix_macos_gatekeeper.sh" ]; then
-            cp scripts/fix_macos_gatekeeper.sh dist/dmg_root/
-            chmod +x dist/dmg_root/fix_macos_gatekeeper.sh
-          fi
-          hdiutil create -volname "BUAA-Signin" -srcfolder dist/dmg_root -ov -format UDZO "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg"
-
-          # 2. Also package zip for direct portability
-          cd dist
-          zip -r -y "BUAA-Signin-macOS-${{ matrix.suffix }}.zip" BUAA-Signin.app
-          cd ..
-
-      - name: Upload Build Artifacts
+          if (-not (Test-Path -LiteralPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe')) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+      - name: Source contracts and browser tests
+        run: python scripts/test_isolated.py
+      - name: Windows and macOS build and compiled acceptance
+        if: runner.os != 'Linux'
+        run: python scripts/build_release.py
+      - name: Linux build and compiled desktop acceptance
+        if: runner.os == 'Linux'
+        shell: bash
+        run: xvfb-run -a python scripts/build_release.py
+      - name: Preserve verification evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BUAA-Signin-macOS-${{ matrix.suffix }}
-          path: |
-            dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg
-            dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip
-
-      - name: Upload to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
-          for i in {1..5}; do
-            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
-            gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG" || true
-            sleep 2
-          done
-          gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.dmg" --clobber || true
-          gh release upload "$TAG" "dist/BUAA-Signin-macOS-${{ matrix.suffix }}.zip" --clobber || true
-
-  release-windows:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Upload Windows Binaries to Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [[ "$TAG" != v* ]]; then TAG="v1.2.2"; fi
-          for i in {1..5}; do
-            if gh release view "$TAG" >/dev/null 2>&1; then break; fi
-            gh release create "$TAG" --title "AUTO-BUAA $TAG" --notes "Release $TAG" || true
-            sleep 2
-          done
-          if [ -f "BUAA-Signin-Setup-v1.2.2.exe" ]; then
-            gh release upload "$TAG" "BUAA-Signin-Setup-v1.2.2.exe" --clobber || true
-          fi
-          if [ -f "BUAA-Signin-v1.2.2-portable.exe" ]; then
-            gh release upload "$TAG" "BUAA-Signin-v1.2.2-portable.exe" --clobber || true
-          fi
+          name: evidence-${{ matrix.platform }}
+          path: acceptance/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload verified fresh binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 14
+# No automatic Release upload. Publication follows all native gates and computer-use.

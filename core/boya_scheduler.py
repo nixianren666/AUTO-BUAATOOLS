@@ -18,76 +18,20 @@ from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
 logger = logging.getLogger(__name__)
 
 
-def parse_dt(value: Optional[str]) -> Optional[datetime]:
-    if not value:
-        return None
-    for fmt in (
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M",
-        "%Y-%m-%d",
-        "%Y/%m/%d %H:%M:%S",
-        "%Y/%m/%d %H:%M",
-        "%Y/%m/%d",
-    ):
-        try:
-            return datetime.strptime(value[:19], fmt)
-        except ValueError:
-            continue
-    return None
+from core.domain import (parse_dt, in_window, sign_config as parse_sign_config,
+    autonomous, course_times as parse_course_time_range, now as china_now,
+    course_id, within_semester, semester_bounds, REQUIREMENTS)
 
+def get_current_semester_range(ref_date=None, semester_info=None):
+    if not semester_info:
+        raise ValueError("官方校历未同步，不能估算本学期")
+    start, end = semester_bounds(semester_info)
+    if not start or not end:
+        raise ValueError("官方校历不完整")
+    return start, end, semester_info.get("semesterName", "")
 
-def get_current_semester_range(ref_date: Optional[datetime] = None) -> Tuple[datetime, datetime, str]:
-    """
-    根据北航校历基准动态推算当前所属学期起止时间与学期全称：
-    - 秋季学期（第一学期）：通常自当年 8 月下旬（约 8-25）开学至次年 1 月中下旬（约 1-20）；
-    - 春季学期（第二学期）：通常自当年 2 月中旬（约 2-15）开学至当年 7 月上旬（约 7-10）；
-    - 夏季学期（第三学期）：7 月中旬至 8 月中旬。
-    """
-    dt = ref_date or datetime.now()
-    y = dt.year
-    m = dt.month
-
-    if m in (9, 10, 11, 12):
-        start = datetime(y, 8, 25, 0, 0, 0)
-        end = datetime(y + 1, 1, 31, 23, 59, 59)
-        name = f"{y}-{y+1}学年第一学期（秋季）"
-    elif m == 1:
-        start = datetime(y - 1, 8, 25, 0, 0, 0)
-        end = datetime(y, 1, 31, 23, 59, 59)
-        name = f"{y-1}-{y}学年第一学期（秋季）"
-    else:
-        start = datetime(y, 2, 15, 0, 0, 0)
-        end = datetime(y, 7, 15, 23, 59, 59)
-        name = f"{y-1}-{y}学年第二学期（春季）"
-
-    return start, end, name
-
-
-def in_window(start: Optional[str], end: Optional[str], now: datetime) -> bool:
-    parsed_start = parse_dt(start)
-    parsed_end = parse_dt(end)
-    return bool(parsed_start and parsed_end and parsed_start <= now <= parsed_end)
-
-
-def parse_sign_config(raw: Any) -> Dict[str, Any]:
-    if isinstance(raw, dict):
-        return raw
-    if not isinstance(raw, str) or not raw.strip():
-        return {}
-    text = raw.replace('\"', '"')
-    try:
-        val = json.loads(text)
-        return val if isinstance(val, dict) else {}
-    except Exception:
-        return {}
-
-
-def has_autonomous_sign(course: Dict[str, Any]) -> bool:
-    cfg = parse_sign_config(course.get("courseSignConfig") or course.get("signConfig"))
-    points = cfg.get("signPointList")
-    return isinstance(points, list) and len(points) > 0
-
+def has_autonomous_sign(course):
+    return autonomous(course)
 
 def get_course_category(course: Dict[str, Any]) -> str:
     kind = course.get("courseNewKind2")
@@ -136,95 +80,30 @@ def random_point_in_radius(lat: float, lng: float, radius_m: float = 10.0) -> Tu
     return round(lat + dlat, 6), round(lng + dlng, 6)
 
 
-def parse_course_time_range(course: Dict[str, Any]) -> Tuple[Optional[datetime], Optional[datetime]]:
-    """
-    解析博雅课程上课起止时间：
-    优先从 courseStartDate / courseStartTime / courseEndDate / courseEndTime 组合解析；
-    兼顾 courseTime 或 timeRange 文本字符串。
-    """
-    start_d = course.get("courseStartDate") or course.get("startDate")
-    start_t = course.get("courseStartTime") or course.get("startTime")
-    end_d = course.get("courseEndDate") or course.get("endDate")
-    end_t = course.get("courseEndTime") or course.get("endTime")
-
-    start_dt = None
-    end_dt = None
-
-    if start_d and start_t:
-        start_dt = parse_dt(f"{start_d} {start_t}")
-    elif start_d:
-        start_dt = parse_dt(str(start_d))
-
-    if end_d and end_t:
-        end_dt = parse_dt(f"{end_d} {end_t}")
-    elif end_d:
-        end_dt = parse_dt(str(end_d))
-
-    if (not start_dt or not end_dt) and course.get("courseTime"):
-        ctime = str(course["courseTime"]).replace("至", "-").replace("~", "-")
-        if "-" in ctime:
-            parts = ctime.split("-", 1)
-            p1 = parse_dt(parts[0].strip())
-            p2 = parse_dt(parts[1].strip())
-            if p1 and p2:
-                start_dt = p1
-                end_dt = p2
-
-    return start_dt, end_dt
-
-
-def courses_time_overlap(c1: Dict[str, Any], c2: Dict[str, Any]) -> bool:
-    """
-    判断两门课程的上课时间是否存在冲突（重叠）：
-    两门课程均有明确起止时间且为正常时间段时：
-    max(start1, start2) < min(end1, end2) 为区间交集。
-    """
+def courses_time_overlap(c1, c2):
     s1, e1 = parse_course_time_range(c1)
     s2, e2 = parse_course_time_range(c2)
-    if not s1 or not e1 or not s2 or not e2:
-        return False
-    if e1 <= s1 or e2 <= s2:
-        return False
+    # Unknown schedules cannot establish that selecting another class is safe.
+    if not s1 or not e1 or not s2 or not e2 or e1 <= s1 or e2 <= s2:
+        return True
     return max(s1, s2) < min(e1, e2)
 
-
-def get_user_category_demands(
-    selected_courses: List[Dict[str, Any]],
-    sem_start: Optional[datetime] = None,
-    sem_end: Optional[datetime] = None
-) -> Dict[str, Dict[str, int]]:
-    """
-    分析学生本学期已选/已修各板块课程数与达标缺口：
-    基准要求：德育: 2, 劳育: 2, 美育: 1, 安全健康: 1
-    返回各板块达标需求与剩余缺口
-    """
-    standards = {
-        "德育": 2,
-        "劳育": 2,
-        "美育": 1,
-        "安全健康": 1,
-    }
-    counts = {"德育": 0, "劳育": 0, "美育": 0, "安全健康": 0}
-    for c in selected_courses or []:
-        if sem_start and sem_end:
-            c_date_str = c.get("courseStartDate") or c.get("courseEndDate") or c.get("selectDate")
-            c_dt = parse_dt(c_date_str)
-            if c_dt and not (sem_start <= c_dt <= sem_end):
-                continue
-        cat = get_course_category(c)
-        if cat in counts:
-            counts[cat] += 1
-
-    demands = {}
-    for k, req in standards.items():
-        cnt = counts.get(k, 0)
-        demands[k] = {
-            "required": req,
-            "count": cnt,
-            "remaining": max(0, req - cnt),
-        }
-    return demands
-
+def get_user_category_demands(selected_courses, sem_start=None, sem_end=None, requirements=None):
+    standards = requirements or REQUIREMENTS
+    counts = {category: 0 for category in standards}
+    current = china_now()
+    for course in selected_courses or []:
+        start, end = parse_course_time_range(course)
+        if not start or not end or not sem_start or not sem_end or not sem_start <= start <= end <= sem_end:
+            continue
+        # Upcoming reservations and pending official assessment occupy the target;
+        # an explicitly failed, finished class does not occupy it forever.
+        if end < current and str(course.get("pass")) == "0":
+            continue
+        category = get_course_category(course)
+        if category in counts:
+            counts[category] += 1
+    return {k: {"required": v, "count": counts[k], "remaining": max(0, v-counts[k])} for k, v in standards.items()}
 
 def calculate_candidate_priority(course: Dict[str, Any], demands: Dict[str, Dict[str, int]]) -> int:
     """
@@ -249,619 +128,227 @@ def calculate_candidate_priority(course: Dict[str, Any], demands: Dict[str, Dict
     return score
 
 
-def is_auto_select_candidate(
-    course: Dict[str, Any],
-    now: datetime,
-    campus: str = "北京",
-    require_auto_sign: bool = True
-) -> bool:
-    if not course_matches_campus(course, campus):
+def capacity_available(course):
+    current, maximum = capacity_values(course)
+    if isinstance(current, bool) or isinstance(maximum, bool):
         return False
-    if get_course_category(course) == "其他方面":
+    if not str(current).isdigit() or not str(maximum).isdigit():
         return False
-    # 安全性铁律：全自动秒抢仅抢选支持线上自主打卡的课程（现场刷卡/核验考勤课程严禁抢选，杜绝旷课违约）
-    if not has_autonomous_sign(course):
+    return 0 <= int(current) < int(maximum)
+
+def capacity_values(course):
+    current = next((course.get(key) for key in ("courseCurrentCount", "courseCurrentNum", "currentCount") if course.get(key) is not None), None)
+    maximum = next((course.get(key) for key in ("courseMaxCount", "courseMaxNum", "maxCount") if course.get(key) is not None), None)
+    return current, maximum
+
+def is_auto_select_candidate(course, now, campus="北京", require_auto_sign=True):
+    if not course_id(course) or not course_matches_campus(course, campus):
         return False
-
-    # 检查课程是否停开/取消/已结束
-    status_str = str(course.get("courseStatus") or course.get("status") or "")
-    if any(kw in status_str for kw in ("已停开", "已取消", "未发布", "已结课", "已结束", "关闭")):
+    if get_course_category(course) not in REQUIREMENTS or not autonomous(course, require_windows=True):
         return False
-
-    # 检查上课时间：已过上课时间的课程坚决不选
-    s_dt, e_dt = parse_course_time_range(course)
-    if e_dt and e_dt <= now:
+    status = str(course.get("courseStatus") or course.get("status") or "")
+    if any(word in status for word in ("停开", "取消", "未发布", "结课", "结束", "关闭")):
         return False
-
-    # 检查选课时间窗口（如果差 <= 5 秒允许放行做高精度临近等待）
-    if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now):
-        sel_start = parse_dt(course.get("courseSelectStartDate"))
-        if sel_start and 0 < (sel_start - now).total_seconds() <= 5:
-            pass
-        else:
-            return False
-
-    # 检查容量
-    cur = course.get("courseCurrentCount") if course.get("courseCurrentCount") is not None else (course.get("courseCurrentNum") if course.get("courseCurrentNum") is not None else course.get("currentCount"))
-    max_c = course.get("courseMaxCount") if course.get("courseMaxCount") is not None else (course.get("courseMaxNum") if course.get("courseMaxNum") is not None else course.get("maxCount"))
-    if cur is not None and max_c is not None:
-        try:
-            if int(max_c) <= 0 or int(cur) >= int(max_c):
-                return False
-        except Exception:
-            pass
-    return True
-
-
+    start, end = parse_course_time_range(course)
+    return bool(start and end and now < start < end and capacity_available(course) and in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now))
 
 class BoyaScheduler:
-    def __init__(self, get_accounts_func: Callable[[], List[Any]], add_log_func: Callable[..., None]) -> None:
+    def __init__(self, get_accounts_func, add_log_func, ordinary_courses=None):
         self.get_accounts = get_accounts_func
         self.add_log = add_log_func
+        self.ordinary_courses = ordinary_courses
+        self.clock = china_now
         self.running = False
         self.interval_seconds = 60
-        self._thread: Optional[threading.Thread] = None
+        self._thread = None
         self._stop_event = threading.Event()
-        # 记录 3 次失败熔断字典：(username, target_key) -> fail_count
-        self.fail_counters: Dict[Tuple[str, Any], int] = {}
-        # 已完成操作防重记录：(username, action, course_id, date_str) -> bool
-        self.done_records: Set[str] = set()
-        # 记录选课成功或已报名的历史：(username, course_id_or_name)
-        self.chosen_history: Set[Tuple[str, str]] = set()
-        # 记录各账号后台周期静默同步已选课表的时间戳：username -> float
-        self.last_sync_times: Dict[str, float] = {}
-        # 记录各账号后台周期静默同步全量课池的时间戳：username -> float
-        self.last_pool_sync_times: Dict[str, float] = {}
-        # 记录各账号课池巡检日志心跳输出时间戳：username -> float
-        self.last_inspect_log_times: Dict[str, float] = {}
-        # 记录各账号课池守护总览日志是否已输出过（每个账号仅输出首条，彻底杜绝10分钟无意义重复刷屏）：username
-        self.logged_pool_summary: Set[str] = set()
+        self._lifecycle = threading.Lock()
+        self._tick_lock = threading.Lock()
+        self.logged_pool_summary = set()
+        self.last_sync_times = {}
+        self.last_pool_sync_times = {}
+        self.last_inspect_log_times = {}
+        self.done_records = set()
+        self.chosen_history = set()
+        self.fail_counters = {}
+        self._workers = None
+        self._warnings = {}
 
-    def start(self, interval_seconds: int = 60) -> None:
-        if self.running:
+    def _warn_course(self, acc, cid, action, message):
+        key=(acc.username,cid,action)
+        if self._warnings.get(key)==message:
             return
-        self.interval_seconds = interval_seconds
-        self.running = True
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run_loop, daemon=True, name="BoyaSchedulerThread")
-        self._thread.start()
-        self.add_log("info", f"博雅自动化守护任务已启动，巡检周期: {self.interval_seconds} 秒", category="boya")
+        if len(self._warnings)>=512:
+            self._warnings.pop(next(iter(self._warnings)))
+        self._warnings[key]=message
+        self.add_log("warning",message,username=acc.username,user_name=acc.name,category="boya")
 
-    def stop(self) -> None:
-        if not self.running:
-            return
-        self.running = False
-        self._stop_event.set()
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=2.0)
-        self.logged_pool_summary.clear()
-        self.add_log("info", "博雅自动化守护任务已停止", category="boya")
+    def start(self, interval_seconds=60):
+        with self._lifecycle:
+            if self.running:
+                return
+            if self._thread and self._thread.is_alive():
+                raise RuntimeError("旧守护仍在安全停止，暂不能重启")
+            self.interval_seconds = max(5, min(60, interval_seconds))
+            self.running = True
+            self._stop_event = threading.Event()
+            event = self._stop_event
+            self._thread = threading.Thread(target=self._run_loop, args=(event,), daemon=True, name="BoyaScheduler")
+            self._thread.start()
+        self.add_log("info", "博雅守护已启动；课池每60秒静默同步。", category="boya")
 
-    def _run_loop(self) -> None:
-        while self.running and not self._stop_event.is_set():
+    def stop(self):
+        with self._lifecycle:
+            self.running = False
+            self._stop_event.set()
+            thread = self._thread
+        if thread and thread is not threading.current_thread():
+            thread.join(timeout=2)
+        self.add_log("info", "已暂停博雅后续提交；在途请求会完成并复核。", category="boya")
+
+    def remove_account(self, username):
+        for mapping in (self.last_sync_times, self.last_pool_sync_times, self.last_inspect_log_times):
+            mapping.pop(username, None)
+        self.logged_pool_summary.discard(username)
+        self.chosen_history.difference_update(k for k in list(self.chosen_history) if k[0] == username)
+        self.done_records.difference_update(k for k in list(self.done_records) if k.startswith(username + "_"))
+        for key in list(self.fail_counters):
+            if key[0] == username:
+                self.fail_counters.pop(key, None)
+        for key in list(self._warnings):
+            if key[0]==username:
+                self._warnings.pop(key,None)
+
+    def _run_loop(self, event):
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=4, thread_name_prefix="BoyaAccount") as workers:
+            self._workers = workers
             try:
-                self.tick()
-            except Exception as e:
-                logger.error(f"BoyaScheduler tick error: {e}", exc_info=True)
+                while self.running and not event.is_set():
+                    self.tick(event)
+                    event.wait(min(self.interval_seconds, 10))
+            finally:
+                self._workers = None
 
-            # 智能夜间免打扰策略：23:30 ~ 07:00 校园服务休眠期，自动降频等待 180 秒，杜绝无意义的网络频繁唤醒
-            now = datetime.now()
-            is_deep_night = (now.hour == 23 and now.minute >= 30) or (0 <= now.hour < 7)
-            wait_sec = 180 if is_deep_night else self.interval_seconds
-            self._stop_event.wait(wait_sec)
-
-    def _renew_session(self, acc: Any) -> bool:
-        """尝试自动为账号静默续期博雅 Token（支持从 Cookies 换取或通过凭据全自动重新登录）"""
+    def _renew_session(self, acc):
+        if getattr(acc, "removed", False) or getattr(acc, "maintenance", False) or getattr(acc, "auth_requires_input", False):
+            return False
         try:
             acc.boya_client.sync_cookies_from(acc.client.client.cookies)
             token = acc.boya_client.acquire_token()
             if token:
-                self.add_log("info", f"【{acc.name}】博雅会话已自动静默续期成功！", username=acc.username, user_name=acc.name, category="boya")
                 return True
-        except Exception as e:
-            logger.debug(f"Auto renew boya token via cookies failed for {acc.username}: {e}")
+        except Exception:
+            pass
+        if not getattr(acc, "password", None):
+            return False
+        if time.monotonic() < getattr(acc, "boya_auth_retry_after", 0):
+            return False
+        acc.boya_auth_retry_after = time.monotonic() + 60
+        try:
+            return bool(acc.boya_client.login_with_credentials(acc.username, acc.password))
+        except BoyaApiError as exc:
+            if exc.code == "captcha_required":
+                acc.auth_requires_input = True
+            return False
+        except Exception:
+            return False
 
-        # 若从已有 cookies 换取失败，且该账号保存了登录密码，使用 credentials 全自动重新登录
-        pwd = getattr(acc, "password", None)
-        if pwd:
-            try:
-                token = acc.boya_client.login_with_credentials(acc.username, pwd)
-                if token:
-                    self.add_log("success", f"【{acc.name}】博雅凭据已自动重新登录认证成功，守护服务无缝恢复！", username=acc.username, user_name=acc.name, category="boya")
-                    return True
-            except Exception as login_err:
-                logger.debug(f"Auto renew boya token via credentials failed for {acc.username}: {login_err}")
-
-        return False
-
-    def tick(self) -> None:
-        now = datetime.now()
-        is_deep_night = (now.hour == 23 and now.minute >= 30) or (0 <= now.hour < 7)
-        pool_sync_interval = 1800 if is_deep_night else 60
-        chosen_sync_interval = 1800 if is_deep_night else 300
-        accounts = self.get_accounts()
-
-        for acc in accounts:
-            if not getattr(acc, "boya_auto_select", False) and not getattr(acc, "boya_auto_sign", False):
-                continue
-            username = acc.username
-            user_name = acc.name
-            boya_client: BoyaClient = getattr(acc, "boya_client", None)
-            if not boya_client or not boya_client.is_authenticated():
-                if not self._renew_session(acc):
-                    continue
-
-            # 首次运行或定期静默同步最新已选课程
-            # 确保无论课程是本软件自动抢到的，还是学生在微信小程序/学校官网自行选中的，都能被守护引擎自动捕获并无缝纳入自动签到/签退！
-            need_sync = False
-            last_sync = self.last_sync_times.get(username)
-            if last_sync is None:
-                if getattr(acc, "boya_selected_courses", None) is None:
-                    need_sync = True
-                else:
-                    self.last_sync_times[username] = time.time()
-            elif time.time() - last_sync > chosen_sync_interval:
-                need_sync = True
-
-            if need_sync:
-                try:
-                    synced = acc.boya_client.query_chosen_courses()
-                    if synced is not None:
-                        acc.boya_selected_courses = synced
+    def tick(self, event=None):
+        if not self._tick_lock.acquire(blocking=False):
+            return
+        try:
+            active = [a for a in self.get_accounts() if not getattr(a, "removed", False) and (getattr(a, "boya_auto_select", False) or getattr(a, "boya_auto_sign", False))]
+            if self._workers:
+                futures = [self._workers.submit(self._check_account, a, event) for a in active]
+                for future in futures:
                     try:
-                        stats = acc.boya_client.query_statistics()
-                        if stats:
-                            acc.boya_statistics = stats
-                    except Exception:
-                        pass
-                    self.last_sync_times[username] = time.time()
-                except BoyaSessionExpired:
-                    if self._renew_session(acc):
-                        try:
-                            synced = acc.boya_client.query_chosen_courses()
-                            if synced is not None:
-                                acc.boya_selected_courses = synced
-                            try:
-                                stats = acc.boya_client.query_statistics()
-                                if stats:
-                                    acc.boya_statistics = stats
-                            except Exception:
-                                pass
-                            self.last_sync_times[username] = time.time()
-                        except Exception:
-                            pass
-                except Exception as sync_e:
-                    logger.debug(f"Auto sync chosen courses error for {username}: {sync_e}")
-                    self.last_sync_times[username] = time.time()
+                        future.result()
+                    except Exception as exc:
+                        logger.warning("博雅账号任务异常: %s", type(exc).__name__)
+            else:
+                for acc in active:
+                    self._check_account(acc, event)
+        finally:
+            self._tick_lock.release()
 
-            # 1.1 若开启自动抢课，定期静默同步全量课池，实时捕捉新放号与退选名额
-            if getattr(acc, "boya_auto_select", False):
-                last_p_sync = self.last_pool_sync_times.get(username, 0)
-                if getattr(acc, "boya_all_courses", None) is None or (time.time() - last_p_sync > pool_sync_interval):
-                    try:
-                        synced_pool = acc.boya_client.query_courses(max_pages=3)
-                        if synced_pool is not None:
-                            acc.boya_all_courses = synced_pool
-                        self.last_pool_sync_times[username] = time.time()
-                    except BoyaSessionExpired:
-                        if self._renew_session(acc):
-                            try:
-                                synced_pool = acc.boya_client.query_courses(max_pages=3)
-                                if synced_pool is not None:
-                                    acc.boya_all_courses = synced_pool
-                                self.last_pool_sync_times[username] = time.time()
-                            except Exception:
-                                pass
-                    except Exception as pool_e:
-                        logger.debug(f"Auto sync boya pool error for {username}: {pool_e}")
-                        self.last_pool_sync_times[username] = time.time()
-
-            # 1.2 自动抢选课流程
-            if getattr(acc, "boya_auto_select", False):
-                self._check_auto_select(acc, now)
-
-            # 2. 自动签到/签退流程（覆盖全部已选课程，包含自选与代抢课程）
-            if getattr(acc, "boya_auto_sign", False):
-                self._check_auto_sign(acc, now)
-
-
-    def _check_auto_select(self, acc: Any, now: datetime) -> None:
-        username = acc.username
-        user_name = acc.name
-        campus = getattr(acc, "campus", "北京")
-        cached_courses: List[Dict[str, Any]] = getattr(acc, "boya_all_courses", [])
-        
-        # 安全铁律：全自动秒抢严格仅限支持线上自主打卡课程（严禁抢选现场刷卡考勤课程，从源头杜绝旷课违约）
-        require_auto_sign = True
-
-        # 建立当前已选课程的完备索引（提取所有可能的 ID 形式与课程名）
-        selected_ids: Set[str] = set()
-        selected_names: Set[str] = set()
-        enrolled_courses = getattr(acc, "boya_selected_courses", []) or []
-        for c in enrolled_courses:
-            for k in ("id", "courseId", "course_id", "chosenCourseId"):
-                v = c.get(k)
-                if v is not None:
-                    selected_ids.add(str(v))
-            name = (c.get("courseName") or c.get("name") or "").strip()
-            if name:
-                selected_names.add(name)
-
-        full_count = 0
-        upcoming_count = 0
-        chosen_count = 0
-        past_count = 0
-        conflict_count = 0
-        offline_count = 0
-        candidates = []
-
-        for course in cached_courses:
-            cid = course.get("id") or course.get("courseId")
-            if not cid:
-                continue
-            cid_str = str(cid)
-            cname = (course.get("courseName") or course.get("name") or cid_str).strip()
-
-            # 防重检查 1：已在已选课程列表中
-            if cid_str in selected_ids or cname in selected_names:
-                chosen_count += 1
-                continue
-
-            # 防重检查 2：已在运行时已选历史中（已抢中或服务端提示已报名过）
-            if (username, cid_str) in self.chosen_history or (username, cname) in self.chosen_history:
-                chosen_count += 1
-                continue
-
-            # 检查熔断：连续失败达 3 次则本轮停止重试
-            fail_key = (username, cid)
-            fail_key_str = (username, cid_str)
-            if self.fail_counters.get(fail_key, 0) >= 3 or self.fail_counters.get(fail_key_str, 0) >= 3:
-                continue
-
-            # 致命安全性防线：严格排除不支持线上自动打卡的现场刷卡/线下核验考勤课程
-            # 既然软件无法为其线上自动打卡，抢下后学生如果未亲临现场刷卡，将直接导致旷课违约记过扣分！
-            if require_auto_sign and not has_autonomous_sign(course):
-                offline_count += 1
-                continue
-
-            # 统计各课程时间与容量状态
-            s_start = course.get("courseSelectStartDate")
-            s_end = course.get("courseSelectEndDate")
-            parsed_s = parse_dt(s_start)
-            parsed_e = parse_dt(s_end)
-            if parsed_s and now < parsed_s:
-                diff = (parsed_s - now).total_seconds()
-                # 只有大于5秒的才算作未开始，<=5秒放行进行毫秒级倒计时抢选
-                if diff > 5:
-                    upcoming_count += 1
-                    continue
-            if parsed_e and now > parsed_e:
-                past_count += 1
-                continue
-
-            cur = course.get("courseCurrentCount")
-            max_c = course.get("courseMaxCount")
-            if cur is not None and max_c is not None:
-                try:
-                    if int(max_c) <= 0 or int(cur) >= int(max_c):
-                        full_count += 1
-                        continue
-                except Exception:
-                    pass
-
-            # 防选错检查：上课时间冲突检测（与学生本学期已选的任一门博雅课程上课时间重叠则坚决不选）
-            conflict_course = None
-            for enrolled in enrolled_courses:
-                if courses_time_overlap(course, enrolled):
-                    conflict_course = enrolled
-                    break
-            if conflict_course:
-                conflict_count += 1
-                continue
-
-            # 检查候选条件（校区、分类、选课时间窗口、容量、已过上课时间排除、线上自主打卡校验）
-            if is_auto_select_candidate(course, now, campus=campus, require_auto_sign=require_auto_sign):
-                candidates.append(course)
-
-        # 智能优先级排序：计算当前学期达标缺口，缺口越大的板块优先排序，已达标板块沉底
-        sem_start, sem_end, _ = get_current_semester_range(now)
-        demands = get_user_category_demands(enrolled_courses, sem_start, sem_end)
-        candidates.sort(key=lambda c: calculate_candidate_priority(c, demands), reverse=True)
-
-        # 仅在初次开启或初次课池同步时向个人日志输出一条守护态势总览，后续每 10 分钟在后台静默巡检，彻底杜绝刷屏
-        if username not in self.logged_pool_summary:
-            self.logged_pool_summary.add(username)
-            self.last_inspect_log_times[username] = time.time()
-            guard_note = f"，{offline_count}门非线上打卡安全排除" if offline_count > 0 or require_auto_sign else ""
-            self.add_log(
-                "info",
-                f"【{user_name}】博雅抢课守护中：全校课池共 {len(cached_courses)} 门（{full_count}门满额{guard_note}，{upcoming_count}门待开放，{chosen_count}门已选，{conflict_count}门时冲跳过），保持毫秒级巡检捡漏与定点抢选...",
-                username=username,
-                user_name=user_name,
-                category="boya",
-            )
-
-        for course in candidates:
-            cid = course.get("id") or course.get("courseId")
-            cid_str = str(cid)
-            cname = (course.get("courseName") or course.get("name") or cid_str).strip()
-            fail_key = (username, cid)
-            fail_key_str = (username, cid_str)
-
-            # 选课开始时间临界点高精度等待（若在 0 < diff <= 5 秒内，高精度倒计时对齐开抢时刻）
-            s_start = course.get("courseSelectStartDate")
-            parsed_s = parse_dt(s_start)
-            if parsed_s and now < parsed_s:
-                diff = (parsed_s - now).total_seconds()
-                if 0 < diff <= 5:
-                    time.sleep(diff)
-
-            # 防封号与频控保护：请求抖动随机延时 0.5s ~ 1.2s，模拟真人操作
-            time.sleep(random.uniform(0.5, 1.2))
-
-            self.add_log(
-                "info",
-                f"发现符合策略的博雅课程 [{cname} (ID: {cid})]，正在触发自动抢课...",
-                username=username,
-                user_name=user_name,
-                category="boya",
-            )
-            try:
-                res = acc.boya_client.select_course(cid)
-                # 抢课成功！登记历史防重
-                self.chosen_history.add((username, cid_str))
-                self.chosen_history.add((username, cname))
-                self.fail_counters.pop(fail_key, None)
-                self.fail_counters.pop(fail_key_str, None)
-                has_sign = has_autonomous_sign(course)
-                sign_hint = "支持线上自主打卡，开课时将自动微扰打卡" if has_sign else "⚠️ 严正提醒：该课程需主办方现场刷卡/线下核验考勤，请务必亲临现场刷卡！"
-                self.add_log(
-                    "success",
-                    f"🎉 成功抢中博雅课程 [{cname}]！{sign_hint}",
-                    username=username,
-                    user_name=user_name,
-                    category="boya",
-                )
-                # 选课成功后，刷新已选列表
-                try:
+    def _check_account(self, acc, event):
+        from core.boya_actions import account_lock, reconcile_official
+        def active():
+            return not getattr(acc, "removed", False) and not getattr(acc, "maintenance", False) and (event is None or (self.running and not event.is_set()))
+        if not active():
+            return
+        try:
+            with account_lock(acc):
+                if not acc.boya_client.is_authenticated() and not self._renew_session(acc):
+                    raise BoyaSessionExpired("请重新认证或输入验证码")
+                stamp = time.monotonic()
+                if acc.username not in self.last_sync_times or stamp-self.last_sync_times[acc.username] >= 60:
                     acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                except Exception:
-                    pass
-            except BoyaApiError as e:
-                err_msg = str(e.message or "")
-                already_selected_keywords = ["已报名", "重复报名", "已经选", "已存在", "已参加", "请勿重复", "不可重复"]
-                if any(kw in err_msg for kw in already_selected_keywords):
-                    # 服务器反馈已经报名或不可重复，明确为已选课程，坚决不再重复发送请求！
-                    self.chosen_history.add((username, cid_str))
-                    self.chosen_history.add((username, cname))
-                    self.fail_counters.pop(fail_key, None)
-                    self.fail_counters.pop(fail_key_str, None)
-                    self.add_log(
-                        "info",
-                        f"博雅课程 [{cname} (ID: {cid})] 提示已报名/已在选课记录中，已自动标记并停止后续抢课请求。",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
-                    try:
-                        acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                    except Exception:
-                        pass
-                else:
-                    self.fail_counters[fail_key] = self.fail_counters.get(fail_key, 0) + 1
-                    self.fail_counters[fail_key_str] = self.fail_counters[fail_key]
-                    attempts = self.fail_counters[fail_key]
-                    if attempts >= 3:
-                        self.add_log(
-                            "warning",
-                            f"抢课 [{cname}] 连续尝试失败达到安全上限 (3次)，已触发熔断保护，本轮停止重试以防风控。",
-                            username=username,
-                            user_name=user_name,
-                            category="boya",
-                        )
-                    else:
-                        self.add_log(
-                            "warning",
-                            f"抢课 [{cname}] 响应提示: {e.message} (重试 {attempts}/3 次)",
-                            username=username,
-                            user_name=user_name,
-                            category="boya",
-                        )
-            except Exception as e:
-                self.add_log(
-                    "error",
-                    f"抢课 [{cname}] 发生网络异常: {e}",
-                    username=username,
-                    user_name=user_name,
-                    category="boya",
-                )
+                    reconcile_official(acc, acc.boya_selected_courses)
+                    self.last_sync_times[acc.username] = time.monotonic()
+                    acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
+                if acc.username not in self.last_pool_sync_times or stamp-self.last_pool_sync_times[acc.username] >= 60:
+                    acc.boya_all_courses = acc.boya_client.query_courses()
+                    self.last_pool_sync_times[acc.username] = time.monotonic()
+                    acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
+                acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": False, "error": None, "next_sync_in_seconds": max(0, round(60-(time.monotonic()-self.last_sync_times[acc.username])))}
+            if acc.username not in self.logged_pool_summary:
+                self.logged_pool_summary.add(acc.username)
+                excluded = sum(not autonomous(c, require_windows=True) for c in (acc.boya_all_courses or []))
+                message = f"博雅抢课守护中：全校课池共 {len(acc.boya_all_courses or [])} 门，{excluded} 门非线上打卡安全排除；持续静默同步。"
+                self.add_log("info", message, username=acc.username, user_name=acc.name, category="boya")
+            if active() and getattr(acc, "boya_auto_select", False):
+                self._check_auto_select(acc, self.clock(), active)
+            if active() and getattr(acc, "boya_auto_sign", False):
+                self._check_auto_sign(acc, self.clock(), active)
+        except Exception as exc:
+            error = type(exc).__name__
+            previous = getattr(acc, "boya_health", {}).get("error")
+            acc.boya_health = {"stale": True, "error": error, "last_success": getattr(acc, "boya_health", {}).get("last_success")}
+            if previous != error:
+                self.add_log("warning", "博雅同步/守护暂不可用：" + error, username=acc.username, user_name=acc.name, category="boya")
 
-
-    def _check_auto_sign(self, acc: Any, now: datetime) -> None:
-        username = acc.username
-        user_name = acc.name
-        chosen_courses: List[Dict[str, Any]] = getattr(acc, "boya_selected_courses", [])
-        today_str = now.strftime("%Y-%m-%d")
-
-        for course in chosen_courses:
-            cid = course.get("id") or course.get("courseId")
-            if not cid:
-                continue
-            cid_str = str(cid)
-            cname = course.get("courseName") or course.get("name") or cid_str
-
-            # 检查课程状态：已结课或已结束跳过
-            status_str = str(course.get("courseStatus") or course.get("status") or "")
-            if "结课" in status_str or "结束" in status_str:
-                continue
-
-            cfg = parse_sign_config(course.get("courseSignConfig"))
-            points = cfg.get("signPointList") or []
-            
-            # 【重要逻辑增强】：如果学生手动在手机/网页端选的课在已选课程接口中缺少签到配置，
-            # 自动从全量学期课池 boya_all_courses 中检索补齐老师配置的签到定位经纬度与时间窗口！
-            if not points:
-                pool_match = next((c for c in getattr(acc, "boya_all_courses", []) if (
-                    str(c.get("id")) == cid_str or str(c.get("courseId")) == cid_str or 
-                    (c.get("courseName") and c.get("courseName") == course.get("courseName"))
-                )), None)
-                if pool_match:
-                    cfg = parse_sign_config(pool_match.get("courseSignConfig"))
-                    points = cfg.get("signPointList") or []
-                    if not course.get("courseStartDate"):
-                        course["courseStartDate"] = pool_match.get("courseStartDate")
-                        course["courseStartTime"] = pool_match.get("courseStartTime")
-                        course["courseEndDate"] = pool_match.get("courseEndDate")
-                        course["courseEndTime"] = pool_match.get("courseEndTime")
-
-            if not points:
-                continue  # 无自主定位打卡配置（如线下纸质签名或闸机刷卡课），安全跳过
-
-            ref_point = points[-1]
+    def _check_auto_select(self, acc, now, active=lambda: True):
+        from core.boya_actions import perform_boya_action
+        info = acc.boya_client.semester_info
+        start, end = semester_bounds(info or {})
+        if not start or not end:
+            return
+        demands = get_user_category_demands(acc.boya_selected_courses, start, end, getattr(acc, "boya_targets", None))
+        candidates = [c for c in (acc.boya_all_courses or []) if is_auto_select_candidate(c, self.clock(), getattr(acc, "campus", "北京"))]
+        candidates.sort(key=lambda c: calculate_candidate_priority(c, demands), reverse=True)
+        for course in candidates:
+            if not active() or not getattr(acc, "boya_auto_select", False):
+                break
             try:
-                base_lat = float(ref_point.get("lat") or ref_point.get("signLat") or 0)
-                base_lng = float(ref_point.get("lng") or ref_point.get("signLng") or 0)
-                radius = float(ref_point.get("radius") or ref_point.get("signRadius") or 15)
-            except (ValueError, TypeError):
-                continue
+                result = perform_boya_action(acc, "select", course_id(course), automatic=True, guard=lambda: active() and acc.boya_auto_select, renew=self._renew_session, ordinary=self.ordinary_courses)
+                if result.get("submitted"):
+                    self._warnings.pop((acc.username,course_id(course),"select"),None)
+                    self.add_log("success", "博雅选课请求已被学校接受。", username=acc.username, user_name=acc.name, category="boya")
+                if result.get("pending_verification"):
+                    break
+            except (BoyaApiError, BoyaSessionExpired) as exc:
+                self._warn_course(acc,course_id(course),"select","本门选课暂未执行：" + str(exc))
+            except Exception as exc:
+                self._warn_course(acc,course_id(course),"select","本门选课异常：" + type(exc).__name__)
 
-            sign_info_obj = None
-            if course.get("signInfo"):
+    def _check_auto_sign(self, acc, now, active=lambda: True):
+        from core.boya_actions import perform_boya_action, merge_selected
+        from core.domain import attendance_allowed
+        for raw in list(acc.boya_selected_courses or []):
+            for sign_type in (1, 2):
+                if not active() or not getattr(acc, "boya_auto_sign", False):
+                    return
+                course = merge_selected(raw, acc.boya_all_courses or [])
+                if not attendance_allowed(course, sign_type, self.clock()):
+                    continue
                 try:
-                    s_raw = course["signInfo"]
-                    sign_info_obj = json.loads(s_raw) if isinstance(s_raw, str) else s_raw
-                except Exception:
-                    pass
-
-            # 1. 签到检查
-            sign_key = f"{username}_sign_{cid_str}_{today_str}"
-            already_signed = bool(
-                course.get("signStatus") == 1
-                or course.get("courseSignStatus") == 1
-                or course.get("signInStatus") == 1
-                or (sign_info_obj and isinstance(sign_info_obj, dict) and sign_info_obj.get("signIn"))
-            )
-            if already_signed:
-                self.done_records.add(sign_key)
-
-            sign_fail_key = (username, f"sign_{cid_str}_{today_str}")
-            if sign_key not in self.done_records and self.fail_counters.get(sign_fail_key, 0) < 3:
-                in_sign_window = in_window(cfg.get("signStartDate"), cfg.get("signEndDate"), now)
-                if not in_sign_window and not cfg.get("signStartDate"):
-                    c_start = parse_dt(f"{course.get('courseStartDate')} {course.get('courseStartTime')}") if course.get('courseStartDate') and course.get('courseStartTime') else None
-                    if c_start:
-                        from datetime import timedelta
-                        if c_start - timedelta(minutes=15) <= now <= c_start + timedelta(minutes=30):
-                            in_sign_window = True
-
-                if in_sign_window:
-                    # 请求抖动与防频控保护
-                    time.sleep(random.uniform(0.5, 1.0))
-                    lat, lng = random_point_in_radius(base_lat, base_lng, radius)
-                    self.add_log(
-                        "info",
-                        f"进入博雅课程 [{cname}] 签到窗口，正在生成定位坐标 ({lat}, {lng}) 提交签到...",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
-                    try:
-                        acc.boya_client.sign_course(cid, lat, lng, sign_type=1)
-                        self.done_records.add(sign_key)
-                        self.fail_counters.pop(sign_fail_key, None)
-                        self.add_log(
-                            "success",
-                            f"✅ 博雅课程 [{cname}] 自动签到成功！",
-                            username=username,
-                            user_name=user_name,
-                            category="boya",
-                        )
-                        # 步骤完成铁律：自动签到成功后立即同步最新已选列表与学分统计
-                        try:
-                            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                            acc.boya_statistics = acc.boya_client.query_statistics()
-                            acc.boya_last_refresh_time = datetime.now().strftime("%H:%M:%S")
-                        except Exception as ref_err:
-                            logger.debug(f"Post-signin Boya refresh error for {username}: {ref_err}")
-                    except Exception as e:
-                        err_msg = str(e)
-                        if any(kw in err_msg for kw in ["已签到", "不能重复", "已完成"]):
-                            self.done_records.add(sign_key)
-                            self.fail_counters.pop(sign_fail_key, None)
-                            self.add_log("info", f"博雅课程 [{cname}] 提示已完成签到，记录完成状态。", username=username, user_name=user_name, category="boya")
-                        else:
-                            self.fail_counters[sign_fail_key] = self.fail_counters.get(sign_fail_key, 0) + 1
-                            attempts = self.fail_counters[sign_fail_key]
-                            self.add_log(
-                                "warning" if attempts < 3 else "error",
-                                f"博雅课程 [{cname}] 自动签到未能完成: {e} ({attempts}/3 次)",
-                                username=username,
-                                user_name=user_name,
-                                category="boya",
-                            )
-
-            # 2. 签退检查
-            signout_key = f"{username}_signout_{cid_str}_{today_str}"
-            already_signed_out = bool(
-                course.get("signOutStatus") == 1
-                or course.get("courseSignOutStatus") == 1
-                or (sign_info_obj and isinstance(sign_info_obj, dict) and sign_info_obj.get("signOut"))
-            )
-            if already_signed_out:
-                self.done_records.add(signout_key)
-
-            signout_fail_key = (username, f"signout_{cid_str}_{today_str}")
-            if signout_key not in self.done_records and self.fail_counters.get(signout_fail_key, 0) < 3:
-                in_signout_window = in_window(cfg.get("signOutStartDate"), cfg.get("signOutEndDate"), now)
-                if not in_signout_window and not cfg.get("signOutStartDate"):
-                    c_end = parse_dt(f"{course.get('courseEndDate')} {course.get('courseEndTime')}") if course.get('courseEndDate') and course.get('courseEndTime') else None
-                    if c_end:
-                        from datetime import timedelta
-                        if c_end - timedelta(minutes=15) <= now <= c_end + timedelta(minutes=30):
-                            in_signout_window = True
-
-                if in_signout_window:
-                    # 请求抖动与防频控保护
-                    time.sleep(random.uniform(0.5, 1.0))
-                    lat, lng = random_point_in_radius(base_lat, base_lng, radius)
-                    self.add_log(
-                        "info",
-                        f"进入博雅课程 [{cname}] 签退窗口，正在生成定位坐标 ({lat}, {lng}) 提交签退...",
-                        username=username,
-                        user_name=user_name,
-                        category="boya",
-                    )
-                    try:
-                        acc.boya_client.sign_course(cid, lat, lng, sign_type=2)
-                        self.done_records.add(signout_key)
-                        self.fail_counters.pop(signout_fail_key, None)
-                        self.add_log(
-                            "success",
-                            f"🏁 博雅课程 [{cname}] 自动签退成功！",
-                            username=username,
-                            user_name=user_name,
-                            category="boya",
-                        )
-                        # 步骤完成铁律：自动签退成功后立即同步最新已选列表与学分统计
-                        try:
-                            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                            acc.boya_statistics = acc.boya_client.query_statistics()
-                            acc.boya_last_refresh_time = datetime.now().strftime("%H:%M:%S")
-                        except Exception as ref_err:
-                            logger.debug(f"Post-signout Boya refresh error for {username}: {ref_err}")
-                    except Exception as e:
-                        err_msg = str(e)
-                        if any(kw in err_msg for kw in ["已签退", "不能重复", "已完成"]):
-                            self.done_records.add(signout_key)
-                            self.fail_counters.pop(signout_fail_key, None)
-                            self.add_log("info", f"博雅课程 [{cname}] 提示已完成签退，记录完成状态。", username=username, user_name=user_name, category="boya")
-                        else:
-                            self.fail_counters[signout_fail_key] = self.fail_counters.get(signout_fail_key, 0) + 1
-                            attempts = self.fail_counters[signout_fail_key]
-                            self.add_log(
-                                "warning" if attempts < 3 else "error",
-                                f"博雅课程 [{cname}] 自动签退未能完成: {e} ({attempts}/3 次)",
-                                username=username,
-                                user_name=user_name,
-                                category="boya",
-                            )
+                    result = perform_boya_action(acc, "sign", course_id(course), sign_type=sign_type, automatic=True, guard=lambda: active() and acc.boya_auto_sign, renew=self._renew_session)
+                    if result.get("submitted"):
+                        self._warnings.pop((acc.username,course_id(course),"sign"+str(sign_type)),None)
+                        self.add_log("success", "博雅考勤请求已被学校接受，最终考核以官方结果为准。", username=acc.username, user_name=acc.name, category="boya")
+                    if result.get("pending_verification"):
+                        return
+                except Exception as exc:
+                    self._warn_course(acc,course_id(course),"sign"+str(sign_type),"本门考勤暂未完成：" + type(exc).__name__)

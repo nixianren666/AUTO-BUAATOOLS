@@ -17,7 +17,14 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal, Annotated
+import tempfile
+from core.version import VERSION
+from core import operations
+from core.domain import now as china_now, course_id, course_times, sign_config, attendance_allowed, within_semester, semester_bounds, REQUIREMENTS
+from core.boya_actions import perform_boya_action, merge_selected, account_lock
+from server.management import install as install_management
 
 from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
@@ -26,62 +33,7 @@ from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_a
 from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
 
 
-def resolve_config_path() -> pathlib.Path:
-    """
-    智能解析配置文件路径：
-    1. 便携版模式优先读取 exe 所在同级目录的 config.json；
-    2. 若同级目录不可写（如标准安装在 Program Files），则切换到用户 APPDATA 目录；
-    3. 若 APPDATA 中尚无配置，且桌面或工作区有旧配置，自动平滑继承。
-    """
-    if getattr(sys, "frozen", False):
-        exe_dir = pathlib.Path(sys.executable).parent
-        portable_cfg = exe_dir / "config.json"
-        if portable_cfg.exists():
-            return portable_cfg
-
-        if sys.platform == "darwin":
-            mac_support_dir = pathlib.Path.home() / "Library" / "Application Support" / "BUAA-Signin"
-            mac_support_dir.mkdir(parents=True, exist_ok=True)
-            mac_cfg = mac_support_dir / "config.json"
-            if mac_cfg.exists():
-                return mac_cfg
-            # 也可检查 .app 同级目录的便携式配置
-            app_bundle_dir = exe_dir.parent.parent.parent
-            if (app_bundle_dir / "config.json").exists():
-                return app_bundle_dir / "config.json"
-            return mac_cfg
-
-        if sys.platform.startswith("linux"):
-            cwd_cfg = pathlib.Path.cwd() / "config.json"
-            if cwd_cfg.exists():
-                return cwd_cfg
-            linux_cfg_dir = pathlib.Path.home() / ".config" / "buaa-signin"
-            linux_cfg_dir.mkdir(parents=True, exist_ok=True)
-            return linux_cfg_dir / "config.json"
-
-        appdata = os.environ.get("APPDATA")
-        if appdata:
-            appdata_dir = pathlib.Path(appdata) / "BUAA-Signin"
-            appdata_dir.mkdir(parents=True, exist_ok=True)
-            appdata_cfg = appdata_dir / "config.json"
-            if appdata_cfg.exists():
-                return appdata_cfg
-
-        # 测试 exe_dir 是否可写
-        try:
-            test_file = exe_dir / ".write_test"
-            test_file.touch()
-            test_file.unlink()
-            return portable_cfg
-        except Exception:
-            if appdata:
-                appdata_dir = pathlib.Path(appdata) / "BUAA-Signin"
-                appdata_dir.mkdir(parents=True, exist_ok=True)
-                return appdata_dir / "config.json"
-            return portable_cfg
-    else:
-        base_dir = pathlib.Path(__file__).parent.parent
-        return base_dir / "config.json"
+from core.profile import resolve_config_path
 
 
 if getattr(sys, "frozen", False):
@@ -95,7 +47,7 @@ else:
 CONFIG_FILE = resolve_config_path()
 
 # 跨模式平滑同步：若当前配置文件不存在，自动尝试从桌面项目目录或 APPDATA 互通导入
-if not CONFIG_FILE.exists():
+if not CONFIG_FILE.exists() and not os.environ.get("BUAA_CONFIG_FILE") and os.environ.get("TESTING") != "1":
     try:
         candidate_paths = [
             pathlib.Path.home() / "Desktop" / "ubaa" / "config.json",
@@ -113,18 +65,27 @@ if not CONFIG_FILE.exists():
         pass
 
 
+config_read_error = False
+
 def load_config() -> Dict[str, Any]:
+    global config_read_error
+    config_read_error = False
     if CONFIG_FILE.exists():
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                if not isinstance(data, dict):
+                    raise ValueError("配置格式无效")
                 # 兼容旧版本单账号配置
                 if "accounts" not in data:
                     accounts_list = []
                     if data.get("username"):
                         pwd = data.get("password", "")
                         if pwd:
-                            pwd = decrypt_local_secret(pwd)
+                            try:
+                                pwd = decrypt_local_secret(pwd)
+                            except Exception:
+                                pwd = ""
                         accounts_list.append({
                             "username": data.get("username", ""),
                             "name": data.get("username", ""),
@@ -132,6 +93,7 @@ def load_config() -> Dict[str, Any]:
                             "remember": data.get("remember", False),
                             "mode": data.get("mode", "auto"),
                             "auto_checkin": data.get("auto_checkin", False),
+                            "_protected_password": data.get("password", ""),
                         })
                     data = {
                         "active_username": data.get("username", ""),
@@ -141,11 +103,18 @@ def load_config() -> Dict[str, Any]:
                     }
                 else:
                     for acc in data.get("accounts", []):
+                        if not isinstance(acc, dict):
+                            raise ValueError("账号配置格式无效")
                         if acc.get("password"):
-                            acc["password"] = decrypt_local_secret(acc["password"])
+                            acc["_protected_password"] = acc["password"]
+                            try:
+                                acc["password"] = decrypt_local_secret(acc["password"])
+                            except Exception:
+                                acc["password"] = ""
+                                acc["auto_checkin"] = acc["boya_auto_select"] = acc["boya_auto_sign"] = False
                 return data
         except Exception:
-            pass
+            config_read_error = True
     return {
         "active_username": "",
         "accounts": [],
@@ -154,59 +123,27 @@ def load_config() -> Dict[str, Any]:
     }
 
 
-def save_config(cfg: Dict[str, Any]):
-    global CONFIG_FILE
+def save_config(cfg):
     if os.environ.get("TESTING") == "1":
         return
+    if config_read_error:
+        raise RuntimeError("原配置无法读取，已保留原文件；请先恢复配置再保存")
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=".config-", suffix=".json", dir=CONFIG_FILE.parent)
     try:
-        CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        # 如果当前位置不可写，自动降级切换至用户数据目录写入
-        if sys.platform == "darwin":
-            mac_support_dir = pathlib.Path.home() / "Library" / "Application Support" / "BUAA-Signin"
-            mac_support_dir.mkdir(parents=True, exist_ok=True)
-            fallback_cfg = mac_support_dir / "config.json"
-            try:
-                with open(fallback_cfg, "w", encoding="utf-8") as f:
-                    json.dump(cfg, f, ensure_ascii=False, indent=2)
-                CONFIG_FILE = fallback_cfg
-            except Exception:
-                pass
-        elif sys.platform.startswith("linux"):
-            linux_cfg_dir = pathlib.Path.home() / ".config" / "buaa-signin"
-            linux_cfg_dir.mkdir(parents=True, exist_ok=True)
-            fallback_cfg = linux_cfg_dir / "config.json"
-            try:
-                with open(fallback_cfg, "w", encoding="utf-8") as f:
-                    json.dump(cfg, f, ensure_ascii=False, indent=2)
-                CONFIG_FILE = fallback_cfg
-            except Exception:
-                pass
-        else:
-            appdata = os.environ.get("APPDATA")
-            if appdata:
-                fallback_cfg = pathlib.Path(appdata) / "BUAA-Signin" / "config.json"
-                fallback_cfg.parent.mkdir(parents=True, exist_ok=True)
-                try:
-                    with open(fallback_cfg, "w", encoding="utf-8") as f:
-                        json.dump(cfg, f, ensure_ascii=False, indent=2)
-                    CONFIG_FILE = fallback_cfg
-                except Exception:
-                    pass
-        print(f"Failed to save config: {e}")
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(cfg, stream, ensure_ascii=False, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, CONFIG_FILE)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
-
-app = FastAPI(title="BUAA Course Signin Multi-Account")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="BUAA Course Signin Multi-Account", version=VERSION)
+install_management(app)
+operations.configure(CONFIG_FILE.with_name("operations.sqlite"))
 
 # 结构化运行日志
 logs_list: List[Dict[str, Any]] = []
@@ -248,6 +185,18 @@ class AccountState:
         boya_allow_offline: bool = False,
         campus: str = "北京",
     ):
+        self.removed = False
+        self.auth_lock = asyncio.Lock()
+        self.maintenance = False
+        self.auth_epoch = 0
+        self.auth_retry_after = 0.0
+        self.auth_requires_input = False
+        self.protected_password = ""
+        self.boya_lock = __import__("threading").RLock()
+        self.boya_pending_courses = operations.ledger.reservations(username)
+        self.boya_targets = dict(REQUIREMENTS)
+        self.regular_health = {"stale": True, "last_success": None}
+        self.boya_health = {"stale": True, "last_success": None}
         self.username = username
         self.name = name or username
         self.password = password
@@ -256,11 +205,15 @@ class AccountState:
         self.auto_checkin = auto_checkin
         self.boya_auto_select = boya_auto_select
         self.boya_auto_sign = boya_auto_sign
-        self.boya_require_auto_sign = boya_require_auto_sign
-        self.boya_allow_offline = boya_allow_offline
+        self.boya_require_auto_sign = True
+        self.boya_allow_offline = False
         self.campus = campus or "北京"
         self.client = IclassClient(mode=("webvpn" if mode == "webvpn" else "direct"))
         self.boya_client = BoyaClient(mode=("webvpn" if mode == "webvpn" else "direct"))
+        self.client.operation_user = username
+        self.client.request_guard = lambda: not self.removed and not self.maintenance
+        self.boya_client.operation_user = username
+        self.boya_client.request_guard = lambda: not self.removed and not self.maintenance
         self.last_classes: List[Dict[str, Any]] = []
         self.last_refresh_time: Optional[str] = None
         self.boya_all_courses: Optional[List[Dict[str, Any]]] = None
@@ -285,6 +238,11 @@ class AccountState:
             "iclass_authenticated": bool(self.client.user_id and self.client.session_id),
             "boya_authenticated": self.boya_client.is_authenticated(),
             "is_active": is_active,
+            "regular_health": self.regular_health,
+            "boya_health": self.boya_health,
+            "boya_targets": self.boya_targets,
+            "auth_requires_input": self.auth_requires_input,
+            "connecting": self._is_connecting,
             "course_count": len(self.last_classes),
             "signed_count": len([c for c in self.last_classes if c.get("signStatus") == 1]),
             "last_refresh_time": self.last_refresh_time,
@@ -310,6 +268,32 @@ def get_active_account() -> Optional[AccountState]:
     return None
 
 
+def resolve_account(username=None):
+    if username is not None:
+        account = accounts.get(username)
+        if account is None or account.removed:
+            raise HTTPException(status_code=404, detail="指定账号不存在")
+        return account
+    return get_active_account()
+
+async def dispose_account(account):
+    account.removed = True
+    account.auth_epoch += 1
+    account.auto_checkin = account.boya_auto_select = account.boya_auto_sign = False
+    scheduler.remove_account(account.username)
+    boya_scheduler.remove_account(account.username)
+    # Mark removed before waiting: in-flight preflights can no longer authorize POST.
+    def close_boya():
+        with account_lock(account):
+            account.boya_client.close()
+    async with account.auth_lock:
+        await asyncio.to_thread(close_boya)
+        async with account.client._signin_lock:
+            await account.client.close()
+    account.password = ""
+    account.boya_pending_courses.clear()
+
+
 def get_scheduler_accounts() -> List[Dict[str, Any]]:
     """返回所有启用了自动打卡的学生账号供后台定时巡检（多学生并行后台守护，不受前台切换影响）"""
     result = []
@@ -329,7 +313,29 @@ scheduler = SigninScheduler(
     on_event_log=add_log,
     reconnect_account=lambda acc: connect_single_account(acc),
 )
-boya_scheduler = BoyaScheduler(get_accounts_func=lambda: list(accounts.values()), add_log_func=add_log)
+main_loop = None
+
+async def fetch_normal_ranges(account, first, last):
+    rows = []
+    date = first
+    while date <= last:
+        if account.removed:
+            raise RuntimeError("账号已移除")
+        rows.extend(await account.client.get_classes(date))
+        date += datetime.timedelta(days=1)
+    return rows
+
+def normal_ranges_from_worker(account, first, last):
+    if main_loop is None or not main_loop.is_running():
+        raise RuntimeError("普通课表服务未就绪")
+    future = asyncio.run_coroutine_threadsafe(fetch_normal_ranges(account, first, last), main_loop)
+    try:
+        return future.result(timeout=30)
+    except BaseException:
+        future.cancel()
+        raise
+
+boya_scheduler = BoyaScheduler(get_accounts_func=lambda: list(accounts.values()), add_log_func=add_log, ordinary_courses=normal_ranges_from_worker)
 
 
 def sync_config():
@@ -338,7 +344,7 @@ def sync_config():
         return
     accounts_data = []
     for acc in accounts.values():
-        stored_pwd = encrypt_local_secret(acc.password) if (acc.remember and acc.password) else ""
+        stored_pwd = encrypt_local_secret(acc.password) if (acc.remember and acc.password) else acc.protected_password if acc.remember else ""
         accounts_data.append({
             "username": acc.username,
             "name": acc.name,
@@ -351,6 +357,7 @@ def sync_config():
             "boya_require_auto_sign": getattr(acc, "boya_require_auto_sign", True),
             "boya_allow_offline": getattr(acc, "boya_allow_offline", False),
             "campus": getattr(acc, "campus", "北京"),
+            "boya_targets": acc.boya_targets,
         })
     config["active_username"] = active_username or ""
     config["accounts"] = accounts_data
@@ -383,11 +390,12 @@ class ToggleAutoRequest(BaseModel):
 
 
 class ModeRequest(BaseModel):
+    username: Optional[str] = None
     mode: str  # "auto", "direct", "webvpn"
 
 
 class SigninRequest(BaseModel):
-    course_id: str
+    course_id: str = Field(pattern=r"^[1-9][0-9]*$")
     username: Optional[str] = None
 
 
@@ -397,15 +405,15 @@ class AutoCheckinRequest(BaseModel):
 
 
 class BoyaActionRequest(BaseModel):
-    course_id: int
+    course_id: int = Field(gt=0, strict=True)
     username: Optional[str] = None
 
 
 class BoyaSignRequest(BaseModel):
-    course_id: int
-    sign_type: int = 1  # 1 为签到, 2 为签退
-    lat: Optional[float] = None
-    lng: Optional[float] = None
+    course_id: int = Field(gt=0, strict=True)
+    sign_type: Literal[1, 2] = 1  # 1 为签到, 2 为签退
+    lat: Optional[float] = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    lng: Optional[float] = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     username: Optional[str] = None
 
 
@@ -416,11 +424,22 @@ class BoyaToggleAutoRequest(BaseModel):
     username: Optional[str] = None
     require_auto_sign: Optional[bool] = None
     allow_offline: Optional[bool] = None
+    targets: Optional[Dict[str, Annotated[int, Field(strict=True, ge=0, le=20)]]] = None
 
 
 @app.on_event("startup")
 async def on_startup():
+    global main_loop
+    main_loop = asyncio.get_running_loop()
+    if os.environ.get("BUAA_SMOKE_PROFILE") == "1":
+        if os.environ.get("TESTING") != "1" or not os.environ.get("BUAA_CONFIG_FILE"):
+            raise RuntimeError("验收配置必须与用户配置隔离")
+        from core.smoke import seed
+        seed(sys.modules[__name__])
+        return
     add_log("info", "BUAA 独立课程签到助手 (多学生并发管理版) 服务已启动。")
+    if config_read_error:
+        add_log("error", "配置文件损坏，已保留原文件且未启动账号；请恢复配置后重启。")
     # 初始化保存的多账号
     saved_accounts = config.get("accounts", [])
     for item in saved_accounts:
@@ -441,6 +460,13 @@ async def on_startup():
             campus=item.get("campus", "北京"),
         )
         accounts[uname] = acc
+        acc.protected_password = item.get("_protected_password", "")
+        targets = item.get("boya_targets")
+        if isinstance(targets, dict) and set(targets) == set(REQUIREMENTS) and all(type(value) is int and 0 <= value <= 20 for value in targets.values()):
+            acc.boya_targets = dict(targets)
+        if acc.protected_password and not acc.password:
+            acc.auth_requires_input = True
+            add_log("warning", "保存的凭据不可解密，原密文已保留，请为此账号重新登录。", username=acc.username)
 
     global active_username
     if not active_username and accounts:
@@ -466,7 +492,47 @@ async def auto_connect_saved_accounts():
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
+def sync_boya_login(acc, mode, cookies):
+    with account_lock(acc):
+        if acc.removed:
+            return False
+        acc.boya_client.mode = mode
+        acc.boya_client.sync_cookies_from(cookies)
+        if not acc.boya_client.acquire_token():
+            return False
+        pool = acc.boya_client.query_courses()
+        selected = acc.boya_client.query_chosen_courses()
+        stats = acc.boya_client.query_statistics()
+        if acc.removed:
+            return False
+        acc.boya_all_courses, acc.boya_selected_courses, acc.boya_statistics = pool, selected, stats
+        acc.boya_last_refresh_time = china_now().isoformat(timespec="seconds")
+        acc.boya_health = {"stale":False,"last_success":acc.boya_last_refresh_time,"error":None}
+        real_name = extract_real_name_from_stats(stats)
+        if real_name and real_name != acc.username:
+            acc.name = real_name
+        return True
+
+
 async def connect_single_account(acc: AccountState) -> bool:
+    import time
+    if acc.removed or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
+        return False
+    # Concurrent refreshes share one authentication attempt, with a bounded cooldown.
+    async with acc.auth_lock:
+        if acc.removed or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
+            return False
+        acc.auth_retry_after = time.monotonic() + 60
+        acc.maintenance = acc._is_connecting = True
+        acc.auth_epoch += 1
+        try:
+            async with acc.client._signin_lock:
+                return await _connect_single_account(acc)
+        finally:
+            acc.maintenance = acc._is_connecting = False
+
+
+async def _connect_single_account(acc: AccountState) -> bool:
     add_log("info", f"正在为学生账号 [{acc.name or acc.username}] 建立连接...", username=acc.username, user_name=acc.name)
     modes_to_try = ["direct", "webvpn"] if acc.mode in ("auto", "direct") else [acc.mode]
 
@@ -481,20 +547,11 @@ async def connect_single_account(acc: AccountState) -> bool:
 
                 # 优先同步博雅系统授权与课程数据
                 try:
-                    acc.boya_client.mode = attempt_mode
-                    acc.boya_client.sync_cookies_from(acc.client.client.cookies)
-                    token = acc.boya_client.acquire_token()
-                    if token:
-                        acc.boya_all_courses = acc.boya_client.query_courses(max_pages=5)
-                        acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                        acc.boya_statistics = acc.boya_client.query_statistics()
-                        acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
-                        boya_name = extract_real_name_from_stats(acc.boya_statistics)
-                        if boya_name and boya_name != acc.username:
-                            acc.name = boya_name
-                        add_log("success", f"学生 [{acc.name}] 博雅系统授权与排课同步成功！", username=acc.username, user_name=acc.name, category="boya")
+                    ready = await asyncio.to_thread(sync_boya_login, acc, attempt_mode, acc.client.client.cookies)
+                    if ready:
+                        add_log("success", "博雅授权与排课同步成功。", username=acc.username, user_name=acc.name, category="boya")
                 except Exception as be:
-                    logger.debug(f"Boya auto sync during connect: {be}")
+                    logger.debug(f"Boya auto sync during connect: {type(be).__name__}")
 
                 # 尝试接入常规课堂签到系统
                 iclass_ok = await acc.client.login_iclass()
@@ -510,19 +567,28 @@ async def connect_single_account(acc: AccountState) -> bool:
                     except Exception:
                         pass
                 else:
-                    add_log("info", f"学生 [{acc.name}] 统一认证成功，常规考勤接口暂未响应 (可能非教学时段或维护中)，博雅套件已正常就绪。", username=acc.username, user_name=acc.name)
+                    add_log("warning", "统一认证成功，常规考勤尚未就绪；博雅状态以授权指示为准。", username=acc.username, user_name=acc.name)
 
+                if acc.removed:
+                    return False
                 sync_config()
                 return True
             elif res.get("status") == "captcha_required":
+                acc.auth_requires_input = True
                 add_log("warning", f"学生 [{acc.name}] 自动登录被阻断（需要图形验证码），请在界面手动登录。", username=acc.username, user_name=acc.name)
+                return False
+            elif res.get("status") != "success" and any(word in str(res.get("message", "")) for word in ("密码", "账号")):
+                acc.auth_requires_input = True
+                add_log("warning", "自动认证未通过，请手动核对账号凭据；已暂停自动登录。", username=acc.username)
                 return False
         except Exception as e:
             if attempt_mode != modes_to_try[-1]:
                 await acc.client.close()
                 acc.client = IclassClient(mode="webvpn")
+                acc.client.operation_user = acc.username
+                acc.client.request_guard = lambda: not acc.removed and not acc.maintenance
                 continue
-            add_log("error", f"学生 [{acc.name}] 连接异常: {e}", username=acc.username, user_name=acc.name)
+            add_log("error", f"学生 [{acc.name}] 连接异常: {type(e).__name__}", username=acc.username, user_name=acc.name)
             return False
 
     return False
@@ -530,8 +596,8 @@ async def connect_single_account(acc: AccountState) -> bool:
 
 
 @app.get("/api/status")
-async def get_status():
-    curr = get_active_account()
+async def get_status(username: Optional[str] = None):
+    curr = resolve_account(username)
     mode = curr.mode if curr else config.get("default_mode", "direct")
     is_authed = bool(curr and (curr.client.is_authenticated() or curr.boya_client.is_authenticated()))
     return {
@@ -610,11 +676,7 @@ async def remove_account(req: RemoveAccountRequest):
         raise HTTPException(status_code=404, detail="Account not found")
 
     acc = accounts.pop(req.username)
-    await acc.client.close()
-    try:
-        acc.boya_client.session.close()
-    except Exception:
-        pass
+    await dispose_account(acc)
     add_log("info", f"学生账号 【{acc.name} ({acc.username})】 已退出并移除。", username=acc.username, user_name=acc.name)
 
     if active_username == req.username:
@@ -631,11 +693,31 @@ async def switch_mode(req: ModeRequest):
         raise HTTPException(status_code=400, detail="Invalid mode")
 
     config["default_mode"] = new_mode
-    curr = get_active_account()
+    curr = resolve_account(req.username)
     if curr:
-        curr.mode = new_mode
-        if new_mode in ("direct", "webvpn"):
-            curr.client.mode = new_mode
+        async with curr.auth_lock:
+            curr.maintenance = True
+            curr.auth_epoch += 1
+            try:
+                async with curr.client._signin_lock:
+                    await curr.client.close()
+                    def reset_boya():
+                        with account_lock(curr):
+                            curr.boya_client.close()
+                            curr.boya_client = BoyaClient(mode="webvpn" if new_mode == "webvpn" else "direct")
+                            curr.boya_client.operation_user = curr.username
+                            curr.boya_client.request_guard = lambda: not curr.removed and not curr.maintenance
+                    await asyncio.to_thread(reset_boya)
+                    curr.client = IclassClient(mode="webvpn" if new_mode == "webvpn" else "direct")
+                    curr.client.operation_user = curr.username
+                    curr.client.request_guard = lambda: not curr.removed and not curr.maintenance
+                    curr.mode = new_mode
+                    curr.auth_retry_after = 0
+                    curr.regular_health["stale"] = curr.boya_health["stale"] = True
+            finally:
+                curr.maintenance = False
+        if curr.password and not curr.auth_requires_input:
+            asyncio.create_task(connect_single_account(curr))
         add_log(
             "info",
             f"学生 【{curr.name}】 连接模式已切换为: {new_mode}",
@@ -646,11 +728,35 @@ async def switch_mode(req: ModeRequest):
         add_log("info", f"系统默认接入模式已切换为: { '校园网直连' if new_mode == 'direct' else ('WebVPN 外网' if new_mode == 'webvpn' else '智能自动') }")
 
     sync_config()
-    return {"status": "ok", "mode": new_mode}
+    return {"status": "ok", "mode": new_mode, "reconnecting": bool(curr and curr.password and not curr.auth_requires_input)}
 
 
 @app.post("/api/login")
 async def login(req: LoginRequest):
+    req_mode = (req.mode or "auto").lower()
+    if req_mode not in ("auto", "direct", "webvpn") or not req.username.strip() or not req.password:
+        raise HTTPException(status_code=400, detail="账号、密码或连接模式无效")
+    acc = accounts.get(req.username)
+    if acc is None:
+        acc = AccountState(req.username, auto_checkin=False)
+        accounts[req.username] = acc
+    async with acc.auth_lock:
+        if acc.removed:
+            raise HTTPException(status_code=409, detail="账号已移除，请重新添加")
+        acc.maintenance = acc._is_connecting = True
+        acc.auth_epoch += 1
+        acc.auth_requires_input = False
+        try:
+            async with acc.client._signin_lock:
+                response = await _login_locked(req)
+            if response.get("status") != "success":
+                acc.auth_requires_input = True
+            return response
+        finally:
+            acc.maintenance = acc._is_connecting = False
+
+
+async def _login_locked(req: LoginRequest):
     global active_username
     req_mode = (req.mode or "auto").lower()
 
@@ -704,21 +810,12 @@ async def login(req: LoginRequest):
 
         # 优先同步博雅系统授权与课程数据
         try:
-            acc.boya_client.mode = attempt_mode
-            acc.boya_client.sync_cookies_from(acc.client.client.cookies)
-            token = acc.boya_client.acquire_token()
-            if token:
-                acc.boya_all_courses = acc.boya_client.query_courses(max_pages=5)
-                acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-                acc.boya_statistics = acc.boya_client.query_statistics()
-                acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
-                boya_name = extract_real_name_from_stats(acc.boya_statistics)
-                if boya_name and boya_name != acc.username:
-                    acc.name = boya_name
-                add_log("success", f"【{acc.name}】博雅系统授权与排课同步成功！", username=acc.username, user_name=acc.name, category="boya")
+            ready = await asyncio.to_thread(sync_boya_login, acc, attempt_mode, acc.client.client.cookies)
+            if ready:
+                add_log("success", "博雅授权与排课同步成功。", username=acc.username, user_name=acc.name, category="boya")
         except Exception as be:
-            logger.debug(f"Boya auto sync during login: {be}")
-            add_log("warning", f"【{acc.name}】博雅系统授权同步异常: {be}", username=acc.username, user_name=acc.name, category="boya")
+            logger.debug(f"Boya auto sync during login: {type(be).__name__}")
+            add_log("warning", f"【{acc.name}】博雅系统授权同步异常: {type(be).__name__}", username=acc.username, user_name=acc.name, category="boya")
 
         # 接入 iclass 课堂签到系统
         add_log("info", f"正在接入 iclass 课堂签到系统 ({'校园网直连' if attempt_mode == 'direct' else 'WebVPN 外网'})...", username=acc.username, user_name=acc.name)
@@ -733,10 +830,12 @@ async def login(req: LoginRequest):
                 acc.last_classes = classes
                 acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
             except Exception as ce:
-                add_log("error", f"【{acc.name}】拉取今日课表失败: {ce}", username=acc.username, user_name=acc.name, category="regular")
+                add_log("error", f"【{acc.name}】拉取今日课表失败: {type(ce).__name__}", username=acc.username, user_name=acc.name, category="regular")
         else:
-            add_log("info", f"【{acc.name}】统一认证成功，常规考勤接口暂未响应 (可能非教学时段或维护中)，博雅套件已正常就绪。", username=acc.username, user_name=acc.name)
+            add_log("warning", "统一认证成功，常规考勤尚未就绪；博雅状态以授权指示为准。", username=acc.username, user_name=acc.name)
 
+        if acc.removed:
+            raise HTTPException(status_code=409, detail="认证过程中账号已移除")
         sync_config()
         return {
             "status": "success",
@@ -749,9 +848,9 @@ async def login(req: LoginRequest):
 
 
 @app.post("/api/logout")
-async def logout():
-    """退出当前活跃账号"""
-    curr = get_active_account()
+async def logout(username: Optional[str] = None):
+    """退出明确指定的账号，兼容旧客户端活跃账号默认值。"""
+    curr = resolve_account(username)
     if not curr:
         return {"status": "ok"}
 
@@ -759,11 +858,7 @@ async def logout():
     username = curr.username
     acc = accounts.pop(username, None)
     if acc:
-        await acc.client.close()
-        try:
-            acc.boya_client.session.close()
-        except Exception:
-            pass
+        await dispose_account(acc)
         add_log("info", f"学生账号 【{acc.name}】 已退出登录。", username=acc.username, user_name=acc.name)
 
     active_username = next(iter(accounts.keys())) if accounts else None
@@ -772,8 +867,8 @@ async def logout():
 
 
 @app.get("/api/classes")
-async def get_today_classes():
-    curr = get_active_account()
+async def get_today_classes(username: Optional[str] = None):
+    curr = resolve_account(username)
     if not curr:
         return {"status": "unauthenticated", "classes": []}
 
@@ -782,12 +877,13 @@ async def get_today_classes():
         try:
             await connect_single_account(curr)
         except Exception as conn_err:
-            logger.debug(f"Auto connect before get_today_classes failed: {conn_err}")
+            logger.debug(f"Auto connect before get_today_classes failed: {type(conn_err).__name__}")
 
     # 若此时仍未鉴权（如离线或测试模式），坚决返回既有课表缓存，杜绝误显假空态
     if not curr.client.is_authenticated() or not curr.client.session_id:
         return {
-            "status": "success",
+            "status": "stale",
+            "stale": True,
             "classes": curr.last_classes or [],
             "username": curr.username,
             "name": curr.name,
@@ -804,7 +900,7 @@ async def get_today_classes():
             add_log("info", f"【{curr.name}】今日常规课程暂无排课或无需签到。", username=curr.username, user_name=curr.name, category="regular")
         return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
     except Exception as e:
-        logger.debug(f"Fetch classes error: {e}")
+        logger.debug(f"Fetch classes error: {type(e).__name__}")
         # 如果是因为会话失效且存有密码，自动重新连接并重试一次
         if curr.password:
             try:
@@ -816,8 +912,8 @@ async def get_today_classes():
                     return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
             except Exception:
                 pass
-        add_log("error", f"【{curr.name}】获取常规课程课表失败: {e}", username=curr.username, user_name=curr.name, category="regular")
-        return {"status": "success", "classes": curr.last_classes or [], "username": curr.username, "name": curr.name}
+        add_log("error", f"【{curr.name}】获取常规课程课表失败: {type(e).__name__}", username=curr.username, user_name=curr.name, category="regular")
+        return {"status": "stale", "stale": True, "classes": curr.last_classes or [], "username": curr.username, "name": curr.name, "message": "课表未同步，显示上次成功数据"}
 
 
 
@@ -827,10 +923,7 @@ async def perform_signin(req: SigninRequest):
         raise HTTPException(status_code=400, detail="Course ID required")
 
     # 指定账号或当前活跃账号
-    if req.username and req.username in accounts:
-        target_acc = accounts[req.username]
-    else:
-        target_acc = get_active_account()
+    target_acc = resolve_account(req.username)
 
     if not target_acc or not target_acc.client.is_authenticated():
         raise HTTPException(status_code=401, detail="Account not authenticated")
@@ -851,7 +944,7 @@ async def perform_signin(req: SigninRequest):
                 target_acc.last_classes = refreshed
                 target_acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
         except Exception as ref_err:
-            logger.debug(f"Post manual signin schedule refresh error: {ref_err}")
+            logger.debug(f"Post manual signin schedule refresh error: {type(ref_err).__name__}")
     else:
         add_log("warning", f"【{target_acc.name}】排课 [{req.course_id}] 签到反馈: {msg}", username=target_acc.username, user_name=target_acc.name)
 
@@ -871,8 +964,8 @@ async def toggle_global_auto_checkin(req: AutoCheckinRequest):
 
 
 @app.get("/api/boya/status")
-async def get_boya_status():
-    curr = get_active_account()
+async def get_boya_status(username: Optional[str] = None):
+    curr = resolve_account(username)
     if not curr:
         return {"authenticated": False, "scheduler_running": boya_scheduler.running}
     return {
@@ -886,6 +979,8 @@ async def get_boya_status():
         "last_refresh_time": getattr(curr, "boya_last_refresh_time", ""),
         "courses_count": len(curr.boya_all_courses) if getattr(curr, "boya_all_courses", None) is not None else 0,
         "selected_count": len(curr.boya_selected_courses) if getattr(curr, "boya_selected_courses", None) is not None else 0,
+        "health": curr.boya_health,
+        "targets": curr.boya_targets,
         "statistics": curr.boya_statistics if getattr(curr, "boya_statistics", None) is not None else {},
     }
 
@@ -1228,310 +1323,107 @@ DEMO_BOYA_STATISTICS = {
 }
 
 
-def enrich_selected_courses(selected_list: List[Dict[str, Any]], pool_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    enriched = []
-    pool_map = {}
-    for p in pool_list or []:
-        if p.get("id"):
-            pool_map[str(p["id"])] = p
-        if p.get("courseId"):
-            pool_map[str(p["courseId"])] = p
-        if p.get("courseName"):
-            pool_map[str(p["courseName"]).strip()] = p
+def enrich_selected_courses(selected_list, pool_list):
+    attendance_names = {0: "待考勤", 1: "考勤通过", 2: "迟到", 3: "早退", 4: "缺勤", 5: "已签到，未签退", 6: "签到异常，未签退", 7: "未签到，已签退", 8: "未签到，签退异常", 9: "双签记录，签到异常", 10: "双签记录，签退异常", 11: "双签记录均异常"}
+    result = []
+    for raw in selected_list or []:
+        c = merge_selected(raw, pool_list or [])
+        start, end = course_times(c)
+        c["is_ended"] = bool(end and china_now() > end)
+        def official_integer(value):
+            return int(value) if not isinstance(value, bool) and str(value).isdigit() else None
+        checkin = official_integer(c.get("checkin"))
+        passed = official_integer(c.get("pass"))
+        c["attendance_status"] = {"passed": True if checkin == 1 else (False if checkin in (2,3,4,6,8,9,10,11) else None), "text": attendance_names.get(checkin, "考勤状态未知"), "badge": "badge-green" if checkin == 1 else "badge-amber"}
+        c["exam_status"] = {"passed": True if passed == 1 else (False if passed == 0 else None), "text": "考核通过" if passed == 1 else ("考核未通过" if passed == 0 else "待官方考核"), "badge": "badge-green" if passed == 1 else "badge-amber"}
+        c["final_passed"] = checkin == 1 and passed == 1
+        c["can_sign_in"] = attendance_allowed(c, 1, china_now())
+        c["can_sign_out"] = attendance_allowed(c, 2, china_now())
+        c["signed_in"] = checkin in (1,5,6,9,10,11)
+        c["signed_out"] = checkin in (1,7,8,9,10,11)
+        c["status_source"] = "official"
+        result.append(c)
+    return result
 
-    now = datetime.datetime.now()
-
-    for item in selected_list or []:
-        c = dict(item)
-        cid_str = str(c.get("id") or c.get("courseId") or "")
-        cname = str(c.get("courseName") or c.get("name") or "").strip()
-
-        # 从全量课池补齐开课、结课时间与打卡配置
-        pool_match = pool_map.get(cid_str) or pool_map.get(cname)
-        if pool_match:
-            for field in (
-                "courseStartDate", "courseStartTime", "courseEndDate", "courseEndTime",
-                "coursePosition", "courseAddress", "courseTeacher", "speaker", "courseSignConfig"
-            ):
-                if not c.get(field) and pool_match.get(field):
-                    c[field] = pool_match.get(field)
-
-        # 规范化四大类别（旧名“国家安全”全面规范映射为“安全健康”）
-        kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
-        if isinstance(c.get("courseNewKind2"), dict):
-            kind = c["courseNewKind2"].get("kindName") or kind
-        if "安全" in kind or "健康" in kind:
-            c["courseKind"] = "安全健康"
-            c["kindName"] = "安全健康"
-            c["courseType"] = "安全健康"
-
-        # 判断课程是否已结课/已结束
-        status_str = str(c.get("courseStatus") or c.get("status") or "")
-        is_ended = bool(c.get("is_ended")) or ("结课" in status_str or "结束" in status_str)
-
-        # 检查打卡截止时间（SignOutEndDate）
-        cfg = parse_sign_config(c.get("courseSignConfig"))
-        sign_out_end = cfg.get("signOutEndDate") or cfg.get("signEndDate")
-        if sign_out_end:
-            dt_out_end = parse_dt(sign_out_end)
-            if dt_out_end and now > dt_out_end:
-                is_ended = True
-
-        # 解析课程结束时间
-        end_date = c.get("courseEndDate") or c.get("courseStartDate")
-        end_time = c.get("courseEndTime")
-        if end_date and end_time:
-            dt_end = parse_dt(f"{end_date} {end_time}")
-            if dt_end and now > dt_end:
-                is_ended = True
-        elif c.get("courseStartDate") and c.get("courseStartTime"):
-            dt_start = parse_dt(f"{c['courseStartDate']} {c['courseStartTime']}")
-            if dt_start and now > dt_start + datetime.timedelta(hours=2.5):
-                is_ended = True
-
-        c["is_ended"] = is_ended
-        if is_ended and not c.get("courseStatus"):
-            c["courseStatus"] = "已结课"
-
-        # 解析考勤状态 (attendance_status)
-        # 1. 优先读取官方 checkin 字段 (1=通过/已考勤, 0=未通过/缺勤)
-        raw_att = (
-            c.get("checkin")
-            if c.get("checkin") is not None
-            else (c.get("attendanceStatus") or c.get("courseAttendanceStatus") or c.get("checkInStatus") or c.get("kaoqinStatus"))
-        )
-
-        has_sign_info = False
-        sign_info = c.get("signInfo")
-        if isinstance(sign_info, str) and sign_info.strip():
-            try:
-                sign_dict = json.loads(sign_info)
-                if isinstance(sign_dict, dict):
-                    has_sign_info = bool(sign_dict.get("signIn") or sign_dict.get("signOut"))
-            except Exception:
-                has_sign_info = ("signIn" in sign_info or "signOut" in sign_info)
-        elif isinstance(sign_info, dict):
-            has_sign_info = bool(sign_info.get("signIn") or sign_info.get("signOut"))
-
-        is_signed = (c.get("signStatus") == 1 or c.get("courseSignStatus") == 1 or c.get("signInStatus") == 1 or has_sign_info)
-        is_signed_out = (c.get("signOutStatus") == 1 or c.get("courseSignOutStatus") == 1)
-
-        if raw_att in (1, "1", "合格", "通过", "正常"):
-            c["attendance_status"] = {"passed": True, "text": "考勤通过", "badge": "badge-green"}
-        elif raw_att in (0, "0", "缺勤", "未通过", "不合格"):
-            if has_sign_info:
-                c["attendance_status"] = {"passed": True, "text": "考勤通过(已打卡)", "badge": "badge-green"}
-            else:
-                c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
-        elif has_sign_info:
-            c["attendance_status"] = {"passed": True, "text": "考勤通过(已打卡)", "badge": "badge-green"}
-        elif is_signed and is_signed_out:
-            c["attendance_status"] = {"passed": True, "text": "考勤通过(已双签)", "badge": "badge-green"}
-        elif is_signed:
-            if is_ended:
-                c["attendance_status"] = {"passed": True, "text": "考勤通过(已签到)", "badge": "badge-green"}
-            else:
-                c["attendance_status"] = {"passed": None, "text": "已签到", "badge": "badge-green"}
-        elif is_ended:
-            c["attendance_status"] = {"passed": False, "text": "考勤缺勤", "badge": "badge-red"}
-        else:
-            c["attendance_status"] = {"passed": None, "text": "待考勤", "badge": "badge-blue"}
-
-        # 解析考核状态 (exam_status)
-        # 优先读取官方 pass 字段 (1=通过, 0=未通过)
-        raw_exam = (
-            c.get("pass")
-            if c.get("pass") is not None
-            else (c.get("examStatus") or c.get("checkStatus") or c.get("passStatus") or c.get("isPass") or c.get("kaoheStatus"))
-        )
-        if raw_exam in (1, "1", "通过", "合格", "PASS"):
-            c["exam_status"] = {"passed": True, "text": "考核通过", "badge": "badge-green"}
-        elif raw_exam in (0, "0", "未通过", "不合格", "FAIL"):
-            c["exam_status"] = {"passed": False, "text": "考核未通过", "badge": "badge-red"}
-        elif raw_exam in (-1, "-1", "待评定", "评定中", "待考核"):
-            c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
-        elif is_ended:
-            if c.get("score") is not None:
-                try:
-                    s = float(c["score"])
-                    c["exam_status"] = {
-                        "passed": s >= 60,
-                        "text": f"考核通过 ({s:.0f}分)" if s >= 60 else f"考核未通过 ({s:.0f}分)",
-                        "badge": "badge-green" if s >= 60 else "badge-red"
-                    }
-                except Exception:
-                    c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
-            elif c["attendance_status"].get("passed") is True:
-                c["exam_status"] = {"passed": True, "text": "考核通过", "badge": "badge-green"}
-            else:
-                c["exam_status"] = {"passed": None, "text": "考核待评定", "badge": "badge-amber"}
-        else:
-            c["exam_status"] = {"passed": None, "text": "未开考", "badge": "badge-blue"}
-
-        # 最终考核：必须是考勤和考核都通过（或官方 pass==1 且考勤通过/已打卡）
-        c["final_passed"] = bool(
-            (c["attendance_status"].get("passed") is True and c["exam_status"].get("passed") is True)
-            or (c.get("pass") == 1 and (c.get("checkin") == 1 or c["attendance_status"].get("passed") is True))
-        )
-        enriched.append(c)
-
-    return enriched
-
-
-def compute_semester_statistics(selected_list: List[Dict[str, Any]], sso_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    moral_count = 0
-    labor_count = 0
-    art_count = 0
-    sec_count = 0
-
-    # 0. 提取学期期限（优先使用官方 semesterInfo，缺少时基于北航校历基准动态推算）
-    sem_info = (sso_stats or {}).get("semesterInfo") if isinstance(sso_stats, dict) else None
-    sem_start_dt = None
-    sem_end_dt = None
-    semester_name = ""
-    if isinstance(sem_info, dict):
-        semester_name = sem_info.get("semesterName") or ""
-        sem_start_dt = parse_dt(sem_info.get("semesterStartDate"))
-        sem_end_dt = parse_dt(sem_info.get("semesterEndDate"))
-
-    if not sem_start_dt or not sem_end_dt:
-        fb_start, fb_end, fb_name = get_current_semester_range()
-        sem_start_dt = sem_start_dt or fb_start
-        sem_end_dt = sem_end_dt or fb_end
-        semester_name = semester_name or fb_name
-
-    # 1. 提取大学全学程历史累计概况（仅供作为历史总修读数据备查，严禁污染当前学期达标数据）
-    all_time = {"moral": 0, "labor": 0, "art": 0, "security": 0, "total": 0}
-    if sso_stats and isinstance(sso_stats, dict):
-        statistical = sso_stats.get("statistical")
-        if isinstance(statistical, dict):
-            boya_tree = statistical.get("60|博雅课程")
-            if isinstance(boya_tree, dict):
-                for cat_key, cat_val in boya_tree.items():
-                    if isinstance(cat_val, dict):
-                        comp = int(cat_val.get("completeAssessmentCount") or 0)
-                        if "德育" in cat_key:
-                            all_time["moral"] = comp
-                        elif "劳育" in cat_key or "劳动" in cat_key:
-                            all_time["labor"] = comp
-                        elif "美育" in cat_key or "艺术" in cat_key:
-                            all_time["art"] = comp
-                        elif "安全" in cat_key or "健康" in cat_key:
-                            all_time["security"] = comp
-                all_time["total"] = all_time["moral"] + all_time["labor"] + all_time["art"] + all_time["security"]
-
-    # 2. 本学期达标统计：严格限定开课或结课时间落在当前校历学期范围内（严防跨学年历史课程污染）
-    moral_count = 0
-    labor_count = 0
-    art_count = 0
-    sec_count = 0
-    for c in selected_list or []:
-        # 校验课程时间是否在当前学期范围内
-        c_date_str = c.get("courseStartDate") or c.get("courseEndDate") or c.get("selectDate")
-        c_dt = parse_dt(c_date_str)
-        if c_dt and sem_start_dt and sem_end_dt:
-            if not (sem_start_dt <= c_dt <= sem_end_dt):
-                continue  # 彻底排除历史学年的选课
-
-        # 校验该课程是否已双通过（考勤与考核）
-        is_passed = (c.get("final_passed") is True)
-        if not is_passed:
-            if c.get("pass") == 1 and (c.get("checkin") == 1 or "signIn" in str(c.get("signInfo", ""))):
-                is_passed = True
-        if is_passed:
-            kind = c.get("courseKind") or c.get("kindName") or c.get("courseType") or ""
-            if "德育" in kind:
-                moral_count += 1
-            elif "劳育" in kind or "劳动" in kind:
-                labor_count += 1
-            elif "美育" in kind or "艺术" in kind:
-                art_count += 1
-            elif "安全" in kind or "健康" in kind:
-                sec_count += 1
-
-    eff_moral = min(moral_count, 2)
-    eff_labor = min(labor_count, 2)
-    eff_art = min(art_count, 1)
-    eff_sec = min(sec_count, 1)
-    total_passed = eff_moral + eff_labor + eff_art + eff_sec
-    rate = round((total_passed / 6.0) * 100)
-
-    official_valid = None
-    if sso_stats and isinstance(sso_stats, dict) and sso_stats.get("validCount") is not None:
-        try:
-            official_valid = int(sso_stats["validCount"])
-        except Exception:
-            pass
-
-    return {
-        "moral_completed": moral_count,
-        "moral_required": 2,
-        "moral_effective": eff_moral,
-        "labor_completed": labor_count,
-        "labor_required": 2,
-        "labor_effective": eff_labor,
-        "art_completed": art_count,
-        "art_required": 1,
-        "art_effective": eff_art,
-        "security_health_completed": sec_count,
-        "security_health_required": 1,
-        "security_health_effective": eff_sec,
-        "semester_passed_total": total_passed,
-        "semester_required_total": 6,
-        "semester_compliance_rate": rate,
-        "semester_name": semester_name,
-        "semester_start": sem_start_dt.strftime("%Y-%m-%d") if sem_start_dt else "",
-        "semester_end": sem_end_dt.strftime("%Y-%m-%d") if sem_end_dt else "",
-        "valid_count": official_valid if official_valid is not None else total_passed,
-        "art_courses_count": art_count,
-        "labor_courses_count": labor_count,
-        "security_courses_count": sec_count,
-        "moral_courses_count": moral_count,
-        "total_passed": total_passed,
-        "total_required": 6,
-        "all_time_stats": all_time,
-        "totalCredit": float(sso_stats.get("totalCredit") or sso_stats.get("total_credits") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
-        "total_credits": float(sso_stats.get("total_credits") or sso_stats.get("totalCredit") or total_passed) if (sso_stats and (sso_stats.get("totalCredit") or sso_stats.get("total_credits"))) else float(total_passed),
-        "requiredCredit": float(sso_stats.get("requiredCredit") or 6.0) if sso_stats else 6.0,
-    }
+def compute_semester_statistics(selected_list, sso_stats=None):
+    from core.boya_scheduler import get_course_category
+    stats = sso_stats if isinstance(sso_stats, dict) else {}
+    info = stats.get("semesterInfo") or {}
+    start, end = semester_bounds(info)
+    known = bool(start and end and start <= china_now() <= end)
+    counts = {k: 0 for k in REQUIREMENTS}
+    unknown, seen = 0, set()
+    for course in selected_list or []:
+        cid = course_id(course)
+        if cid is None or cid in seen:
+            continue
+        seen.add(cid)
+        if not known or not within_semester(course, info):
+            if not all(course_times(course)):
+                unknown += 1
+            continue
+        if str(course.get("checkin")) == "1" and str(course.get("pass")) == "1":
+            category = get_course_category(course)
+            if category in counts:
+                counts[category] += 1
+    total = sum(min(counts[k], REQUIREMENTS[k]) for k in counts)
+    result = {"semester_known": known, "unknown_date_count": unknown, "semester_name": info.get("semesterName") or "官方校历待同步", "semester_start": str(info.get("semesterStartDate") or ""), "semester_end": str(info.get("semesterEndDate") or ""), "semester_passed_total": total, "semester_required_total": 6, "semester_compliance_rate": round(total/6*100) if known else None, "valid_count": total if known else None, "official_valid_count": stats.get("validCount"), "total_passed": total, "total_required": 6, "totalCredit": stats.get("totalCredit"), "total_credits": stats.get("totalCredit"), "requiredCredit": stats.get("requiredCredit", 6), "all_time_stats": {"source": "official", "statistical": stats.get("statistical", {})}}
+    for label, category in (("moral","德育"),("labor","劳育"),("art","美育"),("security_health","安全健康")):
+        result.update({label+"_completed": counts[category], label+"_required": REQUIREMENTS[category], label+"_effective": min(counts[category], REQUIREMENTS[category])})
+    result.update({"moral_courses_count": counts["德育"], "labor_courses_count": counts["劳育"], "art_courses_count": counts["美育"], "security_courses_count": counts["安全健康"]})
+    all_time = {"moral": 0, "labor": 0, "art": 0, "security": 0, "source": "official"}
+    tree = (stats.get("statistical") or {}).get("60|博雅课程", {}) if isinstance(stats.get("statistical"), dict) else {}
+    labels = {"德育": "moral", "劳育": "labor", "美育": "art", "安全健康": "security"}
+    if isinstance(tree, dict):
+        for category, value in tree.items():
+            key = labels.get(get_course_category({"kindName": str(category)}))
+            count = value.get("completeAssessmentCount") if isinstance(value, dict) else None
+            if key and not isinstance(count, bool) and str(count).isdigit():
+                all_time[key] += int(count)
+    all_time["total"] = sum(all_time[key] for key in ("moral", "labor", "art", "security"))
+    result["all_time_stats"] = all_time
+    return result
 
 
 @app.get("/api/boya/courses")
-async def get_boya_courses(force: bool = False):
-    curr = get_active_account()
+async def get_boya_courses(force: bool = False, username: Optional[str] = None):
+    stale = False
+    curr = resolve_account(username)
     if not curr:
         return {"status": "success", "courses": DEMO_BOYA_COURSES, "is_demo": True}
 
     if not curr.boya_client.is_authenticated() and curr.client.is_authenticated():
         try:
-            curr.boya_client.sync_cookies_from(curr.client.client.cookies)
-            curr.boya_client.acquire_token()
+            await asyncio.to_thread(curr.boya_client.sync_cookies_from, curr.client.client.cookies)
+            await asyncio.to_thread(curr.boya_client.acquire_token)
         except Exception as e:
-            logger.debug(f"Boya token acquire failed: {e}")
+            stale = True
+            logger.debug(f"Boya token acquire failed: {type(e).__name__}")
 
     if not curr.boya_client.is_authenticated():
-        courses = curr.boya_all_courses if curr.boya_all_courses is not None else DEMO_BOYA_COURSES
+        courses = curr.boya_all_courses or []
         return {
-            "status": "success",
+            "status": "stale", "stale": True,
             "courses": courses,
             "username": curr.username,
             "name": curr.name,
-            "is_demo": (curr.boya_all_courses is None),
-            "message": "离线预载模式，登录北航统一认证后自动同步实时选课池",
+            "is_demo": False,
+            "message": "博雅认证不可用，显示上次成功数据；请检查登录状态",
         }
 
     if force or curr.boya_all_courses is None:
         try:
-            curr.boya_all_courses = curr.boya_client.query_courses(max_pages=5)
+            curr.boya_all_courses = await asyncio.to_thread(curr.boya_client.query_courses)
             curr.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
             add_log("info", f"【{curr.name}】博雅全量课程刷新成功，共 {len(curr.boya_all_courses)} 门课程。", username=curr.username, user_name=curr.name, category="boya")
         except Exception as e:
-            add_log("warning", f"【{curr.name}】获取博雅线上课程列表失败: {e}，启用预载课程池展示", username=curr.username, user_name=curr.name, category="boya")
-            courses = curr.boya_all_courses if curr.boya_all_courses is not None else DEMO_BOYA_COURSES
-            return {"status": "success", "courses": courses, "is_demo": (curr.boya_all_courses is None), "message": str(e)}
+            stale = True
+            add_log("warning", "博雅课池同步失败：" + type(e).__name__ + "，保留上次成功数据", username=curr.username, user_name=curr.name, category="boya")
+            return {"status": "stale", "stale": True, "courses": curr.boya_all_courses or [], "username": curr.username, "is_demo": False, "message": "课池同步失败，显示上次成功数据"}
 
     return {
-        "status": "success",
+        "status": "stale" if stale else "success",
+        "stale": stale,
         "courses": curr.boya_all_courses if curr.boya_all_courses is not None else [],
         "username": curr.username,
         "name": curr.name,
@@ -1541,9 +1433,13 @@ async def get_boya_courses(force: bool = False):
 
 
 @app.get("/api/boya/selected")
-async def get_boya_selected(force: bool = False):
-    curr = get_active_account()
+async def get_boya_selected(force: bool = False, username: Optional[str] = None):
+    stale = False
+    curr = resolve_account(username)
     if not curr or not curr.boya_client.is_authenticated():
+        if curr:
+            enriched = enrich_selected_courses(curr.boya_selected_courses or [], curr.boya_all_courses or [])
+            return {"status": "stale", "stale": True, "selected": enriched, "username": curr.username, "is_demo": False}
         selected = getattr(curr, "boya_selected_courses", None) if curr else None
         pool = getattr(curr, "boya_all_courses", None) if curr else None
         is_demo = (selected is None)
@@ -1552,15 +1448,17 @@ async def get_boya_selected(force: bool = False):
 
     if force or curr.boya_selected_courses is None:
         try:
-            curr.boya_selected_courses = curr.boya_client.query_chosen_courses()
+            curr.boya_selected_courses = await asyncio.to_thread(curr.boya_client.query_chosen_courses)
         except Exception as e:
-            add_log("warning", f"【{curr.name}】获取线上已选博雅课程失败: {e}，呈现本地已选数据", username=curr.username, user_name=curr.name, category="boya")
+            stale = True
+            add_log("warning", f"【{curr.name}】获取线上已选博雅课程失败: {type(e).__name__}，呈现本地已选数据", username=curr.username, user_name=curr.name, category="boya")
 
     selected_list = curr.boya_selected_courses if curr.boya_selected_courses is not None else []
     all_pool = curr.boya_all_courses if curr.boya_all_courses is not None else []
     enriched = enrich_selected_courses(selected_list, all_pool)
     return {
-        "status": "success",
+        "status": "stale" if stale else "success",
+        "stale": stale,
         "selected": enriched,
         "username": curr.username,
         "name": curr.name,
@@ -1569,9 +1467,13 @@ async def get_boya_selected(force: bool = False):
 
 
 @app.get("/api/boya/statistics")
-async def get_boya_statistics(force: bool = False):
-    curr = get_active_account()
+async def get_boya_statistics(force: bool = False, username: Optional[str] = None):
+    stale = False
+    curr = resolve_account(username)
     if not curr or not curr.boya_client.is_authenticated():
+        if curr:
+            enriched = enrich_selected_courses(curr.boya_selected_courses or [], curr.boya_all_courses or [])
+            return {"status": "stale", "stale": True, "statistics": compute_semester_statistics(enriched, curr.boya_statistics or {}), "username": curr.username, "is_demo": False}
         selected = getattr(curr, "boya_selected_courses", None) if curr else None
         pool = getattr(curr, "boya_all_courses", None) if curr else None
         stats = getattr(curr, "boya_statistics", None) if curr else None
@@ -1581,20 +1483,22 @@ async def get_boya_statistics(force: bool = False):
 
     if force or curr.boya_statistics is None:
         try:
-            curr.boya_statistics = curr.boya_client.query_statistics()
+            curr.boya_statistics = await asyncio.to_thread(curr.boya_client.query_statistics)
             boya_name = extract_real_name_from_stats(curr.boya_statistics)
             if boya_name and boya_name != curr.username and curr.name != boya_name:
                 curr.name = boya_name
                 sync_config()
         except Exception as e:
-            add_log("error", f"【{curr.name}】获取博雅素养学分统计失败: {e}", username=curr.username, user_name=curr.name, category="boya")
+            stale = True
+            add_log("error", f"【{curr.name}】获取博雅素养学分统计失败: {type(e).__name__}", username=curr.username, user_name=curr.name, category="boya")
 
     selected_list = curr.boya_selected_courses if curr.boya_selected_courses is not None else []
     all_pool = curr.boya_all_courses if curr.boya_all_courses is not None else []
     enriched = enrich_selected_courses(selected_list, all_pool)
     stats = compute_semester_statistics(enriched, curr.boya_statistics or {})
     return {
-        "status": "success",
+        "status": "stale" if stale else "success",
+        "stale": stale,
         "statistics": stats,
         "username": curr.username,
         "name": curr.name,
@@ -1602,25 +1506,25 @@ async def get_boya_statistics(force: bool = False):
 
 
 @app.post("/api/boya/refresh")
-async def refresh_boya_data():
-    curr = get_active_account()
+async def refresh_boya_data(username: Optional[str] = None):
+    curr = resolve_account(username)
     if not curr:
         raise HTTPException(status_code=400, detail="无活跃账号")
 
     if not curr.boya_client.is_authenticated() and curr.client.is_authenticated():
         try:
-            curr.boya_client.sync_cookies_from(curr.client.client.cookies)
-            curr.boya_client.acquire_token()
+            await asyncio.to_thread(curr.boya_client.sync_cookies_from, curr.client.client.cookies)
+            await asyncio.to_thread(curr.boya_client.acquire_token)
         except Exception as e:
-            raise HTTPException(status_code=401, detail=f"博雅身份鉴权失败: {e}")
+            raise HTTPException(status_code=401, detail=f"博雅身份鉴权失败: {type(e).__name__}")
 
     if not curr.boya_client.is_authenticated():
         raise HTTPException(status_code=401, detail="博雅未登录鉴权")
 
     try:
-        curr.boya_all_courses = curr.boya_client.query_courses(max_pages=5)
-        curr.boya_selected_courses = curr.boya_client.query_chosen_courses()
-        curr.boya_statistics = curr.boya_client.query_statistics()
+        curr.boya_all_courses = await asyncio.to_thread(curr.boya_client.query_courses)
+        curr.boya_selected_courses = await asyncio.to_thread(curr.boya_client.query_chosen_courses)
+        curr.boya_statistics = await asyncio.to_thread(curr.boya_client.query_statistics)
         curr.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
         add_log("success", f"【{curr.name}】博雅全部数据（课程、已选、学分统计）刷新成功！", username=curr.username, user_name=curr.name, category="boya")
         return {
@@ -1631,120 +1535,66 @@ async def refresh_boya_data():
             "last_refresh_time": curr.boya_last_refresh_time,
         }
     except Exception as e:
-        add_log("error", f"【{curr.name}】博雅数据刷新失败: {e}", username=curr.username, user_name=curr.name, category="boya")
-        raise HTTPException(status_code=500, detail=str(e))
+        add_log("error", f"【{curr.name}】博雅数据刷新失败: {type(e).__name__}", username=curr.username, user_name=curr.name, category="boya")
+        raise HTTPException(status_code=500, detail="博雅数据未同步："+type(e).__name__)
 
+
+async def boya_action_response(req, action):
+    acc = resolve_account(req.username)
+    if not acc:
+        raise HTTPException(status_code=401, detail="请先登录账号")
+    try:
+        coordinates = None
+        if action == "sign":
+            if (req.lat is None) != (req.lng is None):
+                raise HTTPException(status_code=422, detail="经纬度必须同时提供")
+            coordinates = None if req.lat is None else (req.lat, req.lng)
+        result = await asyncio.to_thread(perform_boya_action, acc, action, req.course_id, sign_type=getattr(req, "sign_type", 1), coordinates=coordinates, renew=boya_scheduler._renew_session)
+        add_log("warning" if result.get("pending_verification") else "info", "博雅请求已处理；官方状态待同步。" if result.get("pending_verification") else "博雅操作状态已刷新。", username=acc.username, user_name=acc.name, category="boya")
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        add_log("warning", "博雅操作暂未完成：" + type(exc).__name__, username=acc.username, user_name=acc.name, category="boya")
+        safe_message = exc.message if isinstance(exc, BoyaApiError) else str(exc) if isinstance(exc, (BoyaSessionExpired, operations.OperationBusy)) else "通信未完成，写入结果可能待官方复核；请刷新官方记录，不要反复提交"
+        return {"status": "error", "message": safe_message, "error_type": type(exc).__name__}
 
 @app.post("/api/boya/select")
 async def select_boya_course(req: BoyaActionRequest):
-    acc = accounts.get(req.username) if req.username else get_active_account()
-    if not acc or not acc.boya_client.is_authenticated():
-        raise HTTPException(status_code=401, detail="博雅未登录鉴权")
-
-    try:
-        res = acc.boya_client.select_course(req.course_id)
-        add_log("success", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 抢选成功！", username=acc.username, user_name=acc.name, category="boya")
-        try:
-            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-        except Exception:
-            pass
-        return {"status": "success", "result": res}
-    except Exception as e:
-        add_log("warning", f"【{acc.name}】博雅选课 [ID:{req.course_id}] 反馈: {e}", username=acc.username, user_name=acc.name, category="boya")
-        return {"status": "error", "message": str(e)}
-
+    return await boya_action_response(req, "select")
 
 @app.post("/api/boya/drop")
 async def drop_boya_course(req: BoyaActionRequest):
-    acc = accounts.get(req.username) if req.username else get_active_account()
-    if not acc or not acc.boya_client.is_authenticated():
-        raise HTTPException(status_code=401, detail="博雅未登录鉴权")
-
-    try:
-        # 北航博雅官方 delChosenCourse 接口期望接收的是 courseId（如 10018、10015、10014）
-        # 先以 req.course_id 直接退选；若失败再尝试以 chosenCourseId 作为兜底退选
-        try:
-            res = acc.boya_client.drop_course(req.course_id)
-        except BoyaApiError as be:
-            chosen_reg_id = None
-            for c in getattr(acc, "boya_selected_courses", []):
-                if str(c.get("id")) == str(req.course_id) or str(c.get("courseId")) == str(req.course_id):
-                    chosen_reg_id = c.get("chosenCourseId")
-                    break
-            if chosen_reg_id and chosen_reg_id != req.course_id:
-                res = acc.boya_client.drop_course(chosen_reg_id)
-            else:
-                raise be
-
-        add_log("info", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 已退选成功。", username=acc.username, user_name=acc.name, category="boya")
-        try:
-            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-        except Exception:
-            pass
-        return {"status": "success", "result": res}
-    except Exception as e:
-        add_log("warning", f"【{acc.name}】博雅退课 [ID:{req.course_id}] 反馈: {e}", username=acc.username, user_name=acc.name, category="boya")
-        return {"status": "error", "message": str(e)}
-
+    return await boya_action_response(req, "drop")
 
 @app.post("/api/boya/sign")
 async def sign_boya_course(req: BoyaSignRequest):
-    acc = accounts.get(req.username) if req.username else get_active_account()
-    if not acc or not acc.boya_client.is_authenticated():
-        raise HTTPException(status_code=401, detail="博雅未登录鉴权")
-
-    course = None
-    for c in getattr(acc, "boya_selected_courses", []) + getattr(acc, "boya_all_courses", []):
-        if c.get("id") == req.course_id or c.get("courseId") == req.course_id:
-            course = c
-            break
-
-    lat, lng = req.lat, req.lng
-    if lat is None or lng is None:
-        cfg = parse_sign_config(course.get("courseSignConfig") if course else {})
-        pts = cfg.get("signPointList") or []
-        if pts:
-            ref = pts[-1]
-            base_lat = float(ref.get("lat") or ref.get("signLat") or 39.9822)
-            base_lng = float(ref.get("lng") or ref.get("signLng") or 116.3475)
-            rad = float(ref.get("radius") or ref.get("signRadius") or 20)
-            lat, lng = random_point_in_radius(base_lat, base_lng, rad)
-        else:
-            lat, lng = 39.9822, 116.3475
-
-    action_text = "签退" if req.sign_type == 2 else "签到"
-    try:
-        res = acc.boya_client.sign_course(req.course_id, lat=lat, lng=lng, sign_type=req.sign_type)
-        # 同步记录至守护调度器防重记录，避免后台巡检重复打卡
-        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        record_key = f"{acc.username}_{'signout' if req.sign_type == 2 else 'sign'}_{req.course_id}_{today_str}"
-        boya_scheduler.done_records.add(record_key)
-        add_log("success", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 手动{action_text}成功！微扰定位坐标: ({lat}, {lng})", username=acc.username, user_name=acc.name, category="boya")
-        # 步骤完成铁律：博雅签到/签退成功后立即向系统拉取最新已选列表与学分统计，即时刷新内存
-        try:
-            acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
-            acc.boya_statistics = acc.boya_client.query_statistics()
-            acc.boya_last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
-        except Exception as ref_err:
-            logger.debug(f"Post manual boya sign refresh error: {ref_err}")
-        return {"status": "success", "result": res}
-    except Exception as e:
-        add_log("warning", f"【{acc.name}】博雅课程 [ID:{req.course_id}] 手动{action_text}反馈: {e}", username=acc.username, user_name=acc.name, category="boya")
-        return {"status": "error", "message": str(e)}
+    return await boya_action_response(req, "sign")
 
 
 @app.post("/api/boya/toggle_auto")
 async def toggle_boya_auto(req: BoyaToggleAutoRequest):
-    acc = accounts.get(req.username) if req.username else get_active_account()
+    acc = resolve_account(req.username)
     if not acc:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    if req.auto_select is not None:
-        acc.boya_auto_select = req.auto_select
-    if req.auto_sign is not None:
-        acc.boya_auto_sign = req.auto_sign
-    if req.campus is not None:
-        acc.campus = req.campus
+    if req.campus is not None and req.campus not in ("北京", "杭州"):
+        raise HTTPException(status_code=422, detail="请选择北京或杭州校区")
+    if req.targets is not None and set(req.targets) != set(REQUIREMENTS):
+        raise HTTPException(status_code=422, detail="预约目标必须包含德育、劳育、美育、安全健康")
+    def update_preferences():
+        with account_lock(acc):
+            if acc.removed:
+                raise HTTPException(status_code=409, detail="账号已移除")
+            if req.auto_select is not None:
+                acc.boya_auto_select = req.auto_select
+            if req.auto_sign is not None:
+                acc.boya_auto_sign = req.auto_sign
+            if req.campus is not None:
+                acc.campus = req.campus
+            if req.targets is not None:
+                acc.boya_targets = dict(req.targets)
+    await asyncio.to_thread(update_preferences)
     # 铁律：自动秒抢永久仅抢支持线上自主打卡课程，彻底消除线下考勤风险
     acc.boya_require_auto_sign = True
     acc.boya_allow_offline = False
@@ -1772,6 +1622,7 @@ async def toggle_boya_auto(req: BoyaToggleAutoRequest):
         "boya_auto_sign": acc.boya_auto_sign,
         "campus": acc.campus,
         "scheduler_running": boya_scheduler.running,
+        "boya_targets": acc.boya_targets,
     }
 
 
@@ -1884,7 +1735,7 @@ async def get_disclaimer():
     return {
         "status": "ok",
         "accepted": bool(config.get("disclaimer_accepted", False)),
-        "version": "1.2.2",
+        "version": VERSION,
     }
 
 
@@ -1903,31 +1754,21 @@ async def show_window():
         try:
             cb()
         except Exception as e:
-            logger.warning(f"Error executing window show callback: {e}")
+            logger.warning(f"Error executing window show callback: {type(e).__name__}")
     return {"status": "ok", "message": "window restored"}
-
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "ok",
-        "version": "1.2.5",
-        "active_username": active_username,
-        "accounts_count": len(accounts),
-    }
 
 
 @app.post("/api/exit")
 async def exit_app():
     add_log("info", "接收到退出指令，正在安全关闭后台服务进程...")
     exit_cb = window_controller.get("exit")
-    if exit_cb:
-        try:
-            exit_cb()
-        except Exception:
-            pass
     loop = asyncio.get_event_loop()
-    loop.call_later(0.3, lambda: os._exit(0))
+    def finish_exit():
+        if exit_cb:
+            exit_cb()
+        else:
+            os._exit(0)
+    loop.call_later(0.3, finish_exit)
     return {"status": "exiting"}
 
 
@@ -1946,11 +1787,7 @@ async def delete_account_rest(username: str):
         raise HTTPException(status_code=404, detail="Account not found")
 
     acc = accounts.pop(username)
-    await acc.client.close()
-    try:
-        acc.boya_client.session.close()
-    except Exception:
-        pass
+    await dispose_account(acc)
     add_log("info", f"学生账号 【{acc.name} ({acc.username})】 已通过 RESTful 接口移除。", username=acc.username, user_name=acc.name)
 
     if active_username == username:
@@ -2005,5 +1842,3 @@ async def serve_favicon():
     if fav_file.exists():
         return FileResponse(fav_file)
     raise HTTPException(status_code=404, detail="Favicon not found")
-
-

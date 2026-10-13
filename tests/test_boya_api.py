@@ -7,6 +7,8 @@ from server.app import app, accounts, AccountState
 class TestBoyaApi(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        csrf = self.client.get("/api/session").json()["csrf"]
+        self.client.headers["X-BUAA-CSRF"] = csrf
         accounts.clear()
 
         acc = AccountState(

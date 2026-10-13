@@ -86,24 +86,18 @@ LOCAL_VAULT_IV = hashlib.md5(b"BUAA_SIGNIN_SECURE_IV_v122").digest()
 
 
 def encrypt_local_secret(plaintext: str) -> str:
-    """本地机密数据 AES-128-CBC 对称加密，输出带 enc: 前缀的 Base64 字符串"""
-    if not plaintext:
-        return ""
-    try:
-        data = plaintext.encode("utf-8")
-        padder = sym_padding.PKCS7(128).padder()
-        padded = padder.update(data) + padder.finalize()
-        encryptor = Cipher(algorithms.AES(LOCAL_VAULT_KEY), modes.CBC(LOCAL_VAULT_IV)).encryptor()
-        encrypted = encryptor.update(padded) + encryptor.finalize()
-        return "enc:" + base64.b64encode(encrypted).decode("utf-8")
-    except Exception:
-        return plaintext
+    """Write only protected v2 secrets; legacy constants are read compatibility only."""
+    from core.vault import encrypt
+    return encrypt(plaintext)
 
 
 def decrypt_local_secret(ciphertext: str) -> str:
     """本地机密数据 AES-128-CBC 对称解密，若非 enc: 开头则兼容返回原文"""
     if not ciphertext or not str(ciphertext).startswith("enc:"):
         return ciphertext or ""
+    if ciphertext.startswith(("enc:dpapi:", "enc:keyring:", "enc:keyring-v2:", "enc:v2:")):
+        from core.vault import decrypt
+        return decrypt(ciphertext)
     try:
         raw_b64 = ciphertext[4:]
         encrypted = base64.b64decode(raw_b64)
@@ -112,5 +106,5 @@ def decrypt_local_secret(ciphertext: str) -> str:
         unpadder = sym_padding.PKCS7(128).unpadder()
         data = unpadder.update(padded) + unpadder.finalize()
         return data.decode("utf-8")
-    except Exception:
-        return ciphertext
+    except Exception as exc:
+        raise ValueError("旧凭据无法解密，请重新登录") from exc
