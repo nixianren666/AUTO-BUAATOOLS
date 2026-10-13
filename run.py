@@ -317,14 +317,14 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title="BUAA 课程独立签到助手 v1.2.7 (后台运行中)",
+            title=f"AUTO-BUAA v{VERSION}" if sys.platform.startswith("linux") else "BUAA 课程独立签到助手 v1.2.7 (后台运行中)",
             menu=tray_menu,
         )
         if run_now:
             icon.run_detached()
         return icon
     except Exception as te:
-        print(f"系统托盘创建跳过: {te}")
+        print(f"系统托盘创建跳过: {type(te).__name__}")
         return None
 
 
@@ -449,6 +449,8 @@ def main():
 
     # 5. 创建桌面任务栏系统托盘（包含“显示主界面”与“退出应用”，彻底消除 macOS 死锁与无头报错）
     tray_icon = setup_tray()
+    if tray_icon is None:
+        start_hidden = False
 
     # 6. 启动原生桌面窗体 (pywebview)
     try:
@@ -471,7 +473,7 @@ def main():
                 global is_exiting
                 import json
                 import pathlib
-                report = {"version": VERSION, "native_gui": True, "passed": False}
+                report = {"version": VERSION, "native_gui": True, "passed": False, "tray_available": tray_icon is not None}
                 try:
                     deadline = time.monotonic() + 60
                     while time.monotonic() < deadline:
