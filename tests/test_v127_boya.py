@@ -80,6 +80,13 @@ class BoyaContracts(unittest.TestCase):
             perform_boya_action(self.acc, "sign", 1001)
         self.assertEqual(self.posts, [])
 
+    def test_unknown_fractional_attendance_or_assessment_cannot_authorize_signing(self):
+        from core.domain import attendance_allowed
+        for field, value in (("checkin",5.8),("checkin",0.0),("checkin",""),("pass",0.3),("pass",2),("pass",True)):
+            course={**self.course,"checkin":5,field:value}
+            course["courseSignConfig"]={**self.course["courseSignConfig"],"signOutStartDate":(now()-timedelta(minutes=1)).isoformat()}
+            self.assertFalse(attendance_allowed(course,2,now()))
+
     def test_invalid_location_does_not_use_defaults(self):
         self.selected = [{**self.course, "courseSignConfig": {"signPointList": [{}]}}]
         self.acc.boya_all_courses = []

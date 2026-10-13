@@ -55,6 +55,10 @@ bash scripts/install_linux_service.sh status
 
 Docker 使用单独持久卷保存配置和加密密钥，不复制开发者配置进镜像。`docker compose up --build -d` 前在环境中设置 `BUAA_ADMIN_PASSWORD`；默认端口只映射到宿主机回环。远程访问需自行配置 HTTPS、允许的 Host 和访问控制。
 
+如果开启任务时配置保存失败，程序撤回本次开启；暂停请求仍立即生效。若暂停后提示保存失败，重启前应重新保存，避免磁盘中的旧开关恢复。
+
+Ubuntu/Debian 桌面需要系统图形库，例如 `libegl1 libopengl0 libgl1 libxcb-cursor0 libxkbcommon-x11-0`；仅使用 Headless 时不需要桌面渲染环境。
+
 ## 验证与发布
 
 ```bash

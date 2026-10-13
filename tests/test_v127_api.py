@@ -3,7 +3,7 @@ import asyncio
 import os
 import unittest
 from datetime import timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 if not os.environ.get("BUAA_CONFIG_FILE") or os.environ.get("TESTING") != "1":
     raise RuntimeError("v1.2.7 API tests require the isolated test runner")
@@ -66,6 +66,37 @@ class APIContracts(unittest.TestCase):
         targets={"德育":0,"劳育":0,"美育":0,"安全健康":0}
         data=self.client.post("/api/boya/toggle_auto",json={"targets":targets}).json()
         self.assertEqual(data["boya_targets"],targets)
+
+    def test_failed_persistence_cannot_leave_boya_automation_secretly_enabled(self):
+        with patch.object(backend,"sync_config",side_effect=OSError("synthetic storage failure")),patch.object(backend.boya_scheduler,"start") as start:
+            response=self.client.post("/api/boya/toggle_auto",json={"auto_select":True})
+        self.assertEqual(response.status_code,503)
+        self.assertFalse(self.account.boya_auto_select)
+        start.assert_not_called()
+
+    def test_stop_remains_effective_when_config_cannot_be_saved(self):
+        self.account.boya_auto_select=True
+        with patch.object(backend,"sync_config",side_effect=OSError("synthetic storage failure")):
+            response=self.client.post("/api/boya/toggle_auto",json={"auto_select":False})
+        self.assertEqual(response.status_code,200)
+        self.assertFalse(response.json()["persisted"])
+        self.assertFalse(response.json()["boya_auto_select"])
+        self.assertFalse(self.account.boya_auto_select)
+
+    def test_failed_persistence_rolls_back_regular_enable(self):
+        backend.scheduler.stop()
+        with patch.object(backend,"sync_config",side_effect=OSError("synthetic storage failure")):
+            response=self.client.post("/api/auto_checkin",json={"enabled":True})
+        self.assertEqual(response.status_code,503)
+        self.assertFalse(backend.scheduler.enabled)
+        for value in (True,5,100,20.5):
+            self.assertEqual(self.client.post("/api/auto_checkin",json={"enabled":True,"interval":value}).status_code,422)
+
+    def test_autostart_system_failure_cannot_report_requested_state_as_success(self):
+        with patch("core.autostart.set_autostart",return_value=False),patch("core.autostart.get_autostart_status",return_value=False):
+            data=self.client.post("/api/system/autostart",json={"enabled":True}).json()
+        self.assertEqual(data["status"],"error")
+        self.assertFalse(data["enabled"])
 
     def test_pool_unknowns_remain_unknown_and_official_category_is_preserved(self):
         course={"id":9001,"courseKind":"智育","courseName":"synthetic art title","courseCurrentCount":None,"courseMaxCount":None,"courseSignConfig":{"signPointList":[{}]}}

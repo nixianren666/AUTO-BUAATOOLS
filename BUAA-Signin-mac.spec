@@ -37,6 +37,28 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+# Python and locally linked cryptography may resolve different OpenSSL 3 files
+# with the same basename. Bundle the pair cryptography actually links to.
+from pathlib import Path
+from PyInstaller.depend.bindepend import get_imports
+import cryptography.hazmat.bindings._rust as rust_bindings
+import subprocess
+openssl = {}
+for name, resolved in get_imports(rust_bindings.__file__):
+    if Path(name).name in ('libssl.3.dylib', 'libcrypto.3.dylib'):
+        if not resolved:
+            raise RuntimeError('Cannot resolve cryptography OpenSSL dependency: ' + name)
+        openssl[Path(name).name] = resolved
+if 'libssl.3.dylib' in openssl:
+    for name, resolved in get_imports(openssl['libssl.3.dylib']):
+        if Path(name).name == 'libcrypto.3.dylib' and resolved:
+            openssl['libcrypto.3.dylib'] = resolved
+    required = subprocess.check_output(['nm','-u',rust_bindings.__file__],text=True)
+    provided = subprocess.check_output(['nm','-gU',openssl['libssl.3.dylib']],text=True)
+    if '_SSL_get0_group_name' in required and '_SSL_get0_group_name' not in provided:
+        raise RuntimeError('Resolved OpenSSL does not export cryptography required symbol')
+    a.binaries = [(dest, openssl.get(Path(dest).name, source), kind) for dest,source,kind in a.binaries]
+    print('Pinned linked OpenSSL pair:', sorted(openssl))
 pyz = PYZ(a.pure)
 
 exe = EXE(
