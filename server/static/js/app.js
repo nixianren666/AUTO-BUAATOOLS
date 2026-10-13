@@ -136,6 +136,11 @@ function initModalBackdrops() {
         closeAccountCardsModal();
         return;
       }
+      const glassPopover = document.getElementById("glassPopover");
+      if (glassPopover && !glassPopover.classList.contains("hidden")) {
+        glassPopover.classList.add("hidden");
+        document.getElementById("glassControlBtn")?.focus();
+      }
     }
   });
 }

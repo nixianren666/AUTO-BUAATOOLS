@@ -53,6 +53,10 @@ const fs = require('node:fs');
       assert.equal(await page.locator('#manualSignModal').evaluate(e => e.classList.contains('hidden')), true);
       await page.evaluate(() => updateGlassOpacity('80', false));
       assert.equal(await page.locator('#glassPercentText').textContent(), '透光 80%');
+      await page.locator('#glassControlBtn').click();
+      assert.equal(await page.locator('#glassPopover').evaluate(e=>e.classList.contains('hidden')),false);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#glassPopover').evaluate(e=>e.classList.contains('hidden')),true);
     });
     await check('unknown-calendar-and-signinfo-cannot-invent-semester-pass', async () => {
       assert.equal(await page.evaluate(() => isCourseFinalPassed({checkin:5,pass:1,signInfo:'{"signIn":null}'})), false);

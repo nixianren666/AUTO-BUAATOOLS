@@ -2,7 +2,7 @@
 
 整理时间：2026-10-12；GitHub 审查补全于 2026-10-13，北京时间。用途：让在本目录工作的后续 Codex 对话快速接手；这是一份可更新的项目记忆，不是全部聊天原文的副本。
 
-**正在实施 v1.2.7 修复：** [V127_IMPLEMENTATION.md](V127_IMPLEMENTATION.md) 记录用户要求、禁止 WSL、隐私边界与尚未通过的发布闸门。根目录已有未验收业务修改，不应直接作为可发布版本使用。
+**正在实施 v1.2.7 修复：** [V127_IMPLEMENTATION.md](V127_IMPLEMENTATION.md) 记录用户要求、禁止 WSL、隐私边界与尚未通过的发布闸门；逐项修复对应见 [V127_FIX_MATRIX.md](V127_FIX_MATRIX.md)。根目录已有未验收业务修改，不应直接作为可发布版本使用。
 
 **最新状态（2026-10-14）：** [V126_REVIEW.md](V126_REVIEW.md) 完成 v1.2.6 多角度审查；[VERSION_WITHDRAWAL.md](VERSION_WITHDRAWAL.md) 记录实际 v1.3 下架。main/同级Git已恢复5158df8，v1.3 Release/标签已删除，默认EXE已换为核实的v1.2.6，错误发布流水线暂停。旧报告是时间快照，不能据它们认定v1.3仍为当前入口。
 

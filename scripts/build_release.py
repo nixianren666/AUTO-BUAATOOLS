@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
+import plistlib
 
 ROOT=Path(__file__).resolve().parent.parent
 sys.path.insert(0,str(ROOT))
@@ -32,7 +34,7 @@ def main():
         call("codesign","--force","--deep","-s","-",str(dist/"BUAA-Signin.app"))
         call("codesign","--verify","--deep","--strict",str(dist/"BUAA-Signin.app"))
     call(sys.executable,"scripts/verify_compiled.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"),"--native")
-    if os.environ.get("GITHUB_ACTIONS")=="true" and system in ("linux","darwin"):
+    if os.environ.get("GITHUB_ACTIONS")=="true":
         call(sys.executable,"scripts/verify_native_service.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"))
     if system=="win32":
         shutil.copy2(executable,output/f"BUAA-Signin-v{VERSION}-portable.exe")
@@ -49,6 +51,20 @@ def main():
         (staging/"Applications").symlink_to("/Applications")
         call("hdiutil","create","-volname",f"BUAA-Signin {VERSION}","-srcfolder",str(staging),"-ov","-format","UDZO",str(output/f"BUAA-Signin-v{VERSION}-{suffix}.dmg"))
         call("ditto","-c","-k","--sequesterRsrc","--keepParent",str(dist/"BUAA-Signin.app"),str(output/f"BUAA-Signin-v{VERSION}-{suffix}.zip"))
+        dmg=output/f"BUAA-Signin-v{VERSION}-{suffix}.dmg"
+        call("hdiutil","verify",str(dmg))
+        def tree_hashes(directory):
+            return {str(p.relative_to(directory)):hashlib.sha256(p.read_bytes()).hexdigest() for p in directory.rglob('*') if p.is_file()}
+        with tempfile.TemporaryDirectory(prefix="buaa-dmg-acceptance-") as directory:
+            mount=Path(directory)/"volume";mount.mkdir()
+            subprocess.run(["hdiutil","attach","-readonly","-nobrowse","-mountpoint",str(mount),str(dmg)],check=True,capture_output=True)
+            try:
+                packaged=mount/"BUAA-Signin.app"
+                assert tree_hashes(packaged)==tree_hashes(dist/"BUAA-Signin.app"),"DMG contains another application payload"
+                assert plistlib.loads((packaged/"Contents/Info.plist").read_bytes())["CFBundleVersion"]==VERSION
+                call("codesign","--verify","--deep","--strict",str(packaged))
+            finally:call("hdiutil","detach",str(mount))
+        (ROOT/"acceptance/dmg-summary.json").write_text(json.dumps({"passed":True,"version":VERSION,"dmg_integrity_verified":True,"mounted_payload_matches_tested_application":True}),encoding="utf-8")
     else:
         with tarfile.open(output/f"BUAA-Signin-v{VERSION}-{suffix}.tar.gz","w:gz") as archive:
             archive.add(executable,arcname="BUAA-Signin")

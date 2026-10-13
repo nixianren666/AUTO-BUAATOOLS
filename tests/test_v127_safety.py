@@ -66,6 +66,21 @@ class Contracts(unittest.TestCase):
                 a.db.close()
                 b.db.close()
 
+    def test_long_running_cleanup_preserves_unresolved_writes(self):
+        import time
+        ledger = operations.OperationLedger()
+        try:
+            ledger.claim("old-uncertain",group="fixture-group")
+            ledger.finish("old-uncertain","uncertain")
+            ledger.claim("old-failed");ledger.finish("old-failed","failed")
+            ledger.db.execute("UPDATE operations SET updated=?",(time.time()-181*86400,));ledger.db.commit()
+            ledger._last_prune -= 86401
+            with self.assertRaises(operations.OperationBusy):
+                ledger.claim("changed-window",group="fixture-group")
+            self.assertIsNotNone(ledger.read("old-uncertain"))
+            self.assertIsNone(ledger.read("old-failed"))
+        finally:ledger.db.close()
+
 class RegularWrites(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.previous = operations.ledger
