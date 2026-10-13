@@ -6,7 +6,7 @@ import time
 from core import operations
 from core.boya_client import BoyaApiError, BoyaSessionExpired
 from core.domain import (now, course_id, course_times, sign_config, sign_points,
-    attendance_allowed, within_semester, semester_bounds, in_window)
+    attendance_allowed, drop_allowed, within_semester, semester_bounds, in_window)
 
 _creation_lock = threading.Lock()
 
@@ -23,7 +23,7 @@ def merge_selected(course, pool):
     if match:
         for key in ("courseSignConfig", "courseStartDate", "courseStartTime", "courseEndDate", "courseEndTime", "coursePosition", "courseKind", "courseNewKind2"):
             if result.get(key) in (None, "", {}) or (key == "courseSignConfig" and not sign_points(sign_config(result.get(key)))):
-                result[key] = match.get(key)
+                result[key] = match.get(key, match.get("signConfig")) if key == "courseSignConfig" else match.get(key)
     return result
 
 def reconcile_official(account, selected):
@@ -100,8 +100,8 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             return {"status": "success", "submitted": False, "officially_confirmed": True}
         if action == "sign" and course is None:
             raise BoyaApiError("not_selected", "本账号未选此课程，拒绝考勤")
-        if action == "drop" and course.get("checkin") is not None and str(course.get("checkin")) != "0":
-            raise BoyaApiError("attendance_recorded", "已有官方考勤记录，不能在本程序退选")
+        if action == "drop" and not drop_allowed(course, now()):
+            raise BoyaApiError("attendance_recorded", "已有官方考勤/通过记录、课程已结束或时间不明，不能在本程序退选")
         if action == "select":
             # Read a fresh complete pool; a stale capacity snapshot cannot authorize a write.
             pool = client.query_courses()
@@ -132,7 +132,7 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             course = merge_selected(course, pool)
             if not attendance_allowed(course, sign_type, now()):
                 raise BoyaApiError("outside_window", "官方考勤已完成、配置不完整或不在签到/签退窗口")
-            points = sign_points(sign_config(course.get("courseSignConfig")))
+            points = sign_points(sign_config(course.get("courseSignConfig", course.get("signConfig"))))
             if coordinates is None:
                 point = points[-1]
                 coordinates = random_point_in_radius(point["lat"], point["lng"], point["radius"])
@@ -154,13 +154,13 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
                 return attendance_allowed(course, sign_type, now())
             if action == "select":
                 return in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()) and (not automatic or is_auto_select_candidate(course, now(), getattr(account, "campus", "北京")))
-            return True
+            return drop_allowed(course, now())
         previous_guard = client.request_guard
         previous_scope = client.operation_scope
         client.request_guard = final_guard
         client.operation_user = account.username
         # Attendance is scoped to the course's official window, not a process or guessed day.
-        cfg = sign_config(course.get("courseSignConfig"))
+        cfg = sign_config(course.get("courseSignConfig", course.get("signConfig")))
         if action == "sign":
             client.operation_scope = cfg.get("signStartDate" if sign_type == 1 else "signOutStartDate")
         elif action == "select":

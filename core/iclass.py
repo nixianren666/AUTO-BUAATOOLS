@@ -477,6 +477,8 @@ class IclassClient:
         if not str(course_id).isdigit() or int(course_id) <= 0:
             return False, "排课 ID 无效，未提交"
         async with self._signin_lock:
+            if not self.request_guard() or (guard is not None and not guard()):
+                return False, "账号、连接模式或守护状态已变化，未提交"
             if not await self.ensure_iclass_session():
                 return False, "课堂认证未完成"
             user = self.operation_user or self.user_info.get("schoolid")
@@ -531,6 +533,10 @@ class IclassClient:
                 if not success and message and "登录" in message:
                     self.user_id = self.session_id = None
                 return success, sanitize_signin_message(success, message)
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+                operations.ledger.failed_before_send(key)
+                self.actual_sign_posts -= 1
+                return False, "连接尚未建立，未发送签到；将在有效窗口内退避重试"
             except BaseException:
                 operations.ledger.finish(key, "uncertain")
                 raise

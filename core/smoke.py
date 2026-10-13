@@ -1,6 +1,7 @@
 """Explicit isolated acceptance profile. All school traffic uses MockTransport."""
 import json
 import threading
+import sys
 from datetime import timedelta
 from urllib.parse import parse_qs
 
@@ -8,6 +9,12 @@ import httpx
 from core.domain import now, CHINA
 
 def seed(backend):
+    def forbid_school_traffic(event, args):
+        if event == "socket.connect":
+            address = args[1]
+            if isinstance(address, tuple) and str(address[0]) not in ("127.0.0.1", "localhost", "::1"):
+                raise PermissionError("Acceptance profile permits loopback traffic only")
+    sys.addaudithook(forbid_school_traffic)
     from core.boya_crypto import BykcCrypto
     from core import boya_client
     crypto_local = threading.local()

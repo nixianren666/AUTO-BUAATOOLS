@@ -12,7 +12,9 @@ import unittest
 
 def main():
     project = Path(__file__).resolve().parent.parent
-    report_dir = Path(os.environ.get("BUAA_TEST_REPORT_DIR", tempfile.mkdtemp(prefix="buaa-test-reports-"))).resolve()
+    if not os.environ.get("BUAA_NODE_MODULES") and (project/"node_modules").is_dir():
+        os.environ["BUAA_NODE_MODULES"] = str(project/"node_modules")
+    report_dir = Path(os.environ.get("BUAA_TEST_REPORT_DIR") or tempfile.mkdtemp(prefix="buaa-test-reports-")).resolve()
     report_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="buaa-test-source-") as directory:
         source = Path(directory)

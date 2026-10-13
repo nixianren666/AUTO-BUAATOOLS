@@ -56,13 +56,12 @@ def get_linux_service_path() -> pathlib.Path:
 
 def get_executable_command() -> str:
     """获取启动命令，编译环境下为二进制绝对路径，源码环境下为 python + run.py"""
-    if getattr(sys, "frozen", False):
-        exe_path = os.path.abspath(sys.executable)
-        return f'"{exe_path}" --autostart'
-    else:
-        py_exe = os.path.abspath(sys.executable)
-        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "run.py"))
-        return f'"{py_exe}" "{script_path}" --autostart'
+    from core.profile import resolve_config_path
+    args = [os.path.abspath(sys.executable)]
+    if not getattr(sys, "frozen", False):
+        args.append(str(pathlib.Path(__file__).resolve().parent.parent / "run.py"))
+    args += ["--autostart", "--config", str(resolve_config_path())]
+    return subprocess.list2cmdline(args)
 
 
 def get_autostart_status() -> bool:

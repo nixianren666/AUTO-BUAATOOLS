@@ -178,5 +178,53 @@ class BoyaContracts(unittest.TestCase):
             perform_boya_action(self.acc,"select",1002,automatic=True,ordinary=lambda *a: [])
         self.assertEqual(len(self.posts),1)
 
+    def test_changed_capacity_cannot_replay_uncertain_manual_selection(self):
+        import time
+        stamp=time.time()
+        self.http_status=500
+        with self.assertRaises(httpx.HTTPStatusError):
+            perform_boya_action(self.acc,"select",1001)
+        self.course["courseCurrentCount"]+=1
+        self.http_status=200
+        with patch("core.boya_client.time.time",return_value=stamp+61):
+            with self.assertRaises(operations.OperationBusy):
+                perform_boya_action(self.acc,"select",1001)
+        self.assertEqual(len(self.posts),1)
+
+    def test_connection_failure_before_send_does_not_exhaust_selection_quota(self):
+        import time
+        stamp = time.time()
+        real_post = self.client.http_client.post
+        def offline(*args, **kwargs):
+            raise httpx.ConnectTimeout("synthetic connection failure")
+        self.client.http_client.post = offline
+        for offset in range(0, 600, 61):
+            with patch("core.boya_client.time.time", return_value=stamp+offset):
+                with self.assertRaises(httpx.ConnectTimeout):
+                    perform_boya_action(self.acc,"select",1001)
+        self.assertFalse(self.acc.boya_pending_courses)
+        self.client.http_client.post = real_post
+        with patch("core.boya_client.time.time", return_value=stamp+700):
+            result = perform_boya_action(self.acc,"select",1001)
+        self.assertTrue(result["pending_verification"])
+        self.assertEqual(len(self.posts),1)
+
+    def test_complete_history_range_uses_only_official_calendar_periods(self):
+        older={"semesterStartDate":"2020-09-01","semesterEndDate":"2021-01-31","semesterName":"historical-fixture"}
+        self.client.get_all_config=lambda:{"data":{"semester":[older,self.client.semester_info]}}
+        captured=[]
+        self.client.call=lambda api,payload: captured.append(payload) or {"data":{"courseList":[]}}
+        BoyaClient.query_chosen_courses(self.client)
+        self.assertTrue(captured[0]["startDate"].startswith("2020-09-01"))
+        self.assertGreater(captured[0]["endDate"],now().isoformat(sep=" "))
+        self.assertNotEqual(self.client.semester_info["semesterName"],older["semesterName"])
+
+    def test_known_alias_config_does_not_authorize_explicit_empty_primary(self):
+        alias=self.course.pop("courseSignConfig")
+        self.course["signConfig"]=alias
+        self.assertTrue(is_auto_select_candidate(self.course,now()))
+        self.course["courseSignConfig"]={}
+        self.assertFalse(is_auto_select_candidate(self.course,now()))
+
 if __name__ == "__main__":
     unittest.main()

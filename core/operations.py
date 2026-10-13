@@ -24,10 +24,17 @@ class OperationLedger:
     def key(user, action, cid, day):
         return hashlib.sha256(json.dumps([user, action, str(cid), str(day)]).encode()).hexdigest()
 
-    def claim(self, key, limit=3, group=None):
+    def claim(self, key, limit=3, group=None, block_group_success=False):
         with self.lock:
             self.db.execute("BEGIN IMMEDIATE")
             try:
+                if group:
+                    states = {row[0] for row in self.db.execute("SELECT state FROM operations JOIN operation_groups USING(key) WHERE group_key=?", (group,))}
+                    if states & {"pending", "uncertain"}:
+                        raise OperationBusy("同一操作的先前请求尚待官方确认，禁止跨窗口/容量变化重发")
+                    if block_group_success and "success" in states:
+                        self.db.commit()
+                        return False
                 row = self.db.execute("SELECT state, attempts FROM operations WHERE key=?", (key,)).fetchone()
                 if row and row[0] == "success":
                     self.db.commit()
@@ -54,6 +61,12 @@ class OperationLedger:
     def read(self, key):
         with self.lock:
             return self.db.execute("SELECT state, attempts, updated FROM operations WHERE key=?", (key,)).fetchone()
+
+    def failed_before_send(self, key):
+        """Only transport errors guaranteeing no application request was sent."""
+        with self.lock:
+            self.db.execute("UPDATE operations SET state='failed', attempts=MAX(0,attempts-1), updated=? WHERE key=? AND state IN ('pending','failed')", (time.time(),key))
+            self.db.commit()
 
     def forget_confirmed(self, key):
         """Only callers with a fresh contrary official enrollment may use this."""

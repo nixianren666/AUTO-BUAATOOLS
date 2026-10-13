@@ -73,7 +73,7 @@ def sign_points(config):
     return result
 
 def autonomous(course, require_windows=False):
-    cfg = sign_config(course.get("courseSignConfig") or course.get("signConfig"))
+    cfg = sign_config(course.get("courseSignConfig", course.get("signConfig")))
     if not sign_points(cfg):
         return False
     if require_windows:
@@ -84,7 +84,7 @@ def autonomous(course, require_windows=False):
     return True
 
 def attendance_allowed(course, sign_type, current):
-    cfg = sign_config(course.get("courseSignConfig"))
+    cfg = sign_config(course.get("courseSignConfig", course.get("signConfig")))
     try:
         if isinstance(course.get("checkin"), bool) or isinstance(course.get("pass"), bool):
             return False
@@ -99,6 +99,12 @@ def attendance_allowed(course, sign_type, current):
     if sign_type == 2:
         return checkin in (0, 5, 6) and in_window(cfg.get("signOutStartDate"), cfg.get("signOutEndDate"), current)
     return False
+
+def drop_allowed(course, current):
+    start, end = course_times(course)
+    checkin = course.get("checkin")
+    passed = course.get("pass")
+    return bool(start and end and start <= end and current <= end and not isinstance(checkin, bool) and checkin in (None,0,"0") and not isinstance(passed, bool) and passed in (None,0,"0"))
 
 def semester(config, current=None):
     current = current or now()

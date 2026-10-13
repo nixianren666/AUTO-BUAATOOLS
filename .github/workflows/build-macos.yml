@@ -25,6 +25,7 @@ jobs:
     env:
       BUAA_TEST_REPORT_DIR: ${{ github.workspace }}/acceptance/source
       BUAA_TEST_BROWSER: ""
+      BUAA_NODE_MODULES: ${{ github.workspace }}/node_modules
     steps:
       - uses: actions/checkout@v4
         with:
