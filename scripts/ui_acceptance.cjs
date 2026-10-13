@@ -67,6 +67,19 @@ const fs = require('node:fs');
       assert.equal(await page.locator('[data-action="regularSign"]').isDisabled(),true);
       assert.match(await page.locator('[data-action="regularSign"]').textContent(),/结束/);
     });
+    await check('unknown-capacity-category-and-partial-id-never-become-available-art-course', async () => {
+      const value=await page.evaluate(() => {
+        let rejected=false;
+        try { courseActionId('2001-invalid'); } catch { rejected=true; }
+        appState.boyaTab='all';appState.boyaSearchKeyword='';appState.boyaCategoryFilter='全部';appState.boyaAvailableOnly=true;
+        appState.boyaCourses=[{id:9001,courseName:'synthetic art title',category_key:'智育',capacity_available:false,autonomous_config_valid:false}];
+        renderBoyaFeed();
+        return {rejected,category:normalizeBoyaCategory({courseKind:'智育',courseName:'艺术课程'})};
+      });
+      assert.equal(value.rejected,true);
+      assert.equal(value.category,'智育');
+      assert.equal(await page.locator('#boyaCoursesFeed .feed-card').count(),0);
+    });
     await check('old-account-response-cannot-overwrite-new-view', async () => {
       let release;
       await page.route('**/api/classes**', async route => {

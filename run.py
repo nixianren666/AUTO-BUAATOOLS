@@ -368,6 +368,7 @@ def parse_arguments():
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"监听端口号（默认 {DEFAULT_PORT}）")
     parser.add_argument("--autostart", action="store_true", help="开机自启静默启动模式")
     parser.add_argument("--minimized", action="store_true", help="最小化启动模式")
+    parser.add_argument("--config", type=str, default=None, help="独立配置路径；同一配置只运行一个实例")
     parser.add_argument("--smoke-profile", action="store_true", help="内部验收：独立配置及合成学校接口")
     parser.add_argument("--smoke-test", action="store_true", help="内部验收：原生窗口运行检查后退出")
     parser.add_argument("--smoke-report", type=str, default=None)
@@ -378,6 +379,9 @@ def main():
     global window, tray_icon
 
     args = parse_arguments()
+    if args.config:
+        import pathlib
+        os.environ["BUAA_CONFIG_FILE"] = str(pathlib.Path(args.config).expanduser().resolve())
     smoke_directory = None
     if args.smoke_profile or args.smoke_test:
         import tempfile

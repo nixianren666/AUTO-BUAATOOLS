@@ -41,7 +41,7 @@ class APIContracts(unittest.TestCase):
         self.assertEqual(self.client.get("/api/classes?username=missing-fixture").status_code, 404)
 
     def test_invalid_sign_type_or_coordinates_rejected_by_api(self):
-        for body in ({"course_id": 1001, "sign_type": 9}, {"course_id": -1}, {"course_id": 1001, "lat": 200, "lng": 30}, {"course_id": 1001, "lat": 39}):
+        for body in ({"course_id": 1001, "sign_type": 9}, {"course_id": 1001, "sign_type": True}, {"course_id": 1001, "sign_type": 1.0}, {"course_id": -1}, {"course_id": 1001, "lat": 200, "lng": 30}, {"course_id": 1001, "lat": 39}):
             self.assertEqual(self.client.post("/api/boya/sign", json=body).status_code, 422)
 
     def test_public_health_contains_no_account_identity(self):
@@ -66,6 +66,14 @@ class APIContracts(unittest.TestCase):
         targets={"德育":0,"劳育":0,"美育":0,"安全健康":0}
         data=self.client.post("/api/boya/toggle_auto",json={"targets":targets}).json()
         self.assertEqual(data["boya_targets"],targets)
+
+    def test_pool_unknowns_remain_unknown_and_official_category_is_preserved(self):
+        course={"id":9001,"courseKind":"智育","courseName":"synthetic art title","courseCurrentCount":None,"courseMaxCount":None,"courseSignConfig":{"signPointList":[{}]}}
+        data=backend.enrich_pool([course])[0]
+        self.assertFalse(data["autonomous_config_valid"])
+        self.assertFalse(data["capacity_available"])
+        self.assertIsNone(data["capacity_current"])
+        self.assertEqual(data["category_key"],"智育")
 
     def test_signinfo_or_elapsed_time_does_not_invent_pass(self):
         old = (now()-timedelta(days=1)).isoformat()

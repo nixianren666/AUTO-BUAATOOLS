@@ -17,7 +17,7 @@ import httpx
 from core.cas import CasParser
 from core.webvpn import to_webvpn_url
 from core.boya_crypto import BykcCrypto
-from core.domain import trusted_url, semester, course_id, now as china_now
+from core.domain import trusted_url, semester, semester_bounds, course_id, now as china_now
 from core import operations
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ class BoyaClient:
         self.http_client = httpx.Client(timeout=25, follow_redirects=False, verify=True, trust_env=False)
         self.request_guard = lambda: True
         self.semester_info = None
+        self.calendar_range = None
         self.operation_user = None
         self.operation_scope = None
         self._request_lock = threading.RLock()
@@ -217,7 +218,7 @@ class BoyaClient:
                 if row and time.time()-row[2] < 60:
                     raise operations.OperationBusy("同一课程的选课请求至少间隔60秒")
             group = operations.ledger.key(self.operation_user, action, cid, "group")
-            if not operations.ledger.claim(key, group=group):
+            if not operations.ledger.claim(key, group=group, block_group_success=api_name == "choseCourse"):
                 return {"status": "0", "already_accepted": True}
             if api_name == "choseCourse":
                 try:
@@ -251,6 +252,12 @@ class BoyaClient:
             if key:
                 operations.ledger.finish(key, "success")
             return decoded
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+            if key:
+                operations.ledger.failed_before_send(key)
+                if api_name == "choseCourse":
+                    operations.ledger.failed_before_send(quota)
+            raise
         except (BoyaSessionExpired, BoyaApiError):
             if key:
                 operations.ledger.finish(key, "failed")
@@ -309,13 +316,19 @@ class BoyaClient:
         return data
 
     def current_semester(self):
-        self.semester_info = semester(self.get_all_config())
+        config = self.get_all_config()
+        self.semester_info = semester(config)
+        data = config.get("data", config)
+        periods = [semester_bounds(row) for row in data.get("semester", []) if isinstance(row, dict)]
+        periods = [(start,end) for start,end in periods if start and end]
+        self.calendar_range = (min(start for start,end in periods).isoformat(sep=" "), max(end for start,end in periods).isoformat(sep=" ")) if periods else None
         return self.semester_info
 
     def query_chosen_courses(self, start_date=None, end_date=None):
         if start_date is None or end_date is None:
             info = self.current_semester()
-            start_date, end_date = info["semesterStartDate"], info["semesterEndDate"]
+            # Keep historical selected-course views without a guessed fixed year range.
+            start_date, end_date = self.calendar_range or (info["semesterStartDate"], info["semesterEndDate"])
         data = self.call("queryChosenCourse", {"startDate": start_date, "endDate": end_date}).get("data")
         if not isinstance(data, dict) or not isinstance(data.get("courseList"), list):
             raise BoyaApiError("protocol_error", "缺少官方已选课程数据")

@@ -9,7 +9,7 @@ let appState = {
   activeUser: null,
   accounts: [],
   mode: "direct",
-  globalAutoCheckin: true,
+  globalAutoCheckin: false,
   classes: [],
   currentCaptchaId: "",
   logsTimer: null,
@@ -327,6 +327,10 @@ function renderClassesList(classes) {
   if (mPending) mPending.textContent = pending;
 
   if (!classes || classes.length === 0) {
+    if (appState.regularStale) {
+      container.innerHTML='<div class="origin-empty-state"><div class="empty-title">课表尚未同步</div><div class="empty-desc">尚未取得有效课表，请检查登录与连接状态。</div></div>';
+      return;
+    }
     container.innerHTML = `
       <div class="origin-empty-state">
         <div class="empty-icon">☕</div>
@@ -393,6 +397,7 @@ function renderClassesList(classes) {
 }
 
 async function manualSignIn(courseSchedId) {
+  const requestedUsername=appState.activeUsername, requestedGeneration=viewGeneration;
   showToast(`正在提交排课 ID [${courseSchedId}] 签到请求...`, "info");
   try {
     const res = await apiFetch("/api/signin", {
@@ -401,6 +406,7 @@ async function manualSignIn(courseSchedId) {
       body: JSON.stringify({ course_id: String(courseSchedId) }),
     });
     const data = await res.json();
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     if (data.status === "success" || data.success) {
       showToast("常规课程签到成功！", "success");
       fetchClasses();
@@ -408,6 +414,7 @@ async function manualSignIn(courseSchedId) {
       showToast(`签到反馈: ${data.message || "未能成功"}`, "error");
     }
   } catch (e) {
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     showToast("签到通信异常，请检查网络通道", "error");
   }
 }
@@ -431,19 +438,13 @@ async function toggleAutoCheckin(enabled) {
 
 // 严格归一化为北航官方四大门类：美育、劳育、国家安全、德育
 function normalizeBoyaCategory(c) {
-  const raw = [
-    c.courseKind,
-    c.kindName,
-    c.courseType,
-    (c.courseNewKind2 && c.courseNewKind2.kindName),
-    c.courseName
-  ].filter(Boolean).join(" ");
-
-  if (raw.includes("美育") || raw.includes("艺术") || raw.includes("音乐") || raw.includes("书画") || raw.includes("审美")) return "美育";
-  if (raw.includes("劳育") || raw.includes("劳动") || raw.includes("工程实践") || raw.includes("实训") || raw.includes("制造")) return "劳育";
-  if (raw.includes("安全") || raw.includes("健康") || raw.includes("国家安全") || raw.includes("国防") || raw.includes("保密") || raw.includes("网安")) return "安全健康";
-  if (raw.includes("德育") || raw.includes("思政") || raw.includes("精神") || raw.includes("道德") || raw.includes("诚信") || raw.includes("报国")) return "德育";
-  return "美育"; // 默认规范归类
+  if (typeof c.category_key === "string" && c.category_key) return c.category_key;
+  const raw=String(c.courseNewKind2?.kindName || c.courseKind || c.kindName || c.courseType || "").trim();
+  if (raw.includes("安全") || raw.includes("健康")) return "安全健康";
+  if (raw.includes("德育") || raw.includes("思政")) return "德育";
+  if (raw.includes("劳育") || raw.includes("劳动")) return "劳育";
+  if (raw.includes("美育") || raw.includes("艺术")) return "美育";
+  return raw || "未分类";
 }
 
 // 严密解析博雅签到配置，准确识别线上自主打卡 vs 线下人工核验
@@ -497,6 +498,7 @@ async function fetchBoyaData(isManual = false) {
     if (daemon) daemon.textContent = statusRes.boya_auto_select || statusRes.boya_auto_sign ? "博雅自动化已启用" : "博雅自动化已暂停";
     const health = document.getElementById("boyaHealthText");
     if (health) health.textContent = coursesRes.stale || selectedRes.stale || statsRes.stale ? "官方数据未完全同步，显示上次数据" : statusRes.health?.last_success ? "最近后台同步：" + statusRes.health.last_success : "页面已读取官方数据";
+    appState.boyaDataStale = !!(coursesRes.stale || selectedRes.stale || statsRes.stale);
     renderBoyaStatistics(appState.boyaStatistics);
     switchBoyaTab(appState.boyaTab);
     if (isManual) showToast(coursesRes.stale || selectedRes.stale || statsRes.stale ? "博雅数据未完全同步，保留上次数据" : `博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, coursesRes.stale || selectedRes.stale || statsRes.stale ? "info" : "success");
@@ -711,9 +713,9 @@ function renderBoyaFeed() {
   // 1. 关键词搜索 (课程名、教师、地点、课程 ID)
   if (appState.boyaSearchKeyword) {
     list = list.filter(c => {
-      const name = (c.courseName || c.name || "").toLowerCase();
-      const teacher = (c.speaker || c.teacherName || c.courseTeacher || "").toLowerCase();
-      const pos = (c.coursePosition || c.courseAddress || "").toLowerCase();
+      const name = String(c.courseName || c.name || "").toLowerCase();
+      const teacher = String(c.speaker || c.teacherName || c.courseTeacher || "").toLowerCase();
+      const pos = String(c.coursePosition || c.courseAddress || "").toLowerCase();
       const cid = String(c.id || c.courseId || "");
       return name.includes(appState.boyaSearchKeyword) || teacher.includes(appState.boyaSearchKeyword) || pos.includes(appState.boyaSearchKeyword) || cid.includes(appState.boyaSearchKeyword);
     });
@@ -726,19 +728,19 @@ function renderBoyaFeed() {
 
   // 3. 仅显示支持线上自主打卡 (过滤掉线下人工核验课)
   if (appState.boyaAutoSignOnly) {
-    list = list.filter(c => parseSignConfigPoints(c).length > 0);
+    list = list.filter(c => c.autonomous_config_valid === true);
   }
 
   // 4. 仅显示尚有名额
   if (appState.boyaAvailableOnly) {
-    list = list.filter(c => {
-      const cap = c.courseMaxCount ?? c.courseMaxNum ?? 0;
-      const cur = c.courseCurrentCount ?? c.courseCurrentNum ?? 0;
-      return cap === 0 || cur < cap;
-    });
+    list = list.filter(c => c.capacity_available === true);
   }
 
   if (list.length === 0) {
+    if (appState.boyaDataStale) {
+      container.innerHTML='<div class="origin-empty-state"><div class="empty-title">博雅数据尚未同步</div><div class="empty-desc">请检查账号认证与连接；暂无数据不等于学校没有课程。</div></div>';
+      return;
+    }
     container.innerHTML = `
       <div class="origin-empty-state">
         <div class="empty-icon">🎯</div>
@@ -761,10 +763,10 @@ function renderBoyaFeed() {
     const time = startDate && endDate ? formatDate(startDate) + " — " + formatDate(endDate) : "课程起止时间待官方补全";
     const location = c.coursePosition || c.courseAddress || "校内教室";
     const points = parseSignConfigPoints(c);
-    const hasAutonomousSign = points.length > 0;
-    const rawCapacity = Number(c.courseMaxCount ?? c.courseMaxNum);
+    const hasAutonomousSign = c.autonomous_config_valid === true;
+    const rawCapacity = c.capacity_maximum;
     const capacity = Number.isInteger(rawCapacity) && rawCapacity > 0 ? rawCapacity : null;
-    const rawCurrent = Number(c.courseCurrentCount ?? c.courseCurrentNum);
+    const rawCurrent = c.capacity_current;
     const current = Number.isInteger(rawCurrent) && rawCurrent >= 0 ? rawCurrent : null;
     const isFull = capacity === null || current === null || current >= capacity;
     const isPast = isCoursePast(c);
@@ -781,10 +783,10 @@ function renderBoyaFeed() {
             <h4 class="feed-title">${escapeHtml(name)}</h4>
             <div class="feed-meta-row">
               <span class="feed-badge ${hasAutonomousSign ? 'badge-green' : 'badge-amber'}">
-                ${hasAutonomousSign ? '🛰️ 线上自主打卡' : '🏫 现场刷卡考勤'}
+                ${hasAutonomousSign ? '🛰️ 自主考勤配置完整' : '🏫 需现场核验/配置待确认'}
               </span>
               <span class="feed-badge badge-purple">${escapeHtml(category)}</span>
-              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current ?? "未知"}/${capacity ?? "未知"} (余${Math.max(0, capacity - current)})</span>` : ''}
+              ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current ?? "未知"}/${capacity ?? "未知"}${capacity !== null && current !== null ? ' (余'+Math.max(0,capacity-current)+')' : ''}</span>` : ''}
             </div>
           </div>
         </div>
@@ -820,8 +822,8 @@ function renderBoyaFeed() {
               </div>
             ` : `
               <div style="display:flex;gap:8px;width:100%;justify-content:flex-end;align-items:center;">
-                ${isSigned ? `
-                  <button class="origin-btn origin-btn-danger-ghost" disabled style="opacity:0.35;cursor:not-allowed;" title="已签到课程不可退选">退选</button>
+                ${c.can_drop !== true ? `
+                  <button class="origin-btn origin-btn-danger-ghost" disabled style="opacity:0.35;cursor:not-allowed;" title="已有考勤、已通过、已结束或时间未知的课程不可退选">退选</button>
                 ` : `
                   <button class="origin-btn origin-btn-danger-ghost" ${actionAttributes("drop", courseId)}>退选</button>
                 `}
@@ -851,21 +853,25 @@ function renderBoyaFeed() {
             let btnHtml = "";
             if (isAlreadyChosen) {
               btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.6;cursor:default;">已选修此课</button>`;
+            } else if (!selStart || !selEnd) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled>选课窗口未知</button>`;
             } else if (isBeforeWindow) {
-              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;" title="选课开放时间: ${c.courseSelectStartDate}">⏳ 选课未开放</button>`;
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;" title="选课开放时间: ${escapeHtml(c.courseSelectStartDate)}">⏳ 选课未开放</button>`;
             } else if (isAfterWindow) {
               btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.4;cursor:not-allowed;">选课已截止</button>`;
+            } else if (capacity === null || current === null) {
+              btnHtml = `<button class="origin-btn origin-btn-ghost" disabled>名额未核实</button>`;
             } else if (isFull) {
               btnHtml = `<button class="origin-btn origin-btn-ghost" disabled style="opacity:0.45;">⚠️ 名额已满</button>`;
             } else if (hasAutonomousSign) {
               btnHtml = `<button class="origin-btn origin-btn-primary" ${actionAttributes("select", courseId)}>立即抢课</button>`;
             } else {
-              btnHtml = `<button class="origin-btn origin-btn-secondary" ${actionAttributes("select", courseId)} title="该课程支持线上选课，上课时赴现场刷卡考勤">选课 (现场考勤)</button>`;
+              btnHtml = `<button class="origin-btn origin-btn-secondary" ${actionAttributes("select", courseId)} title="自主考勤配置未核实，请先查看学校要求；仅允许手动选择">选课 (需核实考勤)</button>`;
             }
 
             return `
               <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-                <span style="font-size:12px;color:var(--text-muted);">${isFull ? '⚠️ 名额已满' : `✅ 名额充裕 (余 ${remaining} 空位)`}</span>
+                <span style="font-size:12px;color:var(--text-muted);">${capacity === null || current === null ? '名额数据待同步' : isFull ? '⚠️ 名额已满' : `✅ 名额可用 (余 ${remaining} 空位)`}</span>
                 ${btnHtml}
               </div>
             `;
@@ -876,15 +882,24 @@ function renderBoyaFeed() {
   }).join("");
 }
 
+function courseActionId(value) {
+  const text=String(value);
+  const number=Number(text);
+  if (!/^[1-9][0-9]*$/.test(text) || !Number.isSafeInteger(number)) throw new Error("课程ID未核实");
+  return number;
+}
+
 async function selectBoyaCourse(id) {
+  const requestedUsername=appState.activeUsername, requestedGeneration=viewGeneration;
   showToast(`正在发送抢选请求: [ID:${id}]...`, "info");
   try {
     const res = await apiFetch("/api/boya/select", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ course_id: parseInt(id, 10) || id }),
+      body: JSON.stringify({ course_id: courseActionId(id) }),
     });
     const d = await res.json();
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
       showToast(d.pending_verification ? "选课请求已处理，官方已选记录待同步；不会重复提交" : "官方已选记录已确认", d.pending_verification ? "info" : "success");
       fetchBoyaData();
@@ -892,20 +907,23 @@ async function selectBoyaCourse(id) {
       showToast(`抢选提示: ${d.message || d.msg || "未能选上"}`, "error");
     }
   } catch (e) {
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     showToast("抢课通信请求异常", "error");
   }
 }
 
 async function dropBoyaCourse(id) {
+  const requestedUsername=appState.activeUsername, requestedGeneration=viewGeneration;
   if (!confirm("确定要退选该博雅课程吗？")) return;
   showToast(`正在发送退选请求: [ID:${id}]...`, "info");
   try {
     const res = await apiFetch("/api/boya/drop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ course_id: parseInt(id, 10) || id }),
+      body: JSON.stringify({ course_id: courseActionId(id) }),
     });
     const d = await res.json();
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
       showToast(d.pending_verification ? "退选请求已处理，官方状态待同步；不会重复提交" : "官方退选状态已确认", d.pending_verification ? "info" : "success");
       fetchBoyaData();
@@ -913,20 +931,23 @@ async function dropBoyaCourse(id) {
       showToast(`退选失败: ${d.message || d.msg || ""}`, "error");
     }
   } catch (e) {
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     showToast("退选通信请求异常", "error");
   }
 }
 
 async function boyaSign(id, signType) {
+  const requestedUsername=appState.activeUsername, requestedGeneration=viewGeneration;
   const typeText = signType === 1 ? "签到" : "签退";
   showToast(`正在核对官方窗口并提交${typeText}...`, "info");
   try {
     const res = await apiFetch("/api/boya/sign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ course_id: parseInt(id, 10) || id, sign_type: signType }),
+      body: JSON.stringify({ course_id: courseActionId(id), sign_type: signType }),
     });
     const d = await res.json();
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     if (d.status === "ok" || d.status === "success" || d.code === 0 || d.code === "0") {
       showToast(d.pending_verification ? `博雅${typeText}请求已处理，官方考勤待同步；不会重复提交` : `官方${typeText}记录已确认，最终考核以学校为准`, d.pending_verification ? "info" : "success");
       fetchBoyaData();
@@ -934,6 +955,7 @@ async function boyaSign(id, signType) {
       showToast(`打卡提示: ${d.message || d.msg || "未成功"}`, "error");
     }
   } catch (e) {
+    if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     showToast("打卡通信异常", "error");
   }
 }

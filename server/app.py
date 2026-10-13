@@ -17,12 +17,12 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal, Annotated
 import tempfile
 from core.version import VERSION
 from core import operations
-from core.domain import now as china_now, course_id, course_times, sign_config, attendance_allowed, within_semester, semester_bounds, REQUIREMENTS
+from core.domain import now as china_now, course_id, course_times, sign_config, autonomous, attendance_allowed, drop_allowed, within_semester, semester_bounds, REQUIREMENTS
 from core.boya_actions import perform_boya_action, merge_selected, account_lock
 from server.management import install as install_management
 
@@ -416,6 +416,13 @@ class BoyaSignRequest(BaseModel):
     lng: Optional[float] = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     username: Optional[str] = None
 
+    @field_validator("sign_type", mode="before")
+    @classmethod
+    def strict_sign_type(cls, value):
+        if type(value) is not int or value not in (1, 2):
+            raise ValueError("签到类型必须为整数1或2")
+        return value
+
 
 class BoyaToggleAutoRequest(BaseModel):
     auto_select: Optional[bool] = None
@@ -647,7 +654,7 @@ async def switch_account(req: SwitchAccountRequest):
         "active_account": target_acc.to_dict(is_active=True),
         "classes": target_acc.last_classes or [],
         "boya_selected": target_acc.boya_selected_courses or [],
-        "boya_courses": target_acc.boya_all_courses or [],
+        "boya_courses": enrich_pool(target_acc.boya_all_courses or []),
         "boya_statistics": target_acc.boya_statistics or {},
     }
 
@@ -934,7 +941,10 @@ async def perform_signin(req: SigninRequest):
         username=target_acc.username,
         user_name=target_acc.name,
     )
-    success, msg = await target_acc.client.perform_signin(req.course_id)
+    target_client, epoch = target_acc.client, target_acc.auth_epoch
+    def current_operation():
+        return not target_acc.removed and not target_acc.maintenance and target_acc.client is target_client and target_acc.auth_epoch == epoch
+    success, msg = await target_client.perform_signin(req.course_id, guard=current_operation)
     if success:
         add_log("success", f"【{target_acc.name}】排课 [{req.course_id}] 签到成功: {msg}", username=target_acc.username, user_name=target_acc.name)
         # 步骤完成铁律：签到成功后立即向学校拉取最新课表，即时更新内存与前台状态
@@ -987,343 +997,8 @@ async def get_boya_status(username: Optional[str] = None):
 
 
 # 真实北航博雅示范课程库（严格分为 4 大类：美育、劳育、国家安全、德育）
-DEMO_BOYA_COURSES = [
-    {
-        "id": 7001,
-        "courseId": 7001,
-        "courseName": "航空航天艺术鉴赏与交响乐之美",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "中央音乐学院特聘教授",
-        "teacherName": "中央音乐学院特聘教授",
-        "coursePosition": "沙河校区咏曼剧场",
-        "courseAddress": "沙河校区咏曼剧场",
-        "courseStartDate": "2026-09-18",
-        "courseStartTime": "19:00",
-        "courseEndDate": "2026-09-18",
-        "courseEndTime": "21:00",
-        "courseMaxCount": 180,
-        "courseCurrentCount": 75,
-        "courseMaxNum": 180,
-        "courseCurrentNum": 75,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9822,"signLng":116.3475,"signRadius":60}]}',
-    },
-    {
-        "id": 7002,
-        "courseId": 7002,
-        "courseName": "中国传统水墨意境与经典书法鉴赏",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "人文艺术学院名师",
-        "teacherName": "人文艺术学院名师",
-        "coursePosition": "学院路校区人文讲堂",
-        "courseAddress": "学院路校区人文讲堂",
-        "courseStartDate": "2026-09-19",
-        "courseStartTime": "14:30",
-        "courseEndDate": "2026-09-19",
-        "courseEndTime": "16:30",
-        "courseMaxCount": 60,
-        "courseCurrentCount": 58,
-        "courseMaxNum": 60,
-        "courseCurrentNum": 58,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9815,"signLng":116.3482,"signRadius":40}]}',
-    },
-    {
-        "id": 7003,
-        "courseId": 7003,
-        "courseName": "智能制造与空天机械工程劳动实践",
-        "courseKind": "劳育",
-        "kindName": "劳育",
-        "courseType": "劳育",
-        "speaker": "工训中心高级工程师",
-        "teacherName": "工训中心高级工程师",
-        "coursePosition": "沙河校区工程训练中心201",
-        "courseAddress": "沙河校区工程训练中心201",
-        "courseStartDate": "2026-09-20",
-        "courseStartTime": "09:00",
-        "courseEndDate": "2026-09-20",
-        "courseEndTime": "11:30",
-        "courseMaxCount": 45,
-        "courseCurrentCount": 30,
-        "courseMaxNum": 45,
-        "courseCurrentNum": 30,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9830,"signLng":116.3460,"signRadius":50}]}',
-    },
-    {
-        "id": 7004,
-        "courseId": 7004,
-        "courseName": "现代高校实验室安全规程与劳动素养",
-        "courseKind": "劳育",
-        "kindName": "劳育",
-        "courseType": "劳育",
-        "speaker": "资产处特约专家",
-        "teacherName": "资产处特约专家",
-        "coursePosition": "学院路校区三号楼105",
-        "courseAddress": "学院路校区三号楼105",
-        "courseStartDate": "2026-09-21",
-        "courseStartTime": "15:00",
-        "courseEndDate": "2026-09-21",
-        "courseEndTime": "17:00",
-        "courseMaxCount": 120,
-        "courseCurrentCount": 110,
-        "courseMaxNum": 120,
-        "courseCurrentNum": 110,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9818,"signLng":116.3470,"signRadius":50}]}',
-    },
-    {
-        "id": 7005,
-        "courseId": 7005,
-        "courseName": "总体国家安全观与大国空天战略博弈",
-        "courseKind": "安全健康",
-        "kindName": "安全健康",
-        "courseType": "安全健康",
-        "speaker": "国防战略研究所教授",
-        "teacherName": "国防战略研究所教授",
-        "coursePosition": "学院路校区晨兴音乐厅",
-        "courseAddress": "学院路校区晨兴音乐厅",
-        "courseStartDate": "2026-09-22",
-        "courseStartTime": "19:00",
-        "courseEndDate": "2026-09-22",
-        "courseEndTime": "21:00",
-        "courseMaxCount": 300,
-        "courseCurrentCount": 140,
-        "courseMaxNum": 300,
-        "courseCurrentNum": 140,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9825,"signLng":116.3490,"signRadius":80}]}',
-    },
-    {
-        "id": 7006,
-        "courseId": 7006,
-        "courseName": "关键信息基础设施网络空间安全防御",
-        "courseKind": "安全健康",
-        "kindName": "安全健康",
-        "courseType": "安全健康",
-        "speaker": "网络空间安全学院学术带头人",
-        "teacherName": "网络空间安全学院学术带头人",
-        "coursePosition": "沙河校区J3-205",
-        "courseAddress": "沙河校区J3-205",
-        "courseStartDate": "2026-09-23",
-        "courseStartTime": "14:00",
-        "courseEndDate": "2026-09-23",
-        "courseEndTime": "16:00",
-        "courseMaxCount": 80,
-        "courseCurrentCount": 78,
-        "courseMaxNum": 80,
-        "courseCurrentNum": 78,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9840,"signLng":116.3465,"signRadius":50}]}',
-    },
-    {
-        "id": 7007,
-        "courseId": 7007,
-        "courseName": "空天报国志：北航建校精神与科学家传承",
-        "courseKind": "德育",
-        "kindName": "德育",
-        "courseType": "德育",
-        "speaker": "北航老航空专家宣讲团",
-        "teacherName": "北航老航空专家宣讲团",
-        "coursePosition": "沙河校区J1-101",
-        "courseAddress": "沙河校区J1-101",
-        "courseStartDate": "2026-09-24",
-        "courseStartTime": "15:30",
-        "courseEndDate": "2026-09-24",
-        "courseEndTime": "17:30",
-        "courseMaxCount": 150,
-        "courseCurrentCount": 60,
-        "courseMaxNum": 150,
-        "courseCurrentNum": 60,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9835,"signLng":116.3470,"signRadius":50}]}',
-    },
-    {
-        "id": 7008,
-        "courseId": 7008,
-        "courseName": "新时代青年道德修养与学术诚信准则",
-        "courseKind": "德育",
-        "kindName": "德育",
-        "courseType": "德育",
-        "speaker": "马克思主义学院骨干名师",
-        "teacherName": "马克思主义学院骨干名师",
-        "coursePosition": "学院路校区主楼北翼",
-        "courseAddress": "学院路校区主楼北翼",
-        "courseStartDate": "2026-09-25",
-        "courseStartTime": "16:00",
-        "courseEndDate": "2026-09-25",
-        "courseEndTime": "18:00",
-        "courseMaxCount": 100,
-        "courseCurrentCount": 40,
-        "courseMaxNum": 100,
-        "courseCurrentNum": 40,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9810,"signLng":116.3475,"signRadius":40}]}',
-    },
-    {
-        "id": 7009,
-        "courseId": 7009,
-        "courseName": "传统金石传拓技艺非遗现场实操工坊",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "国家级非物质文化遗产传承人",
-        "teacherName": "国家级非物质文化遗产传承人",
-        "coursePosition": "沙河校区实训楼B座",
-        "courseAddress": "沙河校区实训楼B座",
-        "courseStartDate": "2026-09-26",
-        "courseStartTime": "14:00",
-        "courseEndDate": "2026-09-26",
-        "courseEndTime": "17:00",
-        "courseMaxCount": 30,
-        "courseCurrentCount": 30,
-        "courseMaxNum": 30,
-        "courseCurrentNum": 30,
-        "courseSignConfig": "",  # 线下人工核验课：无 signPointList，不可自动选
-    },
-    {
-        "id": 7010,
-        "courseId": 7010,
-        "courseName": "中法航空工程与跨文化美学交流",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "中法联合学院客座教授",
-        "teacherName": "中法联合学院客座教授",
-        "coursePosition": "杭州校区1号教学楼",
-        "courseAddress": "杭州校区1号教学楼",
-        "courseStartDate": "2026-09-27",
-        "courseStartTime": "15:00",
-        "courseEndDate": "2026-09-27",
-        "courseEndTime": "17:00",
-        "courseMaxCount": 50,
-        "courseCurrentCount": 15,
-        "courseMaxNum": 50,
-        "courseCurrentNum": 15,
-        "courseSignConfig": '{"signPointList":[{"signLat":30.2741,"signLng":120.1551,"signRadius":50}]}',
-    },
-]
-
-DEMO_BOYA_SELECTED = [
-    {
-        "id": 7007,
-        "chosenCourseId": 9901,
-        "courseId": 7007,
-        "courseName": "空天报国志：北航建校精神与科学家传承",
-        "courseKind": "德育",
-        "kindName": "德育",
-        "courseType": "德育",
-        "speaker": "北航老航空专家宣讲团",
-        "teacherName": "北航老航空专家宣讲团",
-        "coursePosition": "沙河校区J1-101",
-        "courseAddress": "沙河校区J1-101",
-        "courseStartDate": "2026-09-24",
-        "courseStartTime": "15:30",
-        "courseEndDate": "2026-09-24",
-        "courseEndTime": "17:30",
-        "selected": True,
-        "status": "进行中",
-        "signStatus": 0,
-        "signOutStatus": 0,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9835,"signLng":116.3470,"signRadius":50}]}',
-    },
-    {
-        "id": 7005,
-        "chosenCourseId": 9905,
-        "courseId": 7005,
-        "courseName": "心肺复苏CPR与AED急救技能实训",
-        "courseKind": "安全健康",
-        "kindName": "安全健康",
-        "courseType": "安全健康",
-        "speaker": "王海玉",
-        "teacherName": "王海玉",
-        "coursePosition": "沙河校区J3-410",
-        "courseAddress": "沙河校区J3-410",
-        "courseStartDate": "2026-09-16",
-        "courseStartTime": "10:40",
-        "courseEndDate": "2026-09-16",
-        "courseEndTime": "12:10",
-        "selected": True,
-        "status": "进行中",
-        "signStatus": 0,
-        "signOutStatus": 0,
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9840,"signLng":116.3465,"signRadius":50}]}',
-    },
-    {
-        "id": 7008,
-        "chosenCourseId": 9908,
-        "courseId": 7008,
-        "courseName": "原创场景剧《北京一号》",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "李英",
-        "teacherName": "李英",
-        "coursePosition": "沙河咏曼剧场",
-        "courseAddress": "沙河咏曼剧场",
-        "courseStartDate": "2026-09-13",
-        "courseStartTime": "19:00",
-        "courseEndDate": "2026-09-13",
-        "courseEndTime": "21:00",
-        "selected": True,
-        "status": "已结课",
-        "signStatus": 1,
-        "signOutStatus": 1,
-        "attendanceStatus": "合格",
-        "examStatus": "通过",
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9822,"signLng":116.3475,"signRadius":60}],"signOutEndDate":"2026-09-13 21:15:00"}',
-    },
-    {
-        "id": 7001,
-        "chosenCourseId": 9801,
-        "courseId": 7001,
-        "courseName": "航空航天艺术鉴赏与交响乐之美",
-        "courseKind": "美育",
-        "kindName": "美育",
-        "courseType": "美育",
-        "speaker": "中央音乐学院特聘教授",
-        "teacherName": "中央音乐学院特聘教授",
-        "coursePosition": "沙河校区咏曼剧场",
-        "courseAddress": "沙河校区咏曼剧场",
-        "courseStartDate": "2026-03-15",
-        "courseStartTime": "19:00",
-        "courseEndDate": "2026-03-15",
-        "courseEndTime": "21:00",
-        "selected": True,
-        "status": "已结课",
-        "signStatus": 1,
-        "signOutStatus": 1,
-        "attendanceStatus": "合格",
-        "examStatus": "通过",
-        "courseSignConfig": '{"signPointList":[{"signLat":39.9822,"signLng":116.3475,"signRadius":60}]}',
-    }
-]
-
-DEMO_BOYA_STATISTICS = {
-    "totalCredit": 3.0,
-    "total_credits": 3.0,
-    "requiredCredit": 4.0,
-    "moral_completed": 0,
-    "moral_required": 2,
-    "moral_effective": 0,
-    "labor_completed": 0,
-    "labor_required": 2,
-    "labor_effective": 0,
-    "art_completed": 1,
-    "art_required": 1,
-    "art_effective": 1,
-    "security_health_completed": 0,
-    "security_health_required": 1,
-    "security_health_effective": 0,
-    "semester_passed_total": 1,
-    "semester_required_total": 6,
-    "semester_compliance_rate": 17,
-    "art_courses_count": 1,
-    "labor_courses_count": 0,
-    "security_courses_count": 0,
-    "moral_courses_count": 0,
-    "total_passed": 1,
-    "total_required": 6,
-}
-
-
 def enrich_selected_courses(selected_list, pool_list):
+    from core.boya_scheduler import get_course_category
     attendance_names = {0: "待考勤", 1: "考勤通过", 2: "迟到", 3: "早退", 4: "缺勤", 5: "已签到，未签退", 6: "签到异常，未签退", 7: "未签到，已签退", 8: "未签到，签退异常", 9: "双签记录，签到异常", 10: "双签记录，签退异常", 11: "双签记录均异常"}
     result = []
     for raw in selected_list or []:
@@ -1341,7 +1016,22 @@ def enrich_selected_courses(selected_list, pool_list):
         c["can_sign_out"] = attendance_allowed(c, 2, china_now())
         c["signed_in"] = checkin in (1,5,6,9,10,11)
         c["signed_out"] = checkin in (1,7,8,9,10,11)
+        c["can_drop"] = drop_allowed(c, china_now())
+        c["autonomous_config_valid"] = autonomous(c, require_windows=True)
         c["status_source"] = "official"
+        c["category_key"] = get_course_category(c)
+        result.append(c)
+    return result
+
+def enrich_pool(courses):
+    from core.boya_scheduler import capacity_values, capacity_available, get_course_category
+    result=[]
+    for raw in courses:
+        c=dict(raw)
+        current,maximum=capacity_values(c)
+        c["category_key"] = get_course_category(c)
+        valid=lambda value: not isinstance(value,bool) and str(value).isdigit()
+        c.update({"capacity_current":int(current) if valid(current) else None,"capacity_maximum":int(maximum) if valid(maximum) and int(maximum)>0 else None,"capacity_available":capacity_available(c),"autonomous_config_valid":autonomous(c,require_windows=True)})
         result.append(c)
     return result
 
@@ -1390,7 +1080,7 @@ async def get_boya_courses(force: bool = False, username: Optional[str] = None):
     stale = False
     curr = resolve_account(username)
     if not curr:
-        return {"status": "success", "courses": DEMO_BOYA_COURSES, "is_demo": True}
+        return {"status": "unauthenticated", "stale":True, "courses":[], "is_demo":False}
 
     if not curr.boya_client.is_authenticated() and curr.client.is_authenticated():
         try:
@@ -1404,7 +1094,7 @@ async def get_boya_courses(force: bool = False, username: Optional[str] = None):
         courses = curr.boya_all_courses or []
         return {
             "status": "stale", "stale": True,
-            "courses": courses,
+            "courses": enrich_pool(courses),
             "username": curr.username,
             "name": curr.name,
             "is_demo": False,
@@ -1419,12 +1109,12 @@ async def get_boya_courses(force: bool = False, username: Optional[str] = None):
         except Exception as e:
             stale = True
             add_log("warning", "博雅课池同步失败：" + type(e).__name__ + "，保留上次成功数据", username=curr.username, user_name=curr.name, category="boya")
-            return {"status": "stale", "stale": True, "courses": curr.boya_all_courses or [], "username": curr.username, "is_demo": False, "message": "课池同步失败，显示上次成功数据"}
+            return {"status": "stale", "stale": True, "courses": enrich_pool(curr.boya_all_courses or []), "username": curr.username, "is_demo": False, "message": "课池同步失败，显示上次成功数据"}
 
     return {
         "status": "stale" if stale else "success",
         "stale": stale,
-        "courses": curr.boya_all_courses if curr.boya_all_courses is not None else [],
+        "courses": enrich_pool(curr.boya_all_courses or []),
         "username": curr.username,
         "name": curr.name,
         "last_refresh_time": curr.boya_last_refresh_time,
@@ -1442,9 +1132,9 @@ async def get_boya_selected(force: bool = False, username: Optional[str] = None)
             return {"status": "stale", "stale": True, "selected": enriched, "username": curr.username, "is_demo": False}
         selected = getattr(curr, "boya_selected_courses", None) if curr else None
         pool = getattr(curr, "boya_all_courses", None) if curr else None
-        is_demo = (selected is None)
-        enriched = enrich_selected_courses(selected if selected is not None else DEMO_BOYA_SELECTED, pool if pool is not None else DEMO_BOYA_COURSES)
-        return {"status": "success", "selected": enriched, "is_demo": is_demo}
+        is_demo = False
+        enriched = enrich_selected_courses(selected or [], pool or [])
+        return {"status": "unauthenticated", "stale":True, "selected": enriched, "is_demo": is_demo}
 
     if force or curr.boya_selected_courses is None:
         try:
@@ -1477,9 +1167,9 @@ async def get_boya_statistics(force: bool = False, username: Optional[str] = Non
         selected = getattr(curr, "boya_selected_courses", None) if curr else None
         pool = getattr(curr, "boya_all_courses", None) if curr else None
         stats = getattr(curr, "boya_statistics", None) if curr else None
-        enriched = enrich_selected_courses(selected if selected is not None else DEMO_BOYA_SELECTED, pool if pool is not None else DEMO_BOYA_COURSES)
-        computed_stats = compute_semester_statistics(enriched, stats if stats is not None else DEMO_BOYA_STATISTICS)
-        return {"status": "success", "statistics": computed_stats}
+        enriched = enrich_selected_courses(selected or [], pool or [])
+        computed_stats = compute_semester_statistics(enriched, stats or {})
+        return {"status": "unauthenticated", "stale":True, "statistics": computed_stats}
 
     if force or curr.boya_statistics is None:
         try:

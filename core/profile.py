@@ -48,9 +48,9 @@ def resolve_config_path() -> pathlib.Path:
 
         # 测试 exe_dir 是否可写
         try:
-            test_file = exe_dir / ".write_test"
-            test_file.touch()
-            test_file.unlink()
+            import tempfile
+            with tempfile.TemporaryFile(dir=exe_dir, prefix=".write-probe-"):
+                pass
             return portable_cfg
         except Exception:
             if appdata:

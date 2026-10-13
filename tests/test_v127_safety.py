@@ -129,6 +129,18 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(success)
         self.assertEqual(len(self.posts), 3)
 
+    async def test_connection_failure_before_send_preserves_actual_budget(self):
+        real_post = self.client._client.post
+        async def offline(*args, **kwargs):
+            raise httpx.ConnectError("synthetic connection failure")
+        self.client._client.post = offline
+        for _ in range(4):
+            self.assertFalse((await self.client.perform_signin("1001"))[0])
+        self.assertEqual(self.client.actual_sign_posts, 0)
+        self.client._client.post = real_post
+        self.assertTrue((await self.client.perform_signin("1001"))[0])
+        self.assertEqual(len(self.posts), 1)
+
     async def test_timeout_blocks_replay_until_official_confirmation(self):
         self.timeout = True
         with self.assertRaises(httpx.ReadTimeout):

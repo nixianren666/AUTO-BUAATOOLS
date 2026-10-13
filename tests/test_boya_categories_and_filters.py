@@ -9,44 +9,32 @@ class TestBoyaCategoriesAndFilters(unittest.TestCase):
         self.client.headers["X-BUAA-CSRF"] = csrf
         accounts.clear()
 
-    def test_demo_courses_strictly_have_four_categories(self):
-        valid_cats = {"美育", "劳育", "安全健康", "德育"}
-        res = self.client.get("/api/boya/courses")
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
-        courses = data.get("courses", [])
-        self.assertGreater(len(courses), 0)
+    def test_unauthenticated_pool_does_not_invent_school_courses(self):
+        response=self.client.get("/api/boya/courses")
+        self.assertEqual(response.status_code,200)
+        data=response.json()
+        self.assertEqual(data["status"],"unauthenticated")
+        self.assertTrue(data["stale"])
+        self.assertFalse(data["is_demo"])
+        self.assertEqual(data["courses"],[])
 
-        categories_found = set()
-        for c in courses:
-            cat = c.get("courseKind") or c.get("courseType")
-            self.assertIn(cat, valid_cats, f"Course {c.get('courseName')} has invalid category {cat}")
-            categories_found.add(cat)
+    def test_autonomous_configuration_requires_real_points_and_complete_windows(self):
+        from server.app import enrich_pool
+        from tests.test_v127_boya import fixture_course
+        valid=fixture_course()
+        invalid={**valid,"id":9002,"courseSignConfig":{"signPointList":[{}]}}
+        onsite={**valid,"id":9003,"courseSignConfig":None}
+        flags=[row["autonomous_config_valid"] for row in enrich_pool([valid,invalid,onsite])]
+        self.assertEqual(flags,[True,False,False])
 
-        self.assertEqual(categories_found, valid_cats)
-
-    def test_autonomous_sign_detection_in_pool(self):
-        res = self.client.get("/api/boya/courses")
-        courses = res.json().get("courses", [])
-        auto_courses = [c for c in courses if "signPointList" in str(c.get("courseSignConfig", "")) and len(c.get("courseSignConfig", "")) > 10]
-        manual_courses = [c for c in courses if not c.get("courseSignConfig")]
-
-        self.assertGreater(len(auto_courses), 0)
-        self.assertGreater(len(manual_courses), 0)
-
-    def test_demo_selected_and_statistics(self):
-        res_sel = self.client.get("/api/boya/selected")
-        self.assertEqual(res_sel.status_code, 200)
-        sel = res_sel.json().get("selected", [])
-        self.assertGreater(len(sel), 0)
-
-        res_stats = self.client.get("/api/boya/statistics")
-        self.assertEqual(res_stats.status_code, 200)
-        stats = res_stats.json().get("statistics", {})
-        self.assertIn("art_courses_count", stats)
-        self.assertIn("labor_courses_count", stats)
-        self.assertIn("security_courses_count", stats)
-        self.assertIn("moral_courses_count", stats)
+    def test_unauthenticated_selected_and_statistics_do_not_invent_progress(self):
+        data=self.client.get("/api/boya/selected").json()
+        self.assertTrue(data["stale"])
+        self.assertEqual(data["selected"],[])
+        stats=self.client.get("/api/boya/statistics").json()["statistics"]
+        self.assertFalse(stats["semester_known"])
+        self.assertIsNone(stats["valid_count"])
+        self.assertEqual(stats["semester_passed_total"],0)
 
     def test_checkin_and_delete_account_compatibility(self):
         acc = AccountState(username="23379999", name="测试学生", password="", mode="direct", auto_checkin=True)
