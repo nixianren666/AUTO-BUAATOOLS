@@ -23,6 +23,7 @@ def main():
         subprocess.run(argv,check=True,timeout=120)
         installed=target/"BUAA-Signin.exe"
         assert digest(installed)==digest(expected),"Installer contains another build"
+        assert digest(target/"README.md")==digest(Path(__file__).resolve().parent.parent/"README.md"),"Installed documentation does not match this source"
         assert json.loads(config.read_text())["fixture_preserve"]
         # Re-install must also preserve preexisting data.
         subprocess.run(argv,check=True,timeout=120)

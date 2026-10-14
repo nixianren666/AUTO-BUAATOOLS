@@ -22,6 +22,9 @@ const fs = require('node:fs');
     await check('initialization-and-paused-health', async () => {
       assert.match(await page.locator('#regularDaemonStatus').textContent(), /暂停/);
       assert.equal(await page.evaluate(() => document.body.scrollWidth <= innerWidth + 2), true);
+      await page.setViewportSize({width:960,height:620});
+      assert.equal(await page.evaluate(() => document.body.scrollWidth <= innerWidth + 2),true);
+      await page.setViewportSize({width:1280,height:840});
     });
     await check('boya-tab-matches-displayed-data', async () => {
       await page.locator('#navBtnBoya').click();
@@ -65,6 +68,13 @@ const fs = require('node:fs');
       assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '—');
       await page.evaluate(() => renderBoyaStatistics({semester_known:true,moral_completed:1,labor_completed:0,art_completed:0,security_health_completed:0}));
       assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '1');
+    });
+    await check('failed-autostart-keeps-system-state-and-shows-error', async () => {
+      await page.route('**/api/system/autostart',async route => route.fulfill({json:{status:'error',enabled:false}}));
+      await page.evaluate(async()=>{document.getElementById('autostartCheckbox').checked=true;await toggleAutostart(true);});
+      assert.equal(await page.locator('#autostartCheckbox').isChecked(),false);
+      assert.match(await page.locator('#toastContainer').textContent(),/系统未确认自启修改/);
+      await page.unroute('**/api/system/autostart');
     });
     await check('regular-window-and-unknown-state-disable-manual-button', async () => {
       await page.evaluate(() => renderClassesList([{courseSchedId:'3001',courseName:'unknown-window',signStatus:0,classBeginTime:'2000-01-01 08:00:00'}]));

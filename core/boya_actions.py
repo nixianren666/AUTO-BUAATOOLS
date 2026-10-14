@@ -71,7 +71,7 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
         raise BoyaApiError("invalid_id", "无效课程本体 ID")
     cid = int(cid)
     epoch = getattr(account, "auth_epoch", 0)
-    if action not in ("select", "drop", "sign") or (action == "sign" and sign_type not in (1, 2)):
+    if action not in ("select", "drop", "sign") or (action == "sign" and (type(sign_type) is not int or sign_type not in (1, 2))):
         raise BoyaApiError("invalid_action", "无效操作类型")
     def active():
         return not getattr(account, "removed", False) and not getattr(account, "maintenance", False) and getattr(account, "auth_epoch", 0) == epoch and (guard is None or guard())

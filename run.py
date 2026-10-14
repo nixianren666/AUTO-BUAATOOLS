@@ -309,6 +309,16 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
             return None
 
     try:
+        if sys.platform.startswith("linux") and pystray.Icon.__module__.endswith("_xorg"):
+            from Xlib import X, display
+            connection = display.Display()
+            try:
+                atom = connection.intern_atom(f"_NET_SYSTEM_TRAY_S{connection.get_default_screen()}")
+                if connection.get_selection_owner(atom) == X.NONE:
+                    print("系统未提供托盘宿主，桌面窗口保持可见")
+                    return None
+            finally:
+                connection.close()
         tray_img = get_tray_image()
         tray_menu = pystray.Menu(
             pystray.MenuItem("显示主界面", lambda icon, item: restore_window(), default=True),
@@ -485,6 +495,37 @@ def main():
                         except Exception:
                             pass
                         time.sleep(0.25)
+                    if not report["passed"]:
+                        raise TimeoutError("Native initialization did not complete")
+                    report["checks"]=[]
+                    def wait_native(expression):
+                        while time.monotonic() < deadline:
+                            if window.evaluate_js(expression):
+                                return
+                            time.sleep(0.1)
+                        raise TimeoutError("Native interaction did not complete")
+                    window.evaluate_js("document.getElementById('navBtnBoya').click()")
+                    wait_native("appState.boyaSelected.length===2")
+                    window.evaluate_js("document.getElementById('tabBoyaSelected').click()")
+                    wait_native("!!document.querySelector('[data-action=sign][data-id=\"2001\"]')")
+                    window.evaluate_js("document.querySelector('[data-action=sign][data-id=\"2001\"]').click()")
+                    wait_native("appState.boyaSelected.some(c=>c.courseId===2001 && c.signed_in)")
+                    report["checks"].append("native-boya-sign")
+                    window.evaluate_js("document.querySelector('[data-action=signout][data-id=\"2001\"]').click()")
+                    wait_native("appState.boyaSelected.some(c=>c.courseId===2001 && c.signed_out && !c.final_passed)")
+                    report["checks"].append("native-boya-signout-without-invented-assessment")
+                    window.evaluate_js("document.getElementById('navBtnAccounts').click()")
+                    wait_native("!!document.querySelector('[data-action=switchAccount][data-id=\"fixture-account-2\"]')")
+                    window.evaluate_js("document.querySelector('[data-action=switchAccount][data-id=\"fixture-account-2\"]').click()")
+                    wait_native("appState.activeUsername==='fixture-account-2' && appState.classes.some(c=>c.courseSchedId==='1002')")
+                    report["checks"].append("native-account-switch")
+                    window.evaluate_js("document.getElementById('navBtnRegular').click()")
+                    wait_native("!!document.querySelector('[data-action=regularSign][data-id=\"1002\"]')")
+                    window.evaluate_js("document.querySelector('[data-action=regularSign][data-id=\"1002\"]').click()")
+                    wait_native("appState.classes.some(c=>c.courseSchedId==='1002' && c.signStatus===1)")
+                    report["checks"].append("native-regular-sign")
+                except Exception as exc:
+                    report.update({"passed":False,"error_type":type(exc).__name__})
                 finally:
                     if args.smoke_report:
                         pathlib.Path(args.smoke_report).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

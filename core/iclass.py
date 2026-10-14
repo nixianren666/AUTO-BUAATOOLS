@@ -429,10 +429,8 @@ class IclassClient:
                 classes = []
                 for item in data.get("result") or []:
                     raw_status = item.get("signStatus")
-                    try:
-                        sign_status = int(raw_status)
-                    except (ValueError, TypeError):
-                        sign_status = None
+                    valid_status = (type(raw_status) is int and raw_status in (0,1)) or (type(raw_status) is str and raw_status in ("0","1"))
+                    sign_status = int(raw_status) if valid_status else None
 
                     c_sched_id = str(item.get("id") or item.get("courseSchedId") or "")
                     c_id = str(item.get("courseId") or c_sched_id)
