@@ -1,0 +1,163 @@
+{
+  "publication": {
+    "published": true,
+    "version": "1.2.7",
+    "commit": "c379c018a66d882698051d01616d0700c3e46950",
+    "run_id": "38521385980",
+    "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.7",
+    "release_id": 412406275,
+    "assets": [
+      {
+        "name": "AUTO-BUAATOOLS-v1.2.7-source.zip",
+        "size": 1777499,
+        "digest": "sha256:db3ed6b1c6d19936dcbd8a14d839ea5a8d209ae2bc9de01f9e9bf999cde90024"
+      },
+      {
+        "name": "BUAA-Signin-Setup-v1.2.7.exe",
+        "size": 31712428,
+        "digest": "sha256:77370602054df5dd5252b7d2c204f71bc58794fa0e38e6cfe466964c674d7576"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-Linux-x86_64.tar.gz",
+        "size": 246362323,
+        "digest": "sha256:095562723ee4ccc8ee7b657250a3afb963b7e8b1e1171e0391e97a94bbf99283"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-macOS-arm64.dmg",
+        "size": 31565472,
+        "digest": "sha256:03c7d7b54483d8d03843ddeab6341afadce155a4cdf5c21b2b40d5f2988113c2"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-macOS-arm64.zip",
+        "size": 27942390,
+        "digest": "sha256:61fbd87c7ba186feb2a787893b2e376569d39bdbc0bd93b9f86f2c4020db9748"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-macOS-x86_64.dmg",
+        "size": 31418449,
+        "digest": "sha256:4b96e33c4419fa29747285aad2a5593a2b39f4345a7c40f73161b0b9f2336dd6"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-macOS-x86_64.zip",
+        "size": 27775533,
+        "digest": "sha256:badc5a8184fe181adbc08a8782a87d54ca73e7ca2e9925b2c7ba4e69945aa75d"
+      },
+      {
+        "name": "BUAA-Signin-v1.2.7-portable.exe",
+        "size": 30231457,
+        "digest": "sha256:fddee0f48a4be64402ee5d8c23daccfb2081c35045f9e4badd9e8e4b3d0b9ceb"
+      },
+      {
+        "name": "manifest-Linux-x86_64.json",
+        "size": 1607,
+        "digest": "sha256:ff56db7279b3ab57bd9ce9421b6e257e4f52b6261a47fe579157fb27d32c728c"
+      },
+      {
+        "name": "manifest-macOS-arm64.json",
+        "size": 1805,
+        "digest": "sha256:909b33919950ae257cce2a3c9a0b439e47eb8da953fe96a76988dfbdb9cb2e25"
+      },
+      {
+        "name": "manifest-macOS-x86_64.json",
+        "size": 1808,
+        "digest": "sha256:f4041ae58edc7483289095b468e27035935883e6d10a2c32c5971f92826bb66c"
+      },
+      {
+        "name": "manifest-Windows-x64.json",
+        "size": 1849,
+        "digest": "sha256:fe8b33c009f86f10cf3af6231428362433c0f5e2520db569a7c3346feb6733d4"
+      },
+      {
+        "name": "public-gnutls-selftest-review.json",
+        "size": 1344,
+        "digest": "sha256:d99c27fd662394b529f49900b2a451d4a6ce90422dd5ee561206e9b8009ea125"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 1379,
+        "digest": "sha256:fd4e202aa6ca78c43f5acbd3cd0d6fef0cf47f421b5a3d3b0bd8032e44146ea9"
+      },
+      {
+        "name": "verification-v1.2.7.json",
+        "size": 8035,
+        "digest": "sha256:dd254fa29541aa790b0cb71c7e24647b609594ba0b06cc4948661297b5252065"
+      }
+    ],
+    "privacy_git_objects": 619,
+    "privacy_artifacts": {
+      "files": 13,
+      "archive_members": 2389,
+      "carchive_members": 3424,
+      "pyz_members": 4376,
+      "bytes": 1527538241
+    },
+    "real_school_writes": 0,
+    "wsl_used": false
+  },
+  "windows_computer_use": {
+    "passed": true,
+    "commit": "c379c018a66d882698051d01616d0700c3e46950",
+    "executable_sha256": "fddee0f48a4be64402ee5d8c23daccfb2081c35045f9e4badd9e8e4b3d0b9ceb",
+    "real_school_writes": 0,
+    "synthetic_accounts_only": true,
+    "personal_screenshots_saved": false,
+    "final_artifact_checks": [
+      "native-window-and-paused-state",
+      "regular-sign-metric-and-disabled-button",
+      "corrected-manual-id-guidance",
+      "manual-popup-escape",
+      "boya-pool-selected-tab",
+      "boya-sign-confirmed",
+      "boya-signout-does-not-invent-assessment",
+      "account-switch-does-not-inherit-attendance"
+    ],
+    "earlier_f9_checks_same_code_except_manual_guidance": [
+      "dark-target-form-save",
+      "course-search-filter",
+      "account-center-layout",
+      "regular-expired-window-disabled",
+      "logs-category-filter",
+      "glass-popover-and-escape-focus"
+    ],
+    "limits": [
+      "No real GUI authentication",
+      "No GUI account/course deletion",
+      "Native small-size layout was checked by browser automation; drag did not resize this window"
+    ]
+  },
+  "compiled_readonly": {
+    "passed": true,
+    "compiled_real_readonly": true,
+    "real_school_writes": 0,
+    "credential_disk_writes": 0,
+    "all_auto_disabled": true,
+    "authenticated": true,
+    "identity_matches": true,
+    "iclass_ready": true,
+    "boya_ready": true
+  },
+  "privacy_git": {
+    "passed": true,
+    "head_commit": "c379c018a66d882698051d01616d0700c3e46950",
+    "counts": {
+      "git_objects": 619,
+      "working_files": 104,
+      "embedded_members": 0,
+      "bytes": 519104967
+    },
+    "known_values_supplied": 5
+  },
+  "privacy_artifacts": {
+    "counts": {
+      "files": 13,
+      "archive_members": 2389,
+      "carchive_members": 3424,
+      "pyz_members": 4376,
+      "bytes": 1527538241
+    },
+    "known_values_supplied": 5,
+    "known_private_matches": 0,
+    "unexplained_patterns": 0,
+    "reviewed_public_library_candidates": 1
+  }
+}
