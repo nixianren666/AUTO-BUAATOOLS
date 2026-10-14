@@ -456,15 +456,15 @@
     <div class="origin-modal-backdrop hidden" id="manualSignModal">
       <div class="origin-modal-dialog">
         <div class="modal-header">
-          <h3 class="modal-title">指定排课 ID 补签</h3>
+          <h3 class="modal-title">指定排课 ID 签到</h3>
           <button class="origin-icon-btn" onclick="closeManualSignModal()">✕</button>
         </div>
         <form id="manualSignForm" onsubmit="handleManualSignSubmit(event)">
           <div class="modal-body">
             <div class="form-group">
               <label>课堂排课 ID (CourseSchedId)</label>
-              <input type="text" id="manualCourseId" required placeholder="输入 8 位或更多位排课 ID" class="origin-input">
-              <span class="field-hint">用于不在今日课表推荐列表中的临时加课或手动补签</span>
+              <input type="text" id="manualCourseId" required placeholder="输入学校提供的数字排课 ID" class="origin-input">
+              <span class="field-hint">仅限本人今日排课，并须处于课前 10 分钟的签到窗口；无法补签已开课或未选课程。</span>
             </div>
           </div>
           <div class="modal-footer">
