@@ -342,17 +342,7 @@ ssh -L 18346:127.0.0.1:18346 你的用户@你的服务器
 
 桌面窗口与浏览器使用同一套 WebUI。FastAPI 汇总各账号状态，后台调度器定期读取课表/课池；手动操作与自动任务在共享规则和账本下执行。统一认证连接学校 SSO，校园网直连或官方 WebVPN 提供对应业务通道。
 
-```mermaid
-flowchart LR
-  UI[桌面窗口 / 浏览器] --> API[本地 FastAPI]
-  API --> Actions[账号与操作规则]
-  Jobs[常规 / 博雅后台调度] --> Actions
-  Actions --> Clients[学校接口客户端]
-  Clients --> SSO[官方 SSO / iClass / 博雅]
-  Actions --- Ledger[本地防重账本]
-  Clients --> State[官方状态 / 同步结果]
-  State --> API
-```
+![AUTO-BUAA 工作流程：界面、共享核验、学校接口、后台调度与本地防重账本](docs/images/architecture.svg)
 
 <details>
 <summary><b>📂 展开源码目录与模块职责</b></summary>
