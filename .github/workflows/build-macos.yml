@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libxcb-cursor0 libxkbcommon-x11-0 libegl1 libopengl0 libgl1 dbus-user-session libsecret-1-0
+          sudo apt-get install -y xvfb libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-shape0 libxcb-render-util0 libxcb-xinerama0 libxkbcommon-x11-0 libegl1 libopengl0 libgl1 libpulse0 dbus-user-session libsecret-1-0
           python -m pip install 'pywebview[qt6]==6.2.1'
           npx playwright install-deps chromium
           sudo loginctl enable-linger "$(id -un)"

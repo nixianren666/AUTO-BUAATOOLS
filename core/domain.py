@@ -36,9 +36,11 @@ def in_window(start, end, current):
 
 def course_id(course):
     info = course.get("courseInfo") or {}
+    if not isinstance(info, dict):
+        return None
     value = course.get("courseId") or info.get("id") or course.get("id")
     try:
-        if isinstance(value, bool) or not str(value).isdigit():
+        if isinstance(value, bool) or not str(value).isascii() or not str(value).isdigit():
             return None
         cid = int(value)
         return cid if cid > 0 else None
@@ -84,6 +86,8 @@ def autonomous(course, require_windows=False):
     return True
 
 def attendance_allowed(course, sign_type, current):
+    if type(sign_type) is not int or sign_type not in (1,2):
+        return False
     cfg = sign_config(course.get("courseSignConfig", course.get("signConfig")))
     raw_checkin, raw_pass = course.get("checkin"), course.get("pass")
     def official_enum(value, allowed):

@@ -217,7 +217,7 @@ async function fetchInitialState() {
 
     appState.mode = statusRes.mode || "direct";
     appState.authenticated = statusRes.authenticated || false;
-    appState.globalAutoCheckin = configRes.global_auto_checkin ?? true;
+    appState.globalAutoCheckin = configRes.global_auto_checkin ?? false;
 
     updateUIElements();
 
@@ -1368,7 +1368,6 @@ async function initAutostartWidget() {
     const data = await res.json();
     const checkbox = document.getElementById("autostartCheckbox");
     if (checkbox) checkbox.checked = !!data.enabled;
-    if (data.status !== "ok") { showToast("系统未确认自启修改，已恢复实际状态", "error"); return; }
   } catch (e) {}
 }
 
@@ -1382,7 +1381,8 @@ async function toggleAutostart(enabled) {
     const data = await res.json();
     const checkbox = document.getElementById("autostartCheckbox");
     if (checkbox) checkbox.checked = !!data.enabled;
-    showToast(data.enabled ? "开机自启已开启 (开机静默常驻托盘)" : "开机自启已关闭", "info");
+    if (data.status !== "ok") { showToast("系统未确认自启修改，已恢复实际状态", "error"); return; }
+    showToast(data.persisted === false ? "系统自启状态已更新，但配置保存失败" : data.enabled ? "开机自启已开启 (开机静默常驻托盘)" : "开机自启已关闭", data.persisted === false ? "warning" : "info");
   } catch (e) {
     showToast("切换开机自启动失败", "error");
   }

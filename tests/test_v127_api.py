@@ -39,6 +39,9 @@ class APIContracts(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.account.client.perform_signin.assert_not_called()
         self.assertEqual(self.client.get("/api/classes?username=missing-fixture").status_code, 404)
+        old_mode=backend.config.get("default_mode")
+        self.assertEqual(self.client.post("/api/mode",json={"username":"missing-fixture","mode":"webvpn"}).status_code,404)
+        self.assertEqual(backend.config.get("default_mode"),old_mode)
 
     def test_invalid_sign_type_or_coordinates_rejected_by_api(self):
         for body in ({"course_id": 1001, "sign_type": 9}, {"course_id": 1001, "sign_type": True}, {"course_id": 1001, "sign_type": 1.0}, {"course_id": -1}, {"course_id": 1001, "lat": 200, "lng": 30}, {"course_id": 1001, "lat": 39}):

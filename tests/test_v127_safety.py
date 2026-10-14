@@ -32,7 +32,7 @@ class Contracts(unittest.TestCase):
         self.assertEqual(trusted_url("https://iclass.buaa.edu.cn:8347/app/"), "https://iclass.buaa.edu.cn:8347/app/")
 
     def test_invalid_id_never_truncates_to_another_course(self):
-        for value in (True, 1.7, "1;attack", -1):
+        for value in (True, 1.7, "1;attack", -1, "١٠٠١", "１００１"):
             self.assertIsNone(course_id({"id": value}))
 
     def test_gateway_cannot_hide_an_untrusted_inner_auth_host(self):
@@ -130,6 +130,22 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         success, _ = await self.client.perform_signin("9999")
         self.assertFalse(success)
         self.assertEqual(len(self.posts), 0)
+
+    async def test_raw_fractional_and_boolean_school_status_never_authorizes_post(self):
+        raw = {"STATUS":"0","result":[dict(self.classes[0])]}
+        def transport(request):
+            if "get_stu_course_sched" in request.url.path:
+                return httpx.Response(200,json=raw)
+            self.posts.append(request)
+            return httpx.Response(500)
+        await self.client._client.aclose()
+        self.client._client=httpx.AsyncClient(transport=httpx.MockTransport(transport))
+        self.client.get_today_classes=lambda:IclassClient.get_classes(self.client,self.current.date())
+        for value in (0.8,0.0,True,False,"٠",None):
+            raw["result"][0]["signStatus"]=value
+            self.assertIsNone((await self.client.get_today_classes())[0]["signStatus"])
+            self.assertFalse((await self.client.perform_signin("1001"))[0])
+        self.assertEqual(self.posts,[])
 
     async def test_manual_auto_race_sends_one_post(self):
         results = await asyncio.gather(self.client.perform_signin("1001"), self.client.perform_signin("1001", guard=lambda: True))

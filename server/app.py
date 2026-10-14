@@ -711,8 +711,8 @@ async def switch_mode(req: ModeRequest):
     if new_mode not in ("auto", "direct", "webvpn"):
         raise HTTPException(status_code=400, detail="Invalid mode")
 
-    config["default_mode"] = new_mode
     curr = resolve_account(req.username)
+    config["default_mode"] = new_mode
     if curr:
         async with curr.auth_lock:
             curr.maintenance = True

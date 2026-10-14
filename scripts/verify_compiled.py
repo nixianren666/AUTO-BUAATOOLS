@@ -80,11 +80,17 @@ def main():
     assert proc.returncode==0,"Built process did not exit cleanly"
     if args.native:
         native=output/"compiled-native.json"
+        native_env=dict(env)
+        if sys.platform=="linux" and os.environ.get("GITHUB_ACTIONS")=="true":
+            native_env["QT_DEBUG_PLUGINS"]="1"
         with open(output/"compiled-native-output.txt","w",encoding="utf-8") as native_log:
-            result=subprocess.run([str(exe),"--smoke-test","--smoke-report",str(native),"--port",str(free_port())],env=env,stdout=native_log,stderr=native_log,timeout=100)
+            result=subprocess.run([str(exe),"--smoke-test","--smoke-report",str(native),"--port",str(free_port())],env=native_env,stdout=native_log,stderr=native_log,timeout=100)
         assert result.returncode==0 and native.exists(),"Compiled native window must complete"
         state=json.loads(native.read_text(encoding="utf-8"))
         assert state["passed"] and state["native_gui"]
+        expected_native={"native-boya-sign","native-boya-signout-without-invented-assessment","native-account-switch","native-regular-sign"}
+        assert set(state.get("checks",[]))==expected_native,"Native engine must exercise all required interactions"
+        checks.extend(state["checks"])
         checks.append("compiled-native-desktop-window")
     summary={"passed":True,"version":"1.2.7","platform":sys.platform,"checks":checks,"real_school_writes":0}
     (output/"compiled-summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
