@@ -26,7 +26,7 @@
 
 ## Windows / macOS / Linux
 
-正式分发见 [GitHub Releases](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)。发布前必须完成对应原生平台与编译后验证，不能将历史程序换文件名后分发。
+正式分发见 [v1.2.7 Release](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.7)。本版四平台各143项源码及18项编译后检查通过；实际界面、安装/服务、现网只读和隐私验证范围见[发布验收记录](docs/handoff/V127_RELEASE.md)。发布前必须完成对应原生平台与编译后验证，不能将历史程序换文件名后分发。
 
 Windows 提供安装程序与便携程序；安装、升级和卸载保留用户配置及无关文件。macOS 提供 Apple Silicon 与 Intel 的 DMG/ZIP；应用使用临时本地签名，未承诺 Apple 公证。Linux 提供 x86_64 压缩包，支持 Qt6 桌面及 Headless 模式。相同配置按系统互斥锁/文件锁只启动一个实例，即使端口不同；锁失败停止启动。端口属于无关服务时明确报错。
 

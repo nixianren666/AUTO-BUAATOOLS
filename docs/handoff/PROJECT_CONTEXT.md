@@ -9,7 +9,7 @@
 用户最初要把 `BUAASubnet/UBAA` 的课堂签到单独做成轻量桌面软件，有现代 UI、Windows EXE 和安装程序。之后引入 `DeNeRATe-cool/AutoBoya` 的博雅功能，并扩展到多账号和多平台。
 
 - 主品牌：AUTO-BUAA；仓库名：AUTO-BUAATOOLS；可执行程序：BUAA-Signin。
-- 公开仓库地址：`https://github.com/nixianren666/AUTO-BUAATOOLS`。2026-10-14已恢复main到v1.2.6提交5158df8，删除v1.3 Release/标签并恢复默认EXE，见VERSION_WITHDRAWAL.md；10-13的GITHUB_AUDIT.md保留旧状态证据。
+- 公开仓库地址：`https://github.com/nixianren666/AUTO-BUAATOOLS`。2026-10-14先撤回v1.3并恢复v1.2.6，随后按授权完成v1.2.7修复、四平台验收与发布；最新精确状态见V127_RELEASE.md。VERSION_WITHDRAWAL.md与GITHUB_AUDIT.md保留各阶段历史证据。
 - 上游参考是机制与协议研究来源，不代表当前接口可以永远照搬，也不代表已获学校方面的稳定性保证。
 - 根 AGENTS.md 的“晨午检”措辞与实际核心功能有出入：本次所见代码主要是 iClass 常规课堂签到与博雅系统，未确认独立晨午检业务模块。后续不能仅据该措辞新增或宣称已有功能。
 
