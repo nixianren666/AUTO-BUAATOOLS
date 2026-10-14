@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 430" role="img" aria-labelledby="title desc">
+  <title id="title">AUTO-BUAA 项目工作流程</title>
+  <desc id="desc">桌面和浏览器通过本地 FastAPI 与共享操作规则连接学校接口；后台调度复用规则，本地账本记录操作和待确认预约。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#94a3b8"/></marker>
+  </defs>
+  <rect width="1080" height="430" rx="24" fill="#0f172a"/>
+  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif" text-anchor="middle">
+    <text x="540" y="44" font-size="23" font-weight="700" fill="#f8fafc">一套规则，贯穿界面与后台</text>
+    <g fill="none" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)">
+      <path d="M245 125 H360"/><path d="M610 125 H750"/>
+      <path d="M750 167 H610"/><path d="M360 167 H245"/>
+      <path d="M300 270 V229 H445 V190"/>
+      <path d="M565 190 V229 H735 V270" stroke-dasharray="6 5"/>
+    </g>
+    <g fill="#cbd5e1" font-size="17">
+      <text x="302" y="109">操作</text><text x="680" y="109">读取 / 提交</text>
+      <text x="680" y="190">官方状态</text><text x="302" y="190">界面反馈</text>
+    </g>
+    <rect x="25" y="80" width="220" height="110" rx="16" fill="#172554" stroke="#60a5fa"/>
+    <text x="135" y="126" font-size="24" font-weight="700" fill="#f8fafc">桌面 / 浏览器</text>
+    <text x="135" y="158" font-size="19" fill="#bfdbfe">同一套 WebUI</text>
+    <rect x="360" y="80" width="250" height="110" rx="16" fill="#1e293b" stroke="#94a3b8"/>
+    <text x="485" y="126" font-size="23" font-weight="700" fill="#f8fafc">FastAPI · 操作规则</text>
+    <text x="485" y="158" font-size="18" fill="#cbd5e1">账号 / 窗口 / 状态校验</text>
+    <rect x="750" y="80" width="305" height="110" rx="16" fill="#164e63" stroke="#22d3ee"/>
+    <text x="902" y="126" font-size="24" font-weight="700" fill="#f8fafc">学校接口客户端</text>
+    <text x="902" y="158" font-size="19" fill="#a5f3fc">官方 SSO · iClass · 博雅</text>
+    <rect x="165" y="270" width="270" height="100" rx="16" fill="#312e81" stroke="#a5b4fc"/>
+    <text x="300" y="310" font-size="24" font-weight="700" fill="#f8fafc">后台调度器</text>
+    <text x="300" y="344" font-size="19" fill="#c7d2fe">课表 / 课池同步 · 任务检查</text>
+    <rect x="600" y="270" width="270" height="100" rx="16" fill="#064e3b" stroke="#34d399"/>
+    <text x="735" y="310" font-size="24" font-weight="700" fill="#f8fafc">本地防重账本</text>
+    <text x="735" y="344" font-size="19" fill="#a7f3d0">操作记录 / 待确认预约</text>
+    <text x="540" y="404" font-size="18" fill="#94a3b8">手动操作与自动任务共享核验；结果以学校官方记录为准</text>
+  </g>
+</svg>
