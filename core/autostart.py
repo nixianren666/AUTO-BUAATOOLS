@@ -110,7 +110,16 @@ def set_autostart(enable: bool, headless: bool = False) -> bool:
         try:
             import winreg
             access = winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_RUN_PATH, 0, access) as key:
+            # Fresh Windows profiles need not have a Run key yet. Disabling an
+            # absent entry is already complete and must not create that key.
+            if enable:
+                key_handle = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, REG_RUN_PATH, 0, access)
+            else:
+                try:
+                    key_handle = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_RUN_PATH, 0, access)
+                except FileNotFoundError:
+                    return True
+            with key_handle as key:
                 if enable:
                     cmd = get_executable_command()
                     winreg.SetValueEx(key, REG_APP_KEY, 0, winreg.REG_SZ, cmd)

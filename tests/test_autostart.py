@@ -4,6 +4,52 @@ import sys
 from core.autostart import get_autostart_status, set_autostart, get_executable_command
 
 class TestAutostart(unittest.TestCase):
+    def test_windows_fresh_profile_creates_run_key_and_preserves_other_apps(self):
+        registry = MagicMock()
+        state = {"exists": False, "values": {"OtherApp": "keep"}}
+        def opened(*args):
+            if not state["exists"]:
+                raise FileNotFoundError()
+            return MagicMock()
+        def created(*args):
+            state["exists"] = True
+            return MagicMock()
+        def queried(key, name):
+            if name not in state["values"]:
+                raise FileNotFoundError()
+            return state["values"][name], registry.REG_SZ
+        registry.OpenKey.side_effect = opened
+        registry.CreateKeyEx.side_effect = created
+        registry.QueryValueEx.side_effect = queried
+        registry.SetValueEx.side_effect = lambda key, name, reserved, kind, value: state["values"].update({name: value})
+        registry.DeleteValue.side_effect = lambda key, name: state["values"].pop(name)
+        with patch("sys.platform", "win32"), patch.dict(sys.modules, {"winreg": registry}):
+            self.assertTrue(set_autostart(False))
+            registry.CreateKeyEx.assert_not_called()
+            self.assertTrue(set_autostart(True))
+            self.assertTrue(get_autostart_status())
+            self.assertEqual(state["values"]["BUAA-Signin"], get_executable_command())
+            self.assertTrue(set_autostart(False))
+            self.assertFalse(get_autostart_status())
+            self.assertEqual(state["values"], {"OtherApp": "keep"})
+
+    def test_windows_registry_permission_failure_is_not_reported_as_success(self):
+        registry = MagicMock()
+        registry.CreateKeyEx.side_effect = PermissionError()
+        registry.OpenKey.side_effect = PermissionError()
+        with patch("sys.platform", "win32"), patch.dict(sys.modules, {"winreg": registry}):
+            self.assertFalse(set_autostart(True))
+            self.assertFalse(set_autostart(False))
+        registry.SetValueEx.assert_not_called()
+        registry.DeleteValue.assert_not_called()
+
+    def test_windows_disable_missing_value_is_idempotent(self):
+        registry = MagicMock()
+        registry.DeleteValue.side_effect = FileNotFoundError()
+        with patch("sys.platform", "win32"), patch.dict(sys.modules, {"winreg": registry}):
+            self.assertTrue(set_autostart(False))
+        registry.CreateKeyEx.assert_not_called()
+
     def test_get_executable_command(self):
         cmd = get_executable_command()
         self.assertIn("--autostart", cmd)
