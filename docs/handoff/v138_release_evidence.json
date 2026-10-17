@@ -1,0 +1,645 @@
+{
+  "version": "1.3.8",
+  "commit": "3bcd92873048d70000f35970079caf461cbe0896",
+  "run_id": 39055548836,
+  "run_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/39055548836",
+  "passed": true,
+  "platforms": {
+    "Windows-x64": {
+      "source": {
+        "tests": 191,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 55.55,
+        "blocked_non_loopback_attempts": 1,
+        "failure_names": [],
+        "error_names": []
+      },
+      "compiled_check_count": 46,
+      "compiled_passed": true,
+      "native_service": {
+        "passed": true,
+        "platform": "win32",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false
+      },
+      "packaging": {
+        "passed": true,
+        "installation": "fresh-and-upgrade",
+        "payload_matches_portable": true,
+        "compiled_installed_app_verified": true,
+        "uninstall_preserves_user_files": true,
+        "installed_autostart_removed": true
+      }
+    },
+    "macOS-arm64": {
+      "source": {
+        "tests": 191,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 38.08,
+        "blocked_non_loopback_attempts": 1,
+        "failure_names": [],
+        "error_names": []
+      },
+      "compiled_check_count": 41,
+      "compiled_passed": true,
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.3.8",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      }
+    },
+    "macOS-x86_64": {
+      "source": {
+        "tests": 191,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 72.47,
+        "blocked_non_loopback_attempts": 1,
+        "failure_names": [],
+        "error_names": []
+      },
+      "compiled_check_count": 41,
+      "compiled_passed": true,
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.3.8",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      }
+    },
+    "Linux-x86_64": {
+      "source": {
+        "tests": 191,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 50.51,
+        "blocked_non_loopback_attempts": 2,
+        "failure_names": [],
+        "error_names": []
+      },
+      "compiled_check_count": 41,
+      "compiled_passed": true,
+      "native_service": {
+        "passed": true,
+        "platform": "linux",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false
+      },
+      "packaging": {}
+    }
+  },
+  "architectures": {
+    "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz": "ELF x86_64",
+    "BUAA-Signin-v1.3.8-macOS-arm64.zip": "Mach-O arm64",
+    "BUAA-Signin-v1.3.8-macOS-x86_64.zip": "Mach-O x86_64",
+    "BUAA-Signin-v1.3.8-portable.exe": "PE x86_64"
+  },
+  "source_archive_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+  "extra_ui": {
+    "passed": true,
+    "suites": [
+      {
+        "name": "glass-check.json",
+        "passed": true,
+        "checks": 22
+      },
+      {
+        "name": "motion-check.json",
+        "passed": true,
+        "checks": 37
+      },
+      {
+        "name": "controls-check.json",
+        "passed": true,
+        "checks": 31
+      },
+      {
+        "name": "feature-ui.json",
+        "passed": true,
+        "checks": 21
+      },
+      {
+        "name": "source-startup.json",
+        "passed": true,
+        "checks": 18
+      },
+      {
+        "name": "source-startup-boundaries.json",
+        "passed": true,
+        "checks": 9
+      },
+      {
+        "name": "app-motion-check.json",
+        "passed": true,
+        "checks": 24
+      }
+    ],
+    "total_checks": 162
+  },
+  "extra_update_cycle": {
+    "passed": true,
+    "checks": [
+      "no-update-network-during-initial-render",
+      "initial-automatic-check-is-nonmanual-and-delayed",
+      "no-repeat-within-day",
+      "next-day-automatic-check-runs-again",
+      "hidden-page-cancels-automatic-check-timer",
+      "restored-overdue-page-resumes-delayed-check",
+      "manual-refresh-and-fixed-release-link",
+      "disabled-automatic-check-stays-off",
+      "re-enabled-overdue-check-resumes"
+    ],
+    "actual_compiled_webui": true,
+    "backend_response_simulated": true,
+    "clock_controlled": true,
+    "real_school_writes": 0
+  },
+  "anonymous_live_update_check": {
+    "passed": true,
+    "endpoint": "https://api.github.com/repos/nixianren666/AUTO-BUAATOOLS/releases/latest",
+    "real_anonymous_request": true,
+    "smoke_bypass": false,
+    "first": {
+      "current_version": "1.3.8",
+      "latest_version": "1.2.7",
+      "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.7",
+      "checked_at": 1792259415,
+      "automatic_interval_seconds": 86400,
+      "status": "local_ahead",
+      "message": "当前已是最新版本",
+      "cached": false,
+      "retry_after_seconds": 86400
+    },
+    "immediate_automatic_cached": true,
+    "immediate_manual_cached": true,
+    "outbound_fetches": 1,
+    "older_1_2_21_comparison": {
+      "current_version": "1.2.21",
+      "latest_version": "1.2.7",
+      "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.7",
+      "checked_at": 1792259416,
+      "automatic_interval_seconds": 86400,
+      "status": "local_ahead",
+      "message": "当前已是最新版本",
+      "cached": false,
+      "retry_after_seconds": 86400
+    },
+    "credentials_sent": false,
+    "school_requests": 0,
+    "automatic_install": false
+  },
+  "final_compiled_real_update_api": {
+    "passed": true,
+    "actual_final_compiled": true,
+    "smoke_profile": false,
+    "configured_accounts": 0,
+    "result": {
+      "current_version": "1.3.8",
+      "latest_version": "1.2.7",
+      "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.2.7",
+      "checked_at": 1792260008,
+      "automatic_interval_seconds": 86400,
+      "status": "local_ahead",
+      "message": "当前已是最新版本",
+      "cached": false,
+      "retry_after_seconds": 86400
+    },
+    "real_school_writes": 0
+  },
+  "computer_use": {
+    "passed": true,
+    "commit": "3bcd92873048d70000f35970079caf461cbe0896",
+    "actual_final_compiled": true,
+    "surface": "Hidden in-app browser controlling final frozen Windows loopback WebUI",
+    "native_physical_clicks": false,
+    "synthetic_only": true,
+    "real_school_writes": 0,
+    "checks": [
+      "Final compiled startup revealed normal interface",
+      "Update button displayed 当前已是最新版本",
+      "Regular during-lesson manual sign confirmed success",
+      "Pool category and both toggles did not hide selected courses",
+      "Boya sign-in confirmed and disabled repeated sign",
+      "Boya sign-out confirmed and disabled repeated sign",
+      "Sign-out did not invent assessment progress",
+      "Account center opened with independent task explanation",
+      "Switching to second account preserved separate pending state",
+      "Glass slider reached 1 percent",
+      "Opening updates closed glass popover",
+      "Final screenshot inspected for readable glass and correct status"
+    ]
+  },
+  "compiled_integrity": {
+    "passed": true,
+    "version": "1.3.8",
+    "commit": "3bcd92873048d70000f35970079caf461cbe0896",
+    "python_minor": "3.12",
+    "application_modules": [
+      "core/__init__.py",
+      "core/autostart.py",
+      "core/boya_actions.py",
+      "core/boya_client.py",
+      "core/boya_crypto.py",
+      "core/boya_scheduler.py",
+      "core/cas.py",
+      "core/domain.py",
+      "core/iclass.py",
+      "core/operations.py",
+      "core/profile.py",
+      "core/regular_policy.py",
+      "core/render_lifecycle.py",
+      "core/scheduler.py",
+      "core/smoke.py",
+      "core/updates.py",
+      "core/vault.py",
+      "core/version.py",
+      "core/webvpn.py",
+      "server/__init__.py",
+      "server/app.py",
+      "server/management.py",
+      "server/update_routes.py"
+    ],
+    "entry_script_equal_source": true,
+    "static_assets": {
+      "server/static/css/startup.css": "9e11cb011b93a977b7b581ed74c5077be1ef7523ce637bc08edb114266a1a63f",
+      "server/static/css/stitch-glass.css": "78ee2acff0da215ae5403f20da5eee4edb9c0097a1619138ea670c894d69dd0e",
+      "server/static/css/style.css": "b51ad9fe2b2b2174ff1b52d52f97ef4a69a643578d2d3fb0ef7962e6c2698eba",
+      "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+      "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+      "server/static/images/buaa-emblem.svg": "46018a6e4b04bb12a1e93935b9bb528e995be2c99356b7550a1106649df9466c",
+      "server/static/images/buaa-wordmark.svg": "0640709a990ca5d9705a1a11eb24dc66478336106240dcded16a4756e2e06efc",
+      "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+      "server/static/images/BUAA_LOGO_SOURCE.json": "d0e29ba0a2ac1b40445afd1de52f8bbe5b1c4956ba7f0bc44681aa35d8fabc01",
+      "server/static/index.html": "13f49f02b3628a7a70e525a0119832bbba8752d38fbfa3cc93c3f6c9cf4229c6",
+      "server/static/js/app.js": "40cfa0199e4952f3036485e31bbc62a8b8e6ac5935cce1236c10679164a24229",
+      "server/static/js/render-lifecycle.js": "76c3b2909d8aecc311c4eb38b2caacce5f64af4cb4c1cefb824f49913a98c03e",
+      "server/static/js/startup.js": "c7c4f20fb721bc8f11f655318bdd43a566d0ad672660c31888510eca27543a2a",
+      "server/static/js/stitch-ambient.js": "86a799cb9eb0af3389017cde2cbe5ff959d8423d47428e3126a4b993a5c609a8",
+      "server/static/js/ui-controls.js": "581ac918e6567971daf0243ae84cb2eef1001e91c8cc35919aea5d3f77892680",
+      "server/static/js/ui-motion.js": "0e608aae0e2b7405ac1183329c1a12096b6531c4e204a5cdb2683bc7a8499498",
+      "server/static/js/ui-surfaces.js": "957e1f7d098e2077c37b286c47cdebd761e60cc0d07b884b85e52cd5a42e38b5",
+      "server/static/js/updates.js": "bfae81f5068d7eb6aa2a795983b62e1b71a09ee4967297688c161298b08181ad"
+    },
+    "executable_sha256": "1f7f6238700e271c5c95581a69b4cbe5052908e0f61d52b130415533fede01df"
+  },
+  "privacy": {
+    "git": {
+      "passed": true,
+      "head_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+      "findings": [],
+      "forbidden_public_files": [],
+      "counts": {
+        "git_objects": 854,
+        "working_files": 207,
+        "embedded_members": 0,
+        "bytes": 598031388
+      },
+      "known_values_supplied": 5,
+      "limitations": [
+        "No OCR of historical images",
+        "Compiled/archive inspection is a separate gate",
+        "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+      ]
+    },
+    "artifacts": {
+      "passed": true,
+      "raw": {
+        "passed": false,
+        "findings": [
+          {
+            "member": "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz!BUAA-Signin!libgnutls.so.30",
+            "kinds": [
+              "private_key_body"
+            ]
+          }
+        ],
+        "counts": {
+          "files": 11,
+          "archive_members": 2516,
+          "carchive_members": 3448,
+          "pyz_members": 4392,
+          "bytes": 1604316599
+        },
+        "assets": [
+          {
+            "name": "AUTO-BUAATOOLS-v1.3.8-source.zip",
+            "size": 38760542,
+            "sha256": "f1cb054ac3dd0648531f2e449470687d54c943de4d2335753a663bdbd52c2859"
+          },
+          {
+            "name": "BUAA-Signin-Setup-v1.3.8.exe",
+            "size": 31792943,
+            "sha256": "d14ba4b39cfec6bc9a470f692a90da45d6d6bf5f4e2bdce71223aabdb3d635eb"
+          },
+          {
+            "name": "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz",
+            "size": 246443485,
+            "sha256": "8fb796dc18a129cda310db0a7f1248970145a81eab88ef2e03f7d9dbc4f2db0a"
+          },
+          {
+            "name": "BUAA-Signin-v1.3.8-macOS-arm64.zip",
+            "size": 28021345,
+            "sha256": "d680198135ac688fcd31bda020560204b2a54a84e2f149f00773fe062bfad033"
+          },
+          {
+            "name": "BUAA-Signin-v1.3.8-macOS-x86_64.zip",
+            "size": 27852920,
+            "sha256": "12137e9085a8ff09232d06a11da2b081148ce8e55990a938d4c3b8f2404fb29f"
+          },
+          {
+            "name": "BUAA-Signin-v1.3.8-portable.exe",
+            "size": 30307175,
+            "sha256": "1f7f6238700e271c5c95581a69b4cbe5052908e0f61d52b130415533fede01df"
+          },
+          {
+            "name": "manifest-Linux-x86_64.json",
+            "size": 1607,
+            "sha256": "369dd9cb3aabc4859e4491ff38853b93c47689f8b3d362a1e0a643c68c331546"
+          },
+          {
+            "name": "manifest-macOS-arm64.json",
+            "size": 1805,
+            "sha256": "0c38b50384e67810231bcb95bcbb52374ba005445c194d29437510be684737ef"
+          },
+          {
+            "name": "manifest-macOS-x86_64.json",
+            "size": 1808,
+            "sha256": "fb7475e92c94aba3c64d2f96bc83e29618b27a33d135d7e2d780fad2e47e27fc"
+          },
+          {
+            "name": "manifest-Windows-x64.json",
+            "size": 1850,
+            "sha256": "f06303e0e7937571f9bc92b8897889866f6a90a876cd6a18ece76475d6b9e344"
+          },
+          {
+            "name": "release-body.md",
+            "size": 3142,
+            "sha256": "2ec982e72033b3b0cc00eccba2d6f91b5e533b51f8c448c9000130ab5f4bb543"
+          }
+        ],
+        "known_values_supplied": 5,
+        "limitations": [
+          "No OCR of image content",
+          "Setup compressed payload requires installer acceptance and matching portable hash",
+          "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+        ]
+      },
+      "public_vector_review": {
+        "passed": true,
+        "classification": "GnuTLS public cryptographic self-test vectors; not user or project private keys",
+        "member": "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz!BUAA-Signin!libgnutls.so.30",
+        "source_url": "https://raw.githubusercontent.com/gnutls/gnutls/3.8.3/lib/crypto-selftests-pk.c",
+        "source_sha256": "0199a5b05732d825e235001455afa1d54178d8508da1fd2e0eb8a5ef271405b8",
+        "embedded_candidates": 5,
+        "matches": [
+          {
+            "sha256_normalized_pem": "003cc63927b31514f9365c3d8d8b279d2fa287617eccdf5eb7f499521c95cc67",
+            "matches_official_selftest": true
+          },
+          {
+            "sha256_normalized_pem": "7d1af1e9fa2e1dc983e22c66894ef86c21e3e2ce4f8f7660401da96ef3596fcf",
+            "matches_official_selftest": true
+          },
+          {
+            "sha256_normalized_pem": "66aefba13ce815a6ff26663773b4fdce1faff87be51daa28930b31a63645de8c",
+            "matches_official_selftest": true
+          },
+          {
+            "sha256_normalized_pem": "ea71262809fc57fca49da9608b04e834c1fefb1741262d382aa996b43da86853",
+            "matches_official_selftest": true
+          },
+          {
+            "sha256_normalized_pem": "c3459defde59823bfe13d6edb7f2d776775dc0489de98ca9c4322f948e278730",
+            "matches_official_selftest": true
+          }
+        ],
+        "raw_scan_findings_retained": true,
+        "unexplained_findings": 0
+      },
+      "known_private_value_findings": 0,
+      "unexplained_findings": 0
+    }
+  },
+  "limitations": [
+    "Synthetic school fixtures only; real school writes zero",
+    "Linux GUI acceptance uses Xvfb, no physical tray host",
+    "No local Mac/Linux manual desktop clicks",
+    "Windows manual inspection used final frozen WebUI without activating desktop",
+    "No physical reboot, long-term unattended soak, Docker runtime acceptance or Apple notarization in this round",
+    "390px viewport retains baseline 26px overflow; desktop 960/1280px checks passed",
+    "Privacy scan has no OCR and cannot guarantee inaccessible/deleted server history",
+    "No WSL installed, downloaded or used"
+  ],
+  "withdrawn_wechat_feature_restored": false,
+  "publication": {
+    "passed": true,
+    "tag": "v1.3.8",
+    "commit": "3bcd92873048d70000f35970079caf461cbe0896",
+    "id": 415982295,
+    "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8",
+    "draft": false,
+    "prerelease": false,
+    "latest_verified": true,
+    "main_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+    "assets": [
+      {
+        "name": "AUTO-BUAATOOLS-v1.3.8-source.zip",
+        "size": 38760542,
+        "digest": "sha256:f1cb054ac3dd0648531f2e449470687d54c943de4d2335753a663bdbd52c2859",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/AUTO-BUAATOOLS-v1.3.8-source.zip"
+      },
+      {
+        "name": "BUAA-Signin-Setup-v1.3.8.exe",
+        "size": 31792943,
+        "digest": "sha256:d14ba4b39cfec6bc9a470f692a90da45d6d6bf5f4e2bdce71223aabdb3d635eb",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-Setup-v1.3.8.exe"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz",
+        "size": 246443485,
+        "digest": "sha256:8fb796dc18a129cda310db0a7f1248970145a81eab88ef2e03f7d9dbc4f2db0a",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-macOS-arm64.dmg",
+        "size": 31720362,
+        "digest": "sha256:db32d35ddada733c0910eea8eddb7e42bbedf771dd01fafa6a52ea575c38f760",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-macOS-arm64.dmg"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-macOS-arm64.zip",
+        "size": 28021345,
+        "digest": "sha256:d680198135ac688fcd31bda020560204b2a54a84e2f149f00773fe062bfad033",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-macOS-arm64.zip"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-macOS-x86_64.dmg",
+        "size": 31403575,
+        "digest": "sha256:242b271a6e422623567da9420ac7aaa6f29edecfdab668d112367e1a2495df07",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-macOS-x86_64.dmg"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-macOS-x86_64.zip",
+        "size": 27852920,
+        "digest": "sha256:12137e9085a8ff09232d06a11da2b081148ce8e55990a938d4c3b8f2404fb29f",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-macOS-x86_64.zip"
+      },
+      {
+        "name": "BUAA-Signin-v1.3.8-portable.exe",
+        "size": 30307175,
+        "digest": "sha256:1f7f6238700e271c5c95581a69b4cbe5052908e0f61d52b130415533fede01df",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/BUAA-Signin-v1.3.8-portable.exe"
+      },
+      {
+        "name": "manifest-Linux-x86_64.json",
+        "size": 1607,
+        "digest": "sha256:369dd9cb3aabc4859e4491ff38853b93c47689f8b3d362a1e0a643c68c331546",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/manifest-Linux-x86_64.json"
+      },
+      {
+        "name": "manifest-macOS-arm64.json",
+        "size": 1805,
+        "digest": "sha256:0c38b50384e67810231bcb95bcbb52374ba005445c194d29437510be684737ef",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/manifest-macOS-arm64.json"
+      },
+      {
+        "name": "manifest-macOS-x86_64.json",
+        "size": 1808,
+        "digest": "sha256:fb7475e92c94aba3c64d2f96bc83e29618b27a33d135d7e2d780fad2e47e27fc",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/manifest-macOS-x86_64.json"
+      },
+      {
+        "name": "manifest-Windows-x64.json",
+        "size": 1850,
+        "digest": "sha256:f06303e0e7937571f9bc92b8897889866f6a90a876cd6a18ece76475d6b9e344",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/manifest-Windows-x64.json"
+      },
+      {
+        "name": "public-gnutls-selftest-review.json",
+        "size": 1296,
+        "digest": "sha256:9500dd97805529401eef964c44db28f7a45d7d831f369cd05390a06c9a2a58dc",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/public-gnutls-selftest-review.json"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 1377,
+        "digest": "sha256:845de4c10e879c1e9a6c278688693ca9d6cec1d01364dad1c36f8d5b78e58aae",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/SHA256SUMS.txt"
+      },
+      {
+        "name": "v1.3.8-acceptance.json",
+        "size": 17197,
+        "digest": "sha256:797681a5d7838612db26c4b0f99703f6c783221245698839ac77bf5070ee708e",
+        "url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/download/untagged-b4557deab015531de591/v1.3.8-acceptance.json"
+      }
+    ]
+  },
+  "post_publication_update_checks": {
+    "new_source": {
+      "passed": true,
+      "endpoint": "https://api.github.com/repos/nixianren666/AUTO-BUAATOOLS/releases/latest",
+      "real_anonymous_request": true,
+      "smoke_bypass": false,
+      "first": {
+        "current_version": "1.3.8",
+        "latest_version": "1.3.8",
+        "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8",
+        "checked_at": 1792261113,
+        "automatic_interval_seconds": 86400,
+        "status": "up_to_date",
+        "message": "当前已是最新版本",
+        "cached": false,
+        "retry_after_seconds": 86400
+      },
+      "immediate_automatic_cached": true,
+      "immediate_manual_cached": true,
+      "outbound_fetches": 1,
+      "older_1_2_21_comparison": {
+        "current_version": "1.2.21",
+        "latest_version": "1.3.8",
+        "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8",
+        "checked_at": 1792261115,
+        "automatic_interval_seconds": 86400,
+        "status": "update_available",
+        "message": "发现新版本 v1.3.8",
+        "cached": false,
+        "retry_after_seconds": 86400
+      },
+      "credentials_sent": false,
+      "school_requests": 0,
+      "automatic_install": false
+    },
+    "actual_old_compiled": {
+      "passed": true,
+      "actual_old_compiled_version": "1.2.21",
+      "anonymous_real_github": true,
+      "smoke_profile": false,
+      "configured_accounts": 0,
+      "result": {
+        "current_version": "1.2.21",
+        "latest_version": "1.3.8",
+        "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8",
+        "checked_at": 1792261117,
+        "automatic_interval_seconds": 86400,
+        "status": "update_available",
+        "message": "发现新版本 v1.3.8",
+        "cached": false,
+        "retry_after_seconds": 86400
+      },
+      "real_school_writes": 0
+    },
+    "actual_new_compiled": {
+      "current_version": "1.3.8",
+      "latest_version": "1.3.8",
+      "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8",
+      "checked_at": 1792261228,
+      "automatic_interval_seconds": 86400,
+      "status": "up_to_date",
+      "message": "当前已是最新版本",
+      "cached": false,
+      "retry_after_seconds": 86400
+    }
+  },
+  "local_delivery": {
+    "passed": true,
+    "sha256": "1f7f6238700e271c5c95581a69b4cbe5052908e0f61d52b130415533fede01df",
+    "config_preserved_during_replace": true,
+    "config_same_as_task_start": true,
+    "user_processes_terminated": false
+  }
+}
