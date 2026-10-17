@@ -17,6 +17,7 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         ]
         mock_client = MagicMock()
         mock_client.is_authenticated.return_value = True
+        mock_client.signin_record.return_value = None
         mock_client.perform_signin = AsyncMock(return_value=(True, "签到成功"))
         mock_client.get_today_classes = AsyncMock(side_effect=[
             [{"courseSchedId": "101", "courseName": "航空航天概论", "signStatus": 0, "classBeginTime": future_time_str}],

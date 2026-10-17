@@ -13,8 +13,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from core.cas import CasParser
-from core.domain import now as china_now, trusted_url, regular_allowed, CHINA
+from core.domain import now as china_now, trusted_url, regular_allowed, regular_window, CHINA
 from core import operations
+from core.regular_policy import MAX_POSTS, minimum_retry_delay
 from core.webvpn import from_webvpn_url, to_webvpn_url
 
 logger = logging.getLogger("buaa_signin")
@@ -470,6 +471,13 @@ class IclassClient:
 
         raise RuntimeError("课表读取失败，保留上次数据，请检查网络与认证")
 
+    def signin_record(self, course_id):
+        user = self.operation_user or self.user_info.get("schoolid")
+        if not user:
+            return None
+        key = operations.ledger.key(user, "iclass-sign", course_id, self.clock().date())
+        return operations.ledger.read(key)
+
     async def perform_signin(self, course_id, guard=None):
         """Manual and automatic callers share identity, window and actual POST budget."""
         if not str(course_id).isdigit() or int(course_id) <= 0:
@@ -492,7 +500,7 @@ class IclassClient:
                 operations.ledger.confirmed(key)
                 return True, "官方已确认签到，无需重复提交"
             if not regular_allowed(course, self.clock()):
-                return False, "不在课前十分钟窗口或考勤状态未知，未提交"
+                return False, "不在开课前十分钟至下课的有效窗口、下课时间未核实或考勤状态未知，未提交"
             response = await self.client.get(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/common/get_timestamp.action"))
             response.raise_for_status()
             timestamp = response.json().get("timestamp")
@@ -505,11 +513,16 @@ class IclassClient:
             if self.clock().date() != query_day or not self.request_guard() or (guard is not None and not guard()) or not regular_allowed(course, self.clock()):
                 return False, "账号已暂停或已超过签到窗口，未提交"
             try:
-                claimed = operations.ledger.claim(key)
+                start, _ = regular_window(course, self.clock())
+                claimed = operations.ledger.claim(key, limit=MAX_POSTS, retry_delay=lambda attempts: minimum_retry_delay(attempts, self.clock() < start and school_now < start))
             except operations.OperationBusy as exc:
                 return False, str(exc)
             if not claimed:
                 return True, "请求已被接受，等待官方状态同步，不再重发"
+            # A persistent claim can wait for another writer; recheck before sending.
+            if self.clock().date() != query_day or not self.request_guard() or (guard is not None and not guard()) or not regular_allowed(course, self.clock()):
+                operations.ledger.failed_before_send(key)
+                return False, "账号已暂停或已超过签到窗口，未提交"
             try:
                 self.actual_sign_posts += 1
                 response = await self.client.post(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/stu_scan_sign.action"), headers={"sessionId": self.session_id}, params={"courseSchedId": course_id, "timestamp": str(timestamp)}, data={"id": self.user_id})

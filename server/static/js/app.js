@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.2.7 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.3.8 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -102,6 +102,26 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 模态弹窗蒙层点击与 ESC 快捷关闭
+function setUISurface(id, visible) {
+  if (window.BUAAUiSurfaces) return window.BUAAUiSurfaces.set(id, visible);
+  // If optional motion fails to load, preserve exclusive, immediate controls.
+  const ids = ["glassPopover", "updatePanel", "accountCardsModal", "loginModal", "manualSignModal", "disclaimerModal"];
+  const modal = document.getElementById("disclaimerModal");
+  if (visible && id !== "disclaimerModal" && modal && !modal.classList.contains("hidden")) return false;
+  ids.forEach(otherId => {
+    const el = document.getElementById(otherId);
+    if (el && (otherId === id || visible)) {
+      const closed = otherId !== id || !visible;
+      el.classList.toggle("hidden", closed);
+      el.inert = closed;
+      el.setAttribute("aria-hidden", String(closed));
+      const triggerId = { glassPopover: "glassControlBtn", updatePanel: "updateCheckBtn" }[otherId];
+      document.getElementById(triggerId)?.setAttribute("aria-expanded", String(!closed));
+    }
+  });
+  return visible;
+}
+
 function initModalBackdrops() {
   const modalConfigs = [
     { id: "accountCardsModal", closeFn: closeAccountCardsModal },
@@ -138,7 +158,7 @@ function initModalBackdrops() {
       }
       const glassPopover = document.getElementById("glassPopover");
       if (glassPopover && !glassPopover.classList.contains("hidden")) {
-        glassPopover.classList.add("hidden");
+        setUISurface("glassPopover", false);
         document.getElementById("glassControlBtn")?.focus();
       }
     }
@@ -277,6 +297,7 @@ function updateUIElements() {
     if (sSelect) sSelect.checked = !!appState.activeUser.boya_auto_select;
     if (sSign) sSign.checked = !!appState.activeUser.boya_auto_sign;
     if (sCampus) sCampus.value = appState.activeUser.campus || "北京";
+    window.BUAAUiControls?.syncSelect(sCampus);
     const targets=appState.activeUser.boya_targets || {"德育":2,"劳育":2,"美育":1,"安全健康":1};
     for (const [category,id] of Object.entries({"德育":"Moral","劳育":"Labor","美育":"Art","安全健康":"Security"})) {
       const input=document.getElementById("boyaTarget"+id);
@@ -350,9 +371,12 @@ function renderClassesList(classes) {
     const isSigned = c.signStatus === 1;
     const statusKnown = c.signStatus === 0 || c.signStatus === 1;
     const begins = parseIsoOrSpaceDate(c.classBeginTime);
+    const ends = parseIsoOrSpaceDate(c.classEndTime);
+    const endKnown = begins && ends && ends > begins;
+    const deadline = endKnown ? ends : begins;
     const timestamp = Date.now();
-    const canSign = statusKnown && !isSigned && begins && timestamp >= begins.getTime()-600000 && timestamp <= begins.getTime();
-    const signHint = !statusKnown ? "官方状态未知" : !begins ? "课程时间未核实" : timestamp > begins.getTime() ? "课前签到窗口已结束" : "尚未到课前10分钟";
+    const canSign = statusKnown && !isSigned && begins && timestamp >= begins.getTime()-600000 && timestamp <= deadline.getTime();
+    const signHint = !statusKnown ? "官方状态未知" : !begins ? "课程时间未核实" : timestamp > deadline.getTime() ? (endKnown ? "本节签到窗口已结束" : "下课时间未核实") : "尚未到课前10分钟";
     const courseName = c.courseName || "未知课程";
     const timeRange = `${c.startTime || "--"} - ${c.endTime || "--"}`;
     const room = c.classroom || c.roomName || "校内教室";
@@ -389,9 +413,9 @@ function renderClassesList(classes) {
         </div>
 
         <div class="feed-card-footer">
-          <span style="font-size:12px;color:var(--text-muted);">上课前10分钟自动签到</span>
+          <span style="font-size:12px;color:var(--text-muted);">课前优先，下课前限次补签</span>
           ${isSigned ? `
-            <button class="origin-btn origin-btn-ghost" disabled style="opacity:0.6;">已签到</button>
+            <button class="origin-btn origin-confirmed-status" disabled title="官方已确认签到">${confirmedCheckIcon()}已签到</button>
           ` : `
             <button class="origin-btn origin-btn-primary" ${actionAttributes("regularSign", schedId)} ${canSign ? '' : 'disabled'}>${canSign ? '立即打卡' : signHint}</button>
           `}
@@ -499,6 +523,7 @@ async function fetchBoyaData(isManual = false) {
       if (selToggle && statusRes.boya_auto_select !== undefined) selToggle.checked = !!statusRes.boya_auto_select;
       if (signToggle && statusRes.boya_auto_sign !== undefined) signToggle.checked = !!statusRes.boya_auto_sign;
       if (campusSelect && statusRes.campus) campusSelect.value = statusRes.campus;
+      window.BUAAUiControls?.syncSelect(campusSelect);
     }
 
     const daemon = document.getElementById("boyaDaemonStatus");
@@ -621,25 +646,23 @@ function isCourseEnded(c) {
     return true;
   }
 
-  // 2. 打卡截止时间配置 (courseSignConfig)
+  // 2. 课程结束时间优先；签到窗口结束不代表课程结束。
+  const endDt = getCourseEndDateTime(c);
+  if (endDt) return new Date() > endDt;
+
+  // 3. 缺少课程结束时间时，仅使用签退截止时间，不使用签到截止时间。
   let cfg = c.courseSignConfig;
   if (typeof cfg === "string") {
     try { cfg = JSON.parse(cfg); } catch (e) { cfg = null; }
   }
   if (cfg && typeof cfg === "object") {
-    const signOutEnd = cfg.signOutEndDate || cfg.signEndDate;
+    const signOutEnd = cfg.signOutEndDate;
     if (signOutEnd) {
       const dtSignOut = parseIsoOrSpaceDate(signOutEnd);
       if (dtSignOut && new Date() > dtSignOut) {
         return true;
       }
     }
-  }
-
-  // 3. 课程结束时间计算
-  const endDt = getCourseEndDateTime(c);
-  if (endDt && new Date() > endDt) {
-    return true;
   }
 
   return false;
@@ -706,7 +729,8 @@ function renderBoyaFeed() {
   if (countSel) countSel.textContent = appState.boyaSelected.length;
   if (countAll) countAll.textContent = appState.boyaCourses.length;
 
-  let list = appState.boyaTab === "selected" ? appState.boyaSelected : appState.boyaCourses;
+  const sourceList = appState.boyaTab === "selected" ? appState.boyaSelected : appState.boyaCourses;
+  let list = sourceList;
 
   // 0. 已选修课程的时间状态筛选 (未来及正在进行 vs 历史选课)
   if (appState.boyaTab === "selected") {
@@ -728,31 +752,30 @@ function renderBoyaFeed() {
     });
   }
 
-  // 2. 官方四大类别筛选
-  if (appState.boyaCategoryFilter !== "全部") {
-    list = list.filter(c => normalizeBoyaCategory(c) === appState.boyaCategoryFilter);
-  }
-
-  // 3. 仅显示支持线上自主打卡 (过滤掉线下人工核验课)
-  if (appState.boyaAutoSignOnly) {
-    list = list.filter(c => c.autonomous_config_valid === true);
-  }
-
-  // 4. 仅显示尚有名额
-  if (appState.boyaAvailableOnly) {
-    list = list.filter(c => c.capacity_available === true);
+  // 课池专属条件不能隐藏已选课程；切页保留选择，仅在对应控件可见的课池应用。
+  if (appState.boyaTab === "all") {
+    if (appState.boyaCategoryFilter !== "全部") {
+      list = list.filter(c => normalizeBoyaCategory(c) === appState.boyaCategoryFilter);
+    }
+    if (appState.boyaAutoSignOnly) {
+      list = list.filter(c => c.autonomous_config_valid === true);
+    }
+    if (appState.boyaAvailableOnly) {
+      list = list.filter(c => c.capacity_available === true);
+    }
   }
 
   if (list.length === 0) {
-    if (appState.boyaDataStale) {
+    if (appState.boyaDataStale && sourceList.length === 0) {
       container.innerHTML='<div class="origin-empty-state"><div class="empty-title">博雅数据尚未同步</div><div class="empty-desc">请检查账号认证与连接；暂无数据不等于学校没有课程。</div></div>';
       return;
     }
+    const selectedHasCourses = appState.boyaTab === "selected" && appState.boyaSelected.length > 0;
     container.innerHTML = `
       <div class="origin-empty-state">
         <div class="empty-icon">🎯</div>
-        <div class="empty-title">${appState.boyaTab === "selected" ? "暂无已选修课程" : "选课池中暂无匹配课程"}</div>
-        <div class="empty-desc">${appState.boyaTab === "selected" ? "可切换至上方【全量选课池】挑选心仪的博雅课程立即抢选。" : "未找到符合当前多维筛选条件的课程，请调整类别、取消过滤器或更换搜索词。"}</div>
+        <div class="empty-title">${appState.boyaTab === "selected" ? (selectedHasCourses ? "当前条件下暂无匹配的已选课程" : "暂无已选修课程") : "选课池中暂无匹配课程"}</div>
+        <div class="empty-desc">${appState.boyaTab === "selected" ? (selectedHasCourses ? "已有选课记录；请切换至【全部已选】或调整上方搜索词查看。" : "可切换至上方【全量选课池】挑选心仪的博雅课程立即抢选。") : "未找到符合当前多维筛选条件的课程，请调整类别、取消过滤器或更换搜索词。"}</div>
       </div>
     `;
     return;
@@ -836,13 +859,13 @@ function renderBoyaFeed() {
                 `}
 
                 ${isSignedOut ? `
-                  <button class="origin-btn origin-btn-info-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签退">🏁 已签退</button>
+                  <button class="origin-btn origin-confirmed-status" disabled title="北航SSO已确认签退">${confirmedCheckIcon()}已签退</button>
                 ` : `
                   <button class="origin-btn origin-btn-secondary" ${c.can_sign_out === true ? "" : "disabled"} ${actionAttributes("signout", courseId)}>定位签退</button>
                 `}
 
                 ${isSigned ? `
-                  <button class="origin-btn origin-btn-success-subtle" disabled style="cursor:default;opacity:0.95;" title="北航SSO已确认签到">✅ 已签到</button>
+                  <button class="origin-btn origin-confirmed-status" disabled title="北航SSO已确认签到">${confirmedCheckIcon()}已签到</button>
                 ` : `
                   <button class="origin-btn origin-btn-primary" ${c.can_sign_in === true ? "" : "disabled"} ${actionAttributes("sign", courseId)}>定位签到</button>
                 `}
@@ -1127,12 +1150,12 @@ async function clearLogs() {
 function openAccountCardsModal() {
   renderAccountsModal();
   const modal = document.getElementById("accountCardsModal");
-  if (modal) modal.classList.remove("hidden");
+  if (modal) setUISurface("accountCardsModal", true);
 }
 
 function closeAccountCardsModal() {
   const modal = document.getElementById("accountCardsModal");
-  if (modal) modal.classList.add("hidden");
+  if (modal) setUISurface("accountCardsModal", false);
 }
 
 function renderAccountsModal() {
@@ -1244,12 +1267,12 @@ function openLoginModalFromCenter() {
 
 function openLoginModal() {
   const m = document.getElementById("loginModal");
-  if (m) m.classList.remove("hidden");
+  if (m) setUISurface("loginModal", true);
 }
 
 function closeLoginModal() {
   const m = document.getElementById("loginModal");
-  if (m) m.classList.add("hidden");
+  if (m) setUISurface("loginModal", false);
 }
 
 async function handleLogin(e) {
@@ -1284,12 +1307,12 @@ async function handleLogin(e) {
 // 手动排课 ID 签到模态框
 function openManualSignModal() {
   const m = document.getElementById("manualSignModal");
-  if (m) m.classList.remove("hidden");
+  if (m) setUISurface("manualSignModal", true);
 }
 
 function closeManualSignModal() {
   const m = document.getElementById("manualSignModal");
-  if (m) m.classList.add("hidden");
+  if (m) setUISurface("manualSignModal", false);
 }
 
 async function handleManualSignSubmit(e) {
@@ -1331,9 +1354,9 @@ async function checkDisclaimerStatus() {
     const modal = document.getElementById("disclaimerModal");
     if (modal) {
       if (!data.accepted) {
-        modal.classList.remove("hidden");
+        setUISurface("disclaimerModal", true);
       } else {
-        modal.classList.add("hidden");
+        setUISurface("disclaimerModal", false);
       }
     }
   } catch (e) {}
@@ -1346,7 +1369,7 @@ function handleDisclaimerCheckChange(checkbox) {
 
 async function handleDisclaimerAccept() {
   const modal = document.getElementById("disclaimerModal");
-  if (modal) modal.classList.add("hidden");
+  if (modal) setUISurface("disclaimerModal", false);
   try {
     const res = await apiFetch("/api/system/disclaimer/accept", { method: "POST" });
     const data = await res.json();
@@ -1403,6 +1426,10 @@ async function requestAppExit() {
 }
 
 // 消息提示 (Origin Toast)
+function confirmedCheckIcon() {
+  return '<svg class="confirmed-check" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.4"/><path d="m6.2 10 2.5 2.6 5.1-5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
 function showToast(message, type = "info") {
   const container = document.getElementById("toastContainer");
   if (!container) return;
@@ -1410,7 +1437,7 @@ function showToast(message, type = "info") {
   const toast = document.createElement("div");
   toast.className = `origin-toast ${type}`;
   toast.innerHTML = `
-    <span class="origin-status-dot ${type === 'success' ? 'green' : type === 'error' ? 'amber' : 'cyan'}"></span>
+    ${type === 'success' ? `<span class="toast-confirmed-mark">${confirmedCheckIcon()}</span>` : `<span class="origin-status-dot ${type === 'error' ? 'amber' : 'cyan'}"></span>`}
     <span>${escapeHtml(message)}</span>
   `;
   container.appendChild(toast);
@@ -1418,7 +1445,7 @@ function showToast(message, type = "info") {
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateX(30px)";
-    toast.style.transition = "all 0.25s ease";
+    toast.style.transition = "opacity 0.25s ease, transform 0.25s ease";
     setTimeout(() => toast.remove(), 250);
   }, 3200);
 }
@@ -1441,139 +1468,32 @@ let ambientAnimFrameId = null;
 function initAmbientCanvas() {
   const canvas = document.getElementById("ambientParticlesCanvas");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  let width = 0;
-  let height = 0;
-  let dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-  function resize() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
+  try {
+    window.BuaaStitchAmbient?.start(canvas);
+  } catch {
+    // A visual renderer failure must not interrupt account/API initialization.
+    canvas.dataset.renderer = "css";
   }
-  resize();
-  window.addEventListener("resize", () => {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    resize();
-  });
-
-  // 1. 流动极光光斑定义 (仿 Gemini App 多彩绚烂流光)
-  const orbs = [
-    { x: width * 0.25, y: height * 0.3, r: 380, color: "rgba(56, 189, 248, 0.26)", angle: 0, speed: 0.0006, rx: 140, ry: 90 },
-    { x: width * 0.75, y: height * 0.25, r: 420, color: "rgba(168, 85, 247, 0.24)", angle: 2.1, speed: 0.0005, rx: 160, ry: 110 },
-    { x: width * 0.5, y: height * 0.75, r: 440, color: "rgba(59, 130, 246, 0.28)", angle: 4.2, speed: 0.0007, rx: 120, ry: 130 },
-    { x: width * 0.15, y: height * 0.8, r: 350, color: "rgba(16, 185, 129, 0.18)", angle: 1.2, speed: 0.0008, rx: 100, ry: 80 },
-    { x: width * 0.85, y: height * 0.7, r: 360, color: "rgba(244, 114, 182, 0.16)", angle: 3.5, speed: 0.0006, rx: 110, ry: 95 }
-  ];
-
-  // 2. 悬浮星尘颗粒群
-  const PARTICLE_COUNT = 65;
-  const particles = [];
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    particles.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35 - 0.1, // 微微向上浮动
-      size: Math.random() * 1.8 + 0.8,
-      alpha: Math.random() * 0.6 + 0.2,
-      baseAlpha: Math.random() * 0.6 + 0.2,
-      pulseSpeed: Math.random() * 0.02 + 0.008,
-      pulsePhase: Math.random() * Math.PI * 2,
-      color: i % 4 === 0 ? "rgba(125, 211, 252, " : (i % 4 === 1 ? "rgba(192, 132, 252, " : "rgba(255, 255, 255, ")
-    });
-  }
-
-  // 鼠标交互微阻尼
-  let mouse = { x: width / 2, y: height / 2, targetX: width / 2, targetY: height / 2 };
-  window.addEventListener("mousemove", (e) => {
-    mouse.targetX = e.clientX;
-    mouse.targetY = e.clientY;
-  });
-
-  let lastTime = performance.now();
-
-  function render(now) {
-    const dt = Math.min(now - lastTime, 50);
-    lastTime = now;
-
-    // 缓动鼠标跟踪
-    mouse.x += (mouse.targetX - mouse.x) * 0.04;
-    mouse.y += (mouse.targetY - mouse.y) * 0.04;
-    const mxShift = (mouse.x - width / 2) * 0.03;
-    const myShift = (mouse.y - height / 2) * 0.03;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // 绘制底层流动极光光斑
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    for (const orb of orbs) {
-      orb.angle += orb.speed * dt;
-      const curX = orb.x + Math.cos(orb.angle) * orb.rx + mxShift;
-      const curY = orb.y + Math.sin(orb.angle) * orb.ry + myShift;
-
-      const grad = ctx.createRadialGradient(curX, curY, 0, curX, curY, orb.r);
-      grad.addColorStop(0, orb.color);
-      grad.addColorStop(0.5, orb.color.replace(/[\d\.]+\)$/, "0.08)"));
-      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(curX, curY, orb.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-
-    // 绘制微光星尘颗粒
-    ctx.save();
-    for (const p of particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-
-      // 屏幕环绕
-      if (p.x < -10) p.x = width + 10;
-      else if (p.x > width + 10) p.x = -10;
-      if (p.y < -10) p.y = height + 10;
-      else if (p.y > height + 10) p.y = -10;
-
-      // 呼吸闪烁
-      p.pulsePhase += p.pulseSpeed;
-      const curAlpha = p.baseAlpha * (0.65 + 0.35 * Math.sin(p.pulsePhase));
-
-      ctx.fillStyle = p.color + curAlpha + ")";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-
-    ambientAnimFrameId = requestAnimationFrame(render);
-  }
-
-  ambientAnimFrameId = requestAnimationFrame(render);
 }
 
 // ==================== 毛玻璃材质单滑杆透光度控制器 ====================
 
 function initGlassControls() {
-  const savedOpacity = localStorage.getItem("origin_glass_opacity") || "65";
+  let savedOpacity = "65";
+  try { savedOpacity = localStorage.getItem("origin_glass_opacity") || "65"; } catch { /* Optional preference. */ }
   updateGlassOpacity(savedOpacity, false);
 
   const opacitySlider = document.getElementById("glassOpacitySlider");
-  if (opacitySlider) opacitySlider.value = savedOpacity;
+  if (opacitySlider) opacitySlider.value = document.getElementById("opacityValLabel").textContent.replace("%", "");
 
   // 点击外部关闭弹窗
   document.addEventListener("click", (e) => {
+    if (window.BUAAUiSurfaces) return;
     const wrapper = document.getElementById("glassControlWrapper");
     const popover = document.getElementById("glassPopover");
     if (popover && !popover.classList.contains("hidden")) {
       if (wrapper && !wrapper.contains(e.target)) {
-        popover.classList.add("hidden");
+        setUISurface("glassPopover", false);
       }
     }
   });
@@ -1583,14 +1503,15 @@ function toggleGlassPopover(event) {
   if (event) event.stopPropagation();
   const popover = document.getElementById("glassPopover");
   if (popover) {
-    popover.classList.toggle("hidden");
+    setUISurface("glassPopover", popover.classList.contains("hidden"));
   }
 }
 
 function updateGlassOpacity(val, save = true) {
-  const numVal = parseInt(val, 10);
+  const parsed = Number(val);
+  const numVal = Number.isFinite(parsed) ? Math.max(1, Math.min(90, Math.round(parsed))) : 65;
   const opacityDecimal = (numVal / 100).toFixed(2);
-  // 单一滑杆联动自动优化背景景深模糊度 (20% -> 24px, 65% -> 39px, 90% -> 47px)
+  // Extend the same visual curve down to1%; preserve the existing65% default.
   const blurPx = Math.round(18 + (numVal / 100) * 32);
 
   document.documentElement.style.setProperty("--glass-opacity", opacityDecimal);
@@ -1600,8 +1521,10 @@ function updateGlassOpacity(val, save = true) {
   const pillText = document.getElementById("glassPercentText");
   if (label) label.textContent = `${numVal}%`;
   if (pillText) pillText.textContent = `透光 ${numVal}%`;
+  const slider = document.getElementById("glassOpacitySlider");
+  if (slider) slider.value = String(numVal);
 
   if (save) {
-    localStorage.setItem("origin_glass_opacity", numVal.toString());
+    try { localStorage.setItem("origin_glass_opacity", numVal.toString()); } catch { /* Session appearance still works. */ }
   }
 }

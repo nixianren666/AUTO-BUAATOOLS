@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/THN-BUAA/BUAA-Logo",
+  "description": "School emblem and wordmark SVGs supplied by user-selected public repository; originals unchanged. Startup copies only normalize fill/stroke for white on black drawing.",
+  "source_metadata": {
+    "repository": "https://github.com/THN-BUAA/BUAA-Logo",
+    "files": {
+      "emblem.svg": {
+        "url": "https://raw.githubusercontent.com/THN-BUAA/BUAA-Logo/main/BUAA-%E6%A0%A1%E5%BE%BD-%E7%9F%A2%E9%87%8F%E5%9B%BE.svg",
+        "etag": "\"1650ab6e71a244e9ec67c1c9ddc013c3658cdb650b052d6a074729620c981696\""
+      },
+      "wordmark.svg": {
+        "url": "https://raw.githubusercontent.com/THN-BUAA/BUAA-Logo/main/BUAA-%E6%A0%A1%E5%90%8D-%E7%9F%A2%E9%87%8F%E5%9B%BE.svg",
+        "etag": "\"1aaae4c40f83330593c1bf085abf3d699ed421a4468464433c35d0104b6c0bad\""
+      }
+    },
+    "note": "原仓库未提供独立LICENSE；仅本地预览，接入公开分发前另核对校徽使用要求。"
+  },
+  "notice": "University marks remain their owners’ marks. Upstream has no standalone LICENSE. No affiliation or endorsement is implied."
+}

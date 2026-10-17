@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-BUAA 课程独立签到助手 v1.2.7 - 原生独立应用入口
+BUAA 课程独立签到助手 v1.3.8 - 原生独立应用入口
 - 原生独立桌面窗口 (pywebview / Edge Chromium WebView2)
 - Windows 任务栏系统托盘常驻 (pystray)
 - 窗口右上角关闭拦截并最小化至托盘
@@ -327,7 +327,7 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title=f"AUTO-BUAA v{VERSION}" if sys.platform.startswith("linux") else "BUAA 课程独立签到助手 v1.2.7 (后台运行中)",
+            title=f"AUTO-BUAA v{VERSION}" if sys.platform.startswith("linux") else "BUAA 课程独立签到助手 v1.3.8 (后台运行中)",
             menu=tray_menu,
         )
         if run_now:
@@ -372,7 +372,7 @@ def run_server(port: int):
 
 def parse_arguments():
     import argparse
-    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.2.7")
+    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.3.8")
     parser.add_argument("--headless", action="store_true", help="无头模式：纯 Web 服务运行（适合 Linux 服务器、Docker 容器与后台驻留）")
     parser.add_argument("--host", type=str, default=None, help="监听主机地址（桌面模式默认 127.0.0.1，无头模式默认 127.0.0.1）")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"监听端口号（默认 {DEFAULT_PORT}）")
@@ -428,7 +428,7 @@ def main():
         print("=" * 66)
         print("  [*] AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
         print("=" * 66)
-        print(f"  版本:     v1.2.7")
+        print(f"  版本:     v1.3.8")
         print(f"  监听地址: http://{host}:{port}")
         print(f"  本地访问: http://127.0.0.1:{port}")
         print(f"  网络访问: http://<你的服务器IP>:{port}")
@@ -474,8 +474,11 @@ def main():
             min_size=(960, 620),
             hidden=start_hidden,
             confirm_close=False,
+            background_color="#000000",  # Match the startup stage before the web document paints.
         )
         window.events.closing += on_window_closing
+        from core.render_lifecycle import install_render_lifecycle
+        install_render_lifecycle(window)
 
         # 启动主 GUI 事件循环（阻塞直到应用退出）
         if args.smoke_test:
@@ -490,7 +493,7 @@ def main():
                         try:
                             state = window.evaluate_js("({ready:typeof appState==='object' && appState.accounts.length===2, title:document.title, bodyWidth:document.body.scrollWidth, viewport:window.innerWidth})")
                             if state and state.get("ready"):
-                                report.update({"passed": "1.2.7" in state.get("title", "") and state["bodyWidth"] <= state["viewport"]+2, "state": state})
+                                report.update({"passed": "1.3.8" in state.get("title", "") and state["bodyWidth"] <= state["viewport"]+2, "state": state})
                                 break
                         except Exception:
                             pass
@@ -524,6 +527,30 @@ def main():
                     window.evaluate_js("document.querySelector('[data-action=regularSign][data-id=\"1002\"]').click()")
                     wait_native("appState.classes.some(c=>c.courseSchedId==='1002' && c.signStatus===1)")
                     report["checks"].append("native-regular-sign")
+                    # Native rendering regression runs only inside the synthetic self-test.
+                    if sys.platform == "win32":
+                        window.on_top = True
+                        wait_native("!document.documentElement.classList.contains('startup-running') && window.BUAARenderLifecycle?.visible")
+                        def fluid_frames():
+                            return window.evaluate_js("Number(document.getElementById('ambientParticlesCanvas').dataset.frames || 0)")
+                        start_frames = fluid_frames()
+                        time.sleep(0.7)
+                        assert fluid_frames() > start_frames, "Visible canvas must animate"
+                        report["checks"].append("native-render-visible")
+                        for mode in ("minimized", "tray"):
+                            (window.minimize if mode == "minimized" else window.hide)()
+                            wait_native("window.BUAARenderLifecycle?.visible === false")
+                            stopped_frames = fluid_frames()
+                            time.sleep(1)
+                            assert fluid_frames() == stopped_frames, "Invisible canvas must stop"
+                            report["checks"].append(f"native-{mode}-no-render")
+                            window.show()
+                            window.restore()
+                            wait_native("window.BUAARenderLifecycle?.visible === true")
+                            resumed_frames = fluid_frames()
+                            time.sleep(0.7)
+                            assert fluid_frames() > resumed_frames, "Restored canvas must resume"
+                            report["checks"].append(f"native-{mode}-resume")
                 except Exception as exc:
                     report.update({"passed":False,"error_type":type(exc).__name__})
                 finally:

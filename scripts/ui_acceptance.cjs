@@ -40,10 +40,21 @@ const fs = require('node:fs');
       await page.waitForFunction(() => appState.boyaSelected.some(c => c.courseId === 2001 && c.signed_out));
       assert.equal(await page.evaluate(() => appState.boyaSelected.find(c => c.courseId === 2001).final_passed), false);
     });
+    await require('./boya_filter_acceptance.cjs').verifyBoyaFilters(page, check);
+    await require('./render_visibility_acceptance.cjs').verifyRenderVisibility(page, check);
     await check('account-modal-and-regular-sign-refresh', async () => {
+      await page.evaluate(() => {
+        Object.assign(appState, { boyaAutoSignOnly: true, boyaAvailableOnly: true, boyaCategoryFilter: '安全健康' });
+        switchBoyaTab('selected');
+      });
       await page.locator('#navBtnAccounts').click();
       await page.locator('[data-action="switchAccount"][data-id="fixture-account-2"]').click();
       await page.waitForFunction(() => appState.activeUsername === 'fixture-account-2' && appState.classes.some(c => c.courseSchedId === '1002'));
+      await page.waitForFunction(() => appState.boyaSelected.length === 2 && document.querySelectorAll('#boyaCoursesFeed .feed-card').length === 2);
+      await page.evaluate(() => {
+        Object.assign(appState, { boyaAutoSignOnly: false, boyaAvailableOnly: false, boyaCategoryFilter: '全部' });
+        renderBoyaFeed();
+      });
       await page.locator('#navBtnRegular').click();
       await page.locator('[data-action="regularSign"][data-id="1002"]').click();
       await page.waitForFunction(() => appState.classes.some(c => c.courseSchedId === '1002' && c.signStatus === 1));
@@ -77,10 +88,11 @@ const fs = require('node:fs');
       await page.unroute('**/api/system/autostart');
     });
     await check('regular-window-and-unknown-state-disable-manual-button', async () => {
-      await page.evaluate(() => renderClassesList([{courseSchedId:'3001',courseName:'unknown-window',signStatus:0,classBeginTime:'2000-01-01 08:00:00'}]));
+      await page.evaluate(() => renderClassesList([{courseSchedId:'3001',courseName:'ended-window',signStatus:0,classBeginTime:'2000-01-01 08:00:00',classEndTime:'2000-01-01 09:00:00'}]));
       assert.equal(await page.locator('[data-action="regularSign"]').isDisabled(),true);
       assert.match(await page.locator('[data-action="regularSign"]').textContent(),/结束/);
     });
+    await require('./regular_window_acceptance.cjs').verifyRegularWindow(page, check);
     await check('unknown-capacity-category-and-partial-id-never-become-available-art-course', async () => {
       const value=await page.evaluate(() => {
         let rejected=false;

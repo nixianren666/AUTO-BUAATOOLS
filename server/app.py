@@ -25,6 +25,7 @@ from core import operations
 from core.domain import now as china_now, course_id, course_times, sign_config, autonomous, attendance_allowed, drop_allowed, within_semester, semester_bounds, REQUIREMENTS
 from core.boya_actions import perform_boya_action, merge_selected, account_lock
 from server.management import install as install_management
+from server.update_routes import install as install_updates
 
 from core.iclass import IclassClient
 from core.scheduler import SigninScheduler
@@ -143,6 +144,7 @@ def save_config(cfg):
 
 app = FastAPI(title="BUAA Course Signin Multi-Account", version=VERSION)
 install_management(app)
+install_updates(app)
 operations.configure(CONFIG_FILE.with_name("operations.sqlite"))
 
 # 结构化运行日志

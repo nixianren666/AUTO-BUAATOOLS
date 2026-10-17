@@ -1,0 +1,655 @@
+{
+  "version": "1.2.17",
+  "status": "completed_local_delivery",
+  "published": false,
+  "github_pushed": false,
+  "direct_baseline": "exact local1.2.16, 92 runtime files",
+  "published_business_baseline": "v1.2.7 c379c018a66d882698051d01616d0700c3e46950",
+  "source_manifest_sha256": {
+    "app_icon.icns": "b93b44d4d3844ba53aa1e6d5853087050200ab93c3a2fafa46fc90d7430b3b82",
+    "app_icon.ico": "cc741ede636086f4d0ab6bc7c5bf46a2d75e0f344e37dc47359ddb68f75add93",
+    "BUAA-Signin-linux.spec": "f9b350bc053146b3eb28ca0bba40acbf29c973a1b2222816c845e49ee11bd48d",
+    "BUAA-Signin-mac.spec": "d64277f75107a72e1334bbd335421a0b38a28cd8a64d5f6a408f26abf79d2f98",
+    "BUAA-Signin.spec": "95f3a2b61fcf2379ef0a8e1474a4b3fae5b62a2757bdec3d4b0c9d2fbc77d19c",
+    "docker-compose.yml": "34ca824c644d6b422a833126d582d0489f773fe5fc218d7ad5faa6bd5d1fb0c5",
+    "Dockerfile": "2eff702313dff1d039262fcfac1ec078e2ec318d40131ad5f61b756dcff855e4",
+    "README.md": "693fc4ea4cd126fe5d942e26130c17345563244c69171218d77fdd202f9e66bb",
+    "requirements-build.txt": "d60fcc36f5841c4af837f6e129894e9f5e52b02f153a6f331eabf4fe67b2abaa",
+    "requirements.txt": "a4209f851e2e9e3b37f7c8cf25e0b7416d2697cd15c32b6643791fe18b5fc0b0",
+    "run.py": "37afa4041d86c574de8155be165d613388ce79abad04273255b1ce477e11b5d8",
+    "tray_icon.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+    "core/autostart.py": "ba1a0f9b9403f3fbf05eaac799874335f8f697ef77b67c104f92d42364d50790",
+    "core/boya_actions.py": "dbf4e214f87ba044db0fbf5a68d5b1b978fcdac11a5cb4f7423eaed8231006a4",
+    "core/boya_client.py": "f0de2c6639bb75c657a1a6e705f856dcc0d49b8f58b22e895977534a7b981d60",
+    "core/boya_crypto.py": "227497c8e6e6fcb0babc68a13a38664871904a21c14632ef5ea3951140bfc888",
+    "core/boya_scheduler.py": "955c0283a3ac280d5a948a410abee6de0e623ecf13e766d08c94384e35313749",
+    "core/cas.py": "fe3bcce3db9e28fcc5a50daa2f1e13164bfc6649d34d5672887bd88ac38f2ca9",
+    "core/domain.py": "e038688fddba4420b1591b906458280708ae4358096951b4119c51a1218fbb4e",
+    "core/iclass.py": "24a0cb00349e1b86deb723d175971bcd53f53446ee53bf0c60244a9b750ea70d",
+    "core/operations.py": "7a0274f0a0f6dd4c5851330cc084df28f3bd9c225b45d437a25362e5136b65aa",
+    "core/profile.py": "f5a1d061240853fe05bf82bfdcfbd491f3305c7918a28de552d30c4bb9239cd8",
+    "core/scheduler.py": "24d8a7e79484bd612e62bb100a2d10d07bd46e3646ab12efe53ad2d4d3d490ac",
+    "core/service_cli.py": "2d2a796a04ff46f65c64df8459f6bcb02b02c49cb82fa63f24974465a22ce6f7",
+    "core/smoke.py": "5cbca2cf6743ea97bf064fa843aad84a1cdf47be5ae7ece1813cf6430e53735b",
+    "core/updates.py": "7a7a91cac781dd3eed2047fd8f8735f58e409748717bcee6509f63bd6ce69a92",
+    "core/vault.py": "43768ec596410442ac2ae471246eeb3d7feabbf44405b6bb574e133bb564364e",
+    "core/version.py": "538b2f3b99afc84ded067d28b4d843f8cc486ffc0e9ad701ecd7a5cbb21f806e",
+    "core/webvpn.py": "fb7430ef1785ecf79043a97fa177bac3306e1ddcb0981ff1ce9de35c992e7036",
+    "core/__init__.py": "6b2bf738aa3c543e4366f811042866e175b0d0cee606d6e0c7b3fc02f3db0104",
+    "installer/setup.iss": "f8a2e61395da7a89b23936902edb73a6e4c4333578f0e53d7142fe8aa51a4eee",
+    "installer/version_info.txt": "d96079ad9651bc2bcad00c9dee182cfa35a5129de92b3cf5ceee22085105c2c3",
+    "scripts/build_macos.sh": "d1e369933f51f65c70c43cfea9c9b934637f20cb0032e0f3a1e055d4738c687c",
+    "scripts/build_release.py": "45848cdf4f33feeae2d5669284fcc7c0892ed832d0bd79a26030dd390f257de6",
+    "scripts/check_release_format.py": "b71defefa0cf63fddae7e41c13282cfbb9f65d14b0621788cd29e036f3ffae16",
+    "scripts/fix_macos_gatekeeper.sh": "263d86cfe6f7f486f1ed1629825bacb7c44eecd71d3e8040a94b91262c387c59",
+    "scripts/install_linux_service.sh": "e8dd37ab76e22e2e56cde446de6659f6e75f67611dcc51aa247ca961b0623b5c",
+    "scripts/install_macos_service.sh": "e8dd37ab76e22e2e56cde446de6659f6e75f67611dcc51aa247ca961b0623b5c",
+    "scripts/privacy_artifacts.py": "909736911ede0d4a5a2061ee0a8081556452e4c7438ce59635d36d678b3a75c7",
+    "scripts/privacy_scan.py": "d35d875fd0fe13745d5d56a0e70c0923d0e3aee3666872979295f86bf39f8603",
+    "scripts/smoke_test_mac.py": "61aa1a0230665d6f1f82703c94f3d64a11eab3fa3e195bcffcf819389acb2646",
+    "scripts/test_isolated.py": "3aa0a074a1384004662e84daf7312d0ef78671a0b1f1b62560a98790d15add8e",
+    "scripts/ui_acceptance.cjs": "4ceb6c1e3a8e13f4e9d0313a59d69dff805e63a24c9706dee96e0ce5266436ef",
+    "scripts/verify_compiled.py": "ac65924fa1106a2e41b71bd307d56dd164d5fddfe5c7fde1577185c343fd9cd5",
+    "scripts/verify_compiled_exe_e2e.py": "61aa1a0230665d6f1f82703c94f3d64a11eab3fa3e195bcffcf819389acb2646",
+    "scripts/verify_installer.py": "da00614fa78571f8a2dee81d6ede4046c6163a4b0a61092562a95dd366136574",
+    "scripts/verify_native_service.py": "f3fa32e3f8f144828e32937bc8cecb392bf72c96147a99b9ef5b00cdc3281fb2",
+    "server/app.py": "89000af50b7fab884e5d55501b4f12d7fbd574e84eb8c9a0fddb9e81cef1d4d1",
+    "server/management.py": "a023c16fa049c33ed7a25419885a5f02ab66c49c4ab29d8ee78179d7266aa139",
+    "server/update_routes.py": "dd6495c73ebb00865a50b7b05093e67172877c0003d718c9fc13d35e8d44f15b",
+    "server/__init__.py": "99c4271bef29ac91a25a11c7c90debf4e905364dceeb46c2af5f0fa39e4e4726",
+    "systemd/auto-buaa.service": "9f4cfe7805dc5026204fd1ad479ba2cb0313dfc3c772c2ed351aaca15dcc4e0e",
+    "tests/boya_fixture.py": "2f620e5a9dde4894d640c4851e2cee1eb12ab19b9308a6a3e2b1c68914e6da2c",
+    "tests/test_api.py": "e885af5d4d5dbf67b396dcb47d93419186252396995412b40180f06d5ce4e9f9",
+    "tests/test_autostart.py": "81be4fd51a4a4193c9d7305325dee6ebf8ab60fdd30410f90ec7fcfb75062d45",
+    "tests/test_boya_api.py": "65f73a9ded7a9cefea89c11b5794aec06377071edbd083fdde87f02b4e8fac67",
+    "tests/test_boya_categories_and_filters.py": "ebdaef714bd085739fecef360ca071d9d06e9fcb121cf38f72f5b9edba891f24",
+    "tests/test_boya_crypto.py": "6f05aa01de9edc86bc63037fa288679f8df3e354c72f92836ee762d325cebd20",
+    "tests/test_boya_lifecycle.py": "e152e137c10900ab58542e96858c4a113a607740078b2499bb36e55c950fbc7f",
+    "tests/test_boya_scheduler.py": "2804ed05d926c42fc8071ce9452d35b1767fe778f7a45b121653fbd185774f18",
+    "tests/test_core.py": "83e7d4a9071e5cb122b83085a66961d2201ac986bcc4bd3a839d6002d58c355f",
+    "tests/test_cross_platform_and_stats.py": "5b61083c40feeca06f262c8b7a0203314ee72ff5853be6486d3bd7df0a176e2e",
+    "tests/test_multi_account.py": "91f691ba06864f4f63a46c834b8ddac04a5bae75cb48b9649601881ad824d373",
+    "tests/test_multi_student_survival_and_switch.py": "c7b637c684e99a485cc0be75f7c676e20ef57d335cfff70f18cf888589e6acbc",
+    "tests/test_ui_interactions.py": "b6c4ac815c397903d121dfdeb3ff8c76160816c7b5872d6d1c8aaabbacdb7702",
+    "tests/test_updates.py": "9e1e97a559cc8694b6c5737bb0e7529109bd95af353096b064a6abea0deb1032",
+    "tests/test_v122_comprehensive_fixes.py": "69a6a298662c397b9a13a593d80c6741b67c310a777a1e8604bf60b559bcbacc",
+    "tests/test_v126_refresh_and_heartbeat.py": "a563ba5aaf4d7038ae014b7e261f84ee784be8fe0c67db9a6a37f9f8454fc185",
+    "tests/test_v127_api.py": "6db9e386874e8c12072a2990db3017eed2d8fd92cc392aae6426d5a90ba6538f",
+    "tests/test_v127_boya.py": "77ff8024e483a6cf3994c7d31bd767233c3b39a002ecced08e34e90449567811",
+    "tests/test_v127_lifecycle.py": "28dd991d7a79fbc09251b5a70b4b26d29d991075ac38d10b858af0e785361fee",
+    "tests/test_v127_management.py": "e163c0792a54ee7ae2f2588e862e9f4a205365c59e77a655765c6504c43d06b4",
+    "tests/test_v127_safety.py": "a7d4d2f03fbd867cd5d8c852a2d246c2db0739c91d28426c7250fe85ec3ee3ce",
+    "tests/__init__.py": "d6ce9fa645413018714d72259432df97a0daf185d8453c012cd33d2ce613eebe",
+    ".github/workflows/build-macos.yml": "6c2e1424656b6330014bcb5b45fe792f07055427febd7e03a3468809aba09aae",
+    "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+    "server/static/index.html": "b638f55c9fda59cf1078841181bee4c5db203f08fcf8dc97398e3d16cdea0831",
+    "server/static/css/stitch-glass.css": "ff6934151e10609b96075b8c8e4351b9bcada773be86c906b220dc0ceda4876e",
+    "server/static/css/style.css": "b51ad9fe2b2b2174ff1b52d52f97ef4a69a643578d2d3fb0ef7962e6c2698eba",
+    "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+    "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+    "server/static/js/app.js": "f4bda8bbd03f9f4890c111e62c9da13845fd77886d31c715118121c8c1666758",
+    "server/static/js/stitch-ambient.js": "24efcbaa2066f3637a710d436f496054e9b70b556f78acd8d2bc8a2800da128a",
+    "server/static/js/ui-controls.js": "b8741dcc57250d5fd707e7cf55639b589ebf51083aa9813d752d9bf4d8437743",
+    "server/static/js/ui-motion.js": "640bab2337f6f38408f9648f0e060b13561ddf8b43ba868da91198faf30b9834",
+    "server/static/js/ui-surfaces.js": "40ea9f9a7d33af17ede0468d201eab11acd164cb92a0b3a7360df0f2ea406cda",
+    "server/static/js/updates.js": "bfae81f5068d7eb6aa2a795983b62e1b71a09ee4967297688c161298b08181ad",
+    "server/static/js/startup.js": "14430214c93812220dc491c48a5d482932cac72f4fe74665355fcfc0248adf20",
+    "server/static/css/startup.css": "9e11cb011b93a977b7b581ed74c5077be1ef7523ce637bc08edb114266a1a63f",
+    "server/static/images/buaa-emblem.svg": "46018a6e4b04bb12a1e93935b9bb528e995be2c99356b7550a1106649df9466c",
+    "server/static/images/buaa-wordmark.svg": "0640709a990ca5d9705a1a11eb24dc66478336106240dcded16a4756e2e06efc",
+    "server/static/images/BUAA_LOGO_SOURCE.json": "1b77601da45b4094e0b29be433d0068352f72da4704af5d64e1739c210c27fa8",
+    "core/render_lifecycle.py": "381757efd6995e1f24c5960599c4105c5d9f80f343bd0db7e67a253c71184cad",
+    "server/static/js/render-lifecycle.js": "0422e8ff4361bbc02747630cc00b594ef000e75c8b71ee192966952639e76d8f",
+    "tests/test_render_lifecycle.py": "ccf3380594bd3a86e2946d404113e9d721f81bc6da7f9a104dcb77deeb80df0e"
+  },
+  "artifact": {
+    "filename": "BUAA-Signin-v1.2.17-portable.exe",
+    "bytes": 33735709,
+    "sha256": "7d03742680e3d77e9a5fef4459a6c3ff2b656935f17e477dde26a16f342f5ad7"
+  },
+  "regression": {
+    "baseline": {
+      "tests": 159,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "elapsed_seconds": 21.86,
+      "blocked_non_loopback_attempts": 2,
+      "failure_names": [],
+      "error_names": []
+    },
+    "candidate": {
+      "tests": 168,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "elapsed_seconds": 21.5,
+      "blocked_non_loopback_attempts": 2,
+      "failure_names": [],
+      "error_names": []
+    }
+  },
+  "ui_checks": {
+    "source": {
+      "startup": 18,
+      "startup_boundaries": 9,
+      "controls": 31,
+      "motion": 37,
+      "glass": 22,
+      "updates_and_one_percent": 21,
+      "rendering": 14,
+      "restore_state": 2
+    },
+    "compiled": {
+      "startup": 18,
+      "startup_boundaries": 9,
+      "controls": 31,
+      "motion": 37,
+      "glass": 22,
+      "updates_and_one_percent": 21,
+      "rendering": 14,
+      "restore_state": 2
+    }
+  },
+  "compiled_standard_checks": 23,
+  "full_page_checks": 24,
+  "native_automated_checks": 14,
+  "native_computer_use_observations": 13,
+  "native_manual_report": {
+    "passed": true,
+    "version": "1.2.17",
+    "synthetic_only": true,
+    "native_artifact": "source/dist/BUAA-Signin.exe",
+    "observations": [
+      "native-regular-page-and-glass-artwork-visible",
+      "boya-navigation-click-and-data-visible",
+      "glass-panel-controls-visible",
+      "update-panel-replaces-glass-panel",
+      "account-modal-replaces-update-and-keeps-background-blur",
+      "synthetic-second-account-selected-by-click",
+      "regular-page-refresh-shows-second-account-course",
+      "native-titlebar-minimize-click",
+      "backend-account-and-health-remain-alive-after-minimize",
+      "restore-through-existing-window-show-API",
+      "native-titlebar-close-hides-to-tray",
+      "backend-stays-alive-after-close",
+      "tray-restore-shows-same-active-account"
+    ],
+    "limitations": [
+      "First two old source-window activations timed out; final compiled window screenshot and click actions succeeded.",
+      "Minimized snapshot request with both outputs disabled was rejected; subsequent restore was re-observed.",
+      "After close the hidden window was not usable for capture, as expected; it was restored through existing public API.",
+      "Physical GPU counters and zero-frame assertions are automated measurements, not estimates from screenshots."
+    ],
+    "public_screenshot": "docs/handoff/media/v1217/native-performance.jpg",
+    "sha256": "7d03742680e3d77e9a5fef4459a6c3ff2b656935f17e477dde26a16f342f5ad7"
+  },
+  "preserved": {
+    "business_frontend_entire_AST": true,
+    "original_html_events_and_layout": true,
+    "previous_motion_choreography_except_visibility_gate": true,
+    "published_v127_backend_file_count": 19,
+    "foreground_interactions": 11,
+    "identical_business_writes": 5,
+    "read_endpoint_types": 20,
+    "response_shapes": 22
+  },
+  "performance": {
+    "scope": "Own busiest GPU engine, Windows counters; not sum of engines or whole card. Finite samples, same physical computer and 1280x840 window.",
+    "actual_exe_visible_gpu_percent": {
+      "before": [
+        14,
+        15,
+        15,
+        15
+      ],
+      "candidate": [
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "source_host_native_measurements": {
+      "passed": true,
+      "rows": [
+        {
+          "version": "1.2.16",
+          "mode": "visible-idle",
+          "gpu_busiest_owned_engine_samples_percent": [
+            15,
+            14,
+            15,
+            15
+          ],
+          "gpu_median_percent": 15.0,
+          "all_owned_process_cpu_percent_one_core": 332.3279714030384,
+          "fluid_frames": 288,
+          "seconds": 9.908998250961304,
+          "initial_state": {
+            "frames": 230,
+            "hidden": false,
+            "render": null,
+            "reason": null,
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 518,
+            "hidden": false,
+            "render": null,
+            "reason": null,
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.16",
+          "mode": "parked-pointer",
+          "gpu_busiest_owned_engine_samples_percent": [
+            16,
+            15,
+            16,
+            16
+          ],
+          "gpu_median_percent": 16.0,
+          "all_owned_process_cpu_percent_one_core": 182.3607427055703,
+          "fluid_frames": 193,
+          "seconds": 6.63773512840271,
+          "initial_state": {
+            "frames": 577,
+            "hidden": false,
+            "render": null,
+            "reason": null,
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 770,
+            "hidden": false,
+            "render": null,
+            "reason": null,
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.17",
+          "mode": "visible-idle",
+          "gpu_busiest_owned_engine_samples_percent": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "gpu_median_percent": 2.0,
+          "all_owned_process_cpu_percent_one_core": 22.537750732476898,
+          "fluid_frames": 179,
+          "seconds": 6.501885175704956,
+          "initial_state": {
+            "frames": 230,
+            "hidden": false,
+            "render": "visible",
+            "reason": "visible",
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 409,
+            "hidden": false,
+            "render": "visible",
+            "reason": "visible",
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.17",
+          "mode": "parked-pointer",
+          "gpu_busiest_owned_engine_samples_percent": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "gpu_median_percent": 2.0,
+          "all_owned_process_cpu_percent_one_core": 17.135743061772605,
+          "fluid_frames": 180,
+          "seconds": 6.527109861373901,
+          "initial_state": {
+            "frames": 466,
+            "hidden": false,
+            "render": "visible",
+            "reason": "visible",
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 646,
+            "hidden": false,
+            "render": "visible",
+            "reason": "visible",
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.17",
+          "mode": "minimized",
+          "gpu_busiest_owned_engine_samples_percent": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "gpu_median_percent": 0.0,
+          "all_owned_process_cpu_percent_one_core": 7.017740848865933,
+          "fluid_frames": 0,
+          "seconds": 6.488513708114624,
+          "initial_state": {
+            "frames": 647,
+            "hidden": true,
+            "render": "paused",
+            "reason": "minimized",
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 647,
+            "hidden": true,
+            "render": "paused",
+            "reason": "minimized",
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.17",
+          "mode": "tray",
+          "gpu_busiest_owned_engine_samples_percent": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "gpu_median_percent": 0.0,
+          "all_owned_process_cpu_percent_one_core": 2.4695190787988257,
+          "fluid_frames": 0,
+          "seconds": 6.476308584213257,
+          "initial_state": {
+            "frames": 677,
+            "hidden": false,
+            "render": "paused",
+            "reason": "tray",
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 677,
+            "hidden": false,
+            "render": "paused",
+            "reason": "tray",
+            "ready": true,
+            "boot": false
+          }
+        },
+        {
+          "version": "1.2.17",
+          "mode": "covered",
+          "gpu_busiest_owned_engine_samples_percent": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "gpu_median_percent": 0.0,
+          "all_owned_process_cpu_percent_one_core": 1.4178765880217785,
+          "fluid_frames": 0,
+          "seconds": 6.409701824188232,
+          "initial_state": {
+            "frames": 743,
+            "hidden": true,
+            "render": "paused",
+            "reason": "covered",
+            "ready": true,
+            "boot": false
+          },
+          "end_state": {
+            "frames": 743,
+            "hidden": true,
+            "render": "paused",
+            "reason": "covered",
+            "ready": true,
+            "boot": false
+          }
+        }
+      ],
+      "note": "Win32 per-process GPU engine counters: busiest own engine, not summed whole-card utilization. CPU is sum of owned process time, one core=100%."
+    },
+    "phase_matched_visual_comparison": {
+      "passed": true,
+      "rows": [
+        {
+          "width": 1280,
+          "phase_ms": 0,
+          "image": "fluid",
+          "mae_255": 0.16356884057971013,
+          "p99_255": 2.0,
+          "max_255": 5.0,
+          "psnr_db": 54.99864053413715
+        },
+        {
+          "width": 1280,
+          "phase_ms": 0,
+          "image": "interface",
+          "mae_255": 0.11705450148809524,
+          "p99_255": 1.0,
+          "max_255": 198.0,
+          "psnr_db": 48.27994894899304
+        },
+        {
+          "width": 1280,
+          "phase_ms": 6000,
+          "image": "fluid",
+          "mae_255": 0.1765863412633306,
+          "p99_255": 2.0,
+          "max_255": 5.0,
+          "psnr_db": 54.549318818836944
+        },
+        {
+          "width": 1280,
+          "phase_ms": 6000,
+          "image": "interface",
+          "mae_255": 0.1295703125,
+          "p99_255": 1.0,
+          "max_255": 198.0,
+          "psnr_db": 46.43928476272582
+        },
+        {
+          "width": 1280,
+          "phase_ms": 18000,
+          "image": "fluid",
+          "mae_255": 0.1866160787530763,
+          "p99_255": 2.0,
+          "max_255": 4.0,
+          "psnr_db": 54.338202161297005
+        },
+        {
+          "width": 1280,
+          "phase_ms": 18000,
+          "image": "interface",
+          "mae_255": 0.1443133060515873,
+          "p99_255": 2.0,
+          "max_255": 198.0,
+          "psnr_db": 46.13420853084496
+        },
+        {
+          "width": 2560,
+          "phase_ms": 0,
+          "image": "fluid",
+          "mae_255": 0.13967628761574075,
+          "p99_255": 2.0,
+          "max_255": 5.0,
+          "psnr_db": 55.937562977680685
+        },
+        {
+          "width": 2560,
+          "phase_ms": 0,
+          "image": "interface",
+          "mae_255": 0.10346164279513889,
+          "p99_255": 1.0,
+          "max_255": 190.0,
+          "psnr_db": 50.991198503079076
+        },
+        {
+          "width": 2560,
+          "phase_ms": 6000,
+          "image": "fluid",
+          "mae_255": 0.15444516782407408,
+          "p99_255": 2.0,
+          "max_255": 5.0,
+          "psnr_db": 55.393107057976394
+        },
+        {
+          "width": 2560,
+          "phase_ms": 6000,
+          "image": "interface",
+          "mae_255": 0.11268129701967593,
+          "p99_255": 1.0,
+          "max_255": 190.0,
+          "psnr_db": 52.171378270011814
+        },
+        {
+          "width": 2560,
+          "phase_ms": 18000,
+          "image": "fluid",
+          "mae_255": 0.16443214699074074,
+          "p99_255": 2.0,
+          "max_255": 4.0,
+          "psnr_db": 55.18553220685759
+        },
+        {
+          "width": 2560,
+          "phase_ms": 18000,
+          "image": "interface",
+          "mae_255": 0.12413013599537037,
+          "p99_255": 1.0,
+          "max_255": 190.0,
+          "psnr_db": 51.67444948747943
+        }
+      ]
+    }
+  },
+  "privacy": {
+    "passed": true,
+    "git": {
+      "passed": true,
+      "head_commit": "56761b65d5517b93e696fb469d1bcb38b219dcbf",
+      "findings": [],
+      "forbidden_public_files": [],
+      "counts": {
+        "git_objects": 674,
+        "working_files": 186,
+        "embedded_members": 0,
+        "bytes": 534681430
+      },
+      "known_values_supplied": 4,
+      "limitations": [
+        "No OCR of historical images",
+        "Compiled/archive inspection is a separate gate",
+        "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+      ]
+    },
+    "artifact": {
+      "passed": true,
+      "findings": [],
+      "counts": {
+        "files": 1,
+        "archive_members": 165,
+        "carchive_members": 874,
+        "pyz_members": 1157,
+        "bytes": 124153766
+      },
+      "assets": [
+        {
+          "name": "BUAA-Signin.exe",
+          "size": 33735709,
+          "sha256": "7d03742680e3d77e9a5fef4459a6c3ff2b656935f17e477dde26a16f342f5ad7"
+        }
+      ],
+      "known_values_supplied": 4,
+      "limitations": [
+        "No OCR of image content",
+        "Setup compressed payload requires installer acceptance and matching portable hash",
+        "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+      ]
+    },
+    "local_delta": {
+      "passed": true,
+      "files": 27,
+      "findings": [],
+      "known_seeds_count": 4,
+      "read_only_local_credential_decryptions": 1,
+      "limitation": "Known values and token/key/JWT patterns only; no OCR or guarantee for unknown secrets."
+    },
+    "screenshot_manually_verified_synthetic": true
+  },
+  "platforms": {
+    "windows_native": true,
+    "macos_native_this_round": false,
+    "linux_native_this_round": false,
+    "wsl_used_installed_or_downloaded": false
+  },
+  "references": {
+    "review": "V1217_PERFORMANCE.md",
+    "synthetic_native_screenshot": "media/v1217/native-performance.jpg"
+  },
+  "delivery": {
+    "default_installed": false,
+    "sibling_git_synchronized": true,
+    "source_directory_count": 95,
+    "passed": true,
+    "version": "1.2.17",
+    "sha256": "7d03742680e3d77e9a5fef4459a6c3ff2b656935f17e477dde26a16f342f5ad7",
+    "bytes": 33735709,
+    "default_updated": true,
+    "portable_updated": true,
+    "method": "replace",
+    "config_same_during_update": true,
+    "config_same_as_task_start": false,
+    "user_processes_terminated": false
+  },
+  "passed": true,
+  "compiled_asset_count": 18,
+  "compiled_python_integrity": {
+    "passed": true,
+    "packaged_python_modules_match_final_source": [
+      "core/autostart.py",
+      "core/boya_actions.py",
+      "core/boya_client.py",
+      "core/boya_crypto.py",
+      "core/boya_scheduler.py",
+      "core/cas.py",
+      "core/domain.py",
+      "core/iclass.py",
+      "core/operations.py",
+      "core/profile.py",
+      "core/scheduler.py",
+      "core/smoke.py",
+      "core/updates.py",
+      "core/vault.py",
+      "core/version.py",
+      "core/webvpn.py",
+      "core/__init__.py",
+      "server/app.py",
+      "server/management.py",
+      "server/update_routes.py",
+      "server/__init__.py",
+      "core/render_lifecycle.py"
+    ],
+    "method": "Recursive code object equality excluding only filesystem co_filename; compiler optimize=0",
+    "packaged_entry_script_matches_final_source": true
+  }
+}

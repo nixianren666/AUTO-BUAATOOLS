@@ -86,6 +86,8 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         self.previous = operations.ledger
         operations.ledger = operations.OperationLedger()
         self.current = datetime(2026, 10, 14, 8, 59, 50)
+        self.wall_clock = patch("core.operations.time.time", lambda: self.current.replace(tzinfo=CHINA).timestamp())
+        self.wall_clock.start()
         self.posts = []
         self.timestamp = str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
         self.delay = 0
@@ -95,7 +97,7 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         self.client.operation_user = "fixture-account"
         self.client.user_id, self.client.session_id = "fixture-id", "fixture-session"
         self.client.clock = lambda: self.current
-        self.classes = [{"courseSchedId": "1001", "classBeginTime": "2026-10-14 09:00:00", "signStatus": 0}]
+        self.classes = [{"courseSchedId": "1001", "classBeginTime": "2026-10-14 09:00:00", "classEndTime": "2026-10-14 10:00:00", "signStatus": 0}]
         async def classes():
             return list(self.classes)
         self.client.get_today_classes = classes
@@ -113,8 +115,10 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         await self.client.close()
         operations.ledger.db.close()
         operations.ledger = self.previous
+        self.wall_clock.stop()
 
-    async def test_timestamp_delay_crossing_start_sends_no_post(self):
+    async def test_timestamp_delay_crossing_end_sends_no_post(self):
+        self.classes[0]["classEndTime"] = "2026-10-14 09:00:00"
         self.delay = 15
         success, _ = await self.client.perform_signin("1001")
         self.assertFalse(success)
@@ -153,12 +157,21 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.posts), 1)
         self.assertEqual(self.posts[0].url.path, "/app/course/stu_scan_sign.action")
 
-    async def test_three_attempt_budget_counts_actual_posts(self):
+    async def test_six_attempt_budget_and_group_cooldowns_count_actual_posts(self):
         self.failure = True
-        for _ in range(5):
+        for delay in (0, 30, 30, 300, 30, 30):
+            self.current += timedelta(seconds=delay)
+            self.timestamp = str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
             success, _ = await self.client.perform_signin("1001")
             self.assertFalse(success)
-        self.assertEqual(len(self.posts), 3)
+            attempts=len(self.posts)
+            self.assertFalse((await self.client.perform_signin("1001"))[0])
+            self.assertEqual(len(self.posts),attempts,"Repeated clicks cannot bypass cooldown")
+        self.assertEqual(len(self.posts), 6)
+        self.current += timedelta(minutes=10)
+        self.timestamp = str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+        self.assertFalse((await self.client.perform_signin("1001"))[0])
+        self.assertEqual(len(self.posts),6)
 
     async def test_connection_failure_before_send_preserves_actual_budget(self):
         real_post = self.client._client.post
@@ -171,6 +184,68 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         self.client._client.post = real_post
         self.assertTrue((await self.client.perform_signin("1001"))[0])
         self.assertEqual(len(self.posts), 1)
+
+    async def test_manual_group_cooling_changes_at_start(self):
+        self.failure = True
+        self.current = datetime(2026,10,14,8,58)
+        async def attempt():
+            self.timestamp=str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+            return await self.client.perform_signin('1001')
+        for _ in range(3):
+            await attempt();self.current+=timedelta(seconds=30)
+        self.assertEqual(len(self.posts),3)
+        self.current=datetime(2026,10,14,8,59,59)
+        await attempt();self.assertEqual(len(self.posts),3)
+        # 60 seconds since the third failure, but now class has started: use 300.
+        self.current=datetime(2026,10,14,9)
+        await attempt();self.assertEqual(len(self.posts),3)
+        self.current=datetime(2026,10,14,9,3,59)
+        await attempt();self.assertEqual(len(self.posts),3)
+        self.current=datetime(2026,10,14,9,4)
+        await attempt();self.assertEqual(len(self.posts),4)
+
+    async def test_preclass_group_allows_fourth_after_one_minute(self):
+        self.failure=True
+        self.current=datetime(2026,10,14,8,53)
+        for delay in (0,30,30,59,1):
+            self.current+=timedelta(seconds=delay)
+            self.timestamp=str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+            await self.client.perform_signin('1001')
+            if delay==59:self.assertEqual(len(self.posts),3)
+        self.assertEqual(len(self.posts),4)
+
+    async def test_during_lesson_manual_succeeds_and_after_end_is_blocked(self):
+        self.current=datetime(2026,10,14,9,30)
+        self.timestamp=str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+        self.assertTrue((await self.client.perform_signin('1001'))[0])
+        self.assertEqual(len(self.posts),1)
+        operations.ledger.db.execute('DELETE FROM operations');operations.ledger.db.commit()
+        self.current=datetime(2026,10,14,10,0,1)
+        self.timestamp=str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+        self.assertFalse((await self.client.perform_signin('1001'))[0])
+        self.assertEqual(len(self.posts),1)
+
+    async def test_ledger_wait_crossing_end_or_stop_never_sends(self):
+        real_claim=operations.ledger.claim
+        def delayed_claim(*args,**kwargs):
+            result=real_claim(*args,**kwargs)
+            self.current=datetime(2026,10,14,10,0,1)
+            return result
+        with patch.object(operations.ledger,'claim',side_effect=delayed_claim):
+            self.assertFalse((await self.client.perform_signin('1001'))[0])
+        self.assertEqual(len(self.posts),0)
+        self.assertEqual(self.client.signin_record('1001')[1],0)
+
+    async def test_school_clock_crossing_start_enforces_five_minute_group_gap(self):
+        self.failure=True
+        self.current=datetime(2026,10,14,8,57,30)
+        for _ in range(3):
+            self.timestamp=str(int(self.current.replace(tzinfo=CHINA).timestamp()*1000))
+            await self.client.perform_signin('1001');self.current+=timedelta(seconds=30)
+        self.current=datetime(2026,10,14,8,59,59)
+        self.timestamp=str(int(datetime(2026,10,14,9,0,1,tzinfo=CHINA).timestamp()*1000))
+        self.assertFalse((await self.client.perform_signin('1001'))[0])
+        self.assertEqual(len(self.posts),3)
 
     async def test_timeout_blocks_replay_until_official_confirmation(self):
         self.timeout = True

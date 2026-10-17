@@ -1,4 +1,4 @@
-name: Native v1.2.7 verification and builds
+name: Native v1.3.8 verification and builds
 on:
   workflow_dispatch:
 permissions:
@@ -41,6 +41,8 @@ jobs:
           python -m pip install -r requirements-build.txt
           npm install --no-save --package-lock=false playwright@1.62.1
           npx playwright install chromium
+      - name: Verify runtime and release version format
+        run: python scripts/check_release_format.py
       - name: Linux native desktop and user-service environment
         if: runner.os == 'Linux'
         shell: bash

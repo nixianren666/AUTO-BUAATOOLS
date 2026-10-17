@@ -1,0 +1,214 @@
+{
+  "date": "2026-10-16",
+  "status": "local_applied_unpublished_awaiting_aesthetic_feedback",
+  "version": "1.2.7",
+  "source_integrity": {
+    "source_sha256": {
+      "server/static/index.html": "e8aa1ad678b93477e99be6a2447a461a1ca7414980cb3d0bb6d9cffe223ba1f5",
+      "server/static/js/app.js": "ac159a7122f98670bc3929c08f37032149c7636342800786787ecf7a1d6cf67d",
+      "server/static/css/stitch-glass.css": "d413e687e02fc9c79aa4a21d394719027f87310c1e099a236d1727a15269eb48",
+      "server/static/js/stitch-ambient.js": "822a2559cc3635b958654d00f5e36c889cf93f1b8a1a2710628c86a33996eb0a"
+    },
+    "other_source_files_unchanged": 61,
+    "sibling_source_matches": true
+  },
+  "executable": {
+    "sha256": "265ec4756ff93eee021bd8e9f6e1dcb263b7366c8714633201b56319423246f2",
+    "bytes": 33663530,
+    "matches_verified_build": true,
+    "old_default_backup_preserved": true
+  },
+  "regression": {
+    "tests": 143,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 12.96,
+    "blocked_non_loopback_attempts": 2,
+    "failure_names": [],
+    "error_names": []
+  },
+  "motion_and_layout": {
+    "passed": true,
+    "checks": [
+      "continuous-motion-changes-rendered-pixels",
+      "pointer-moves-background-without-moving-content",
+      "appearance-switches-stop-and-persist",
+      "reduced-motion-default-and-explicit-override",
+      "success-feedback-is-small-green-check-and-one-shot",
+      "hidden-window-stops-and-resumes-with-one-renderer",
+      "blocked-appearance-storage-does-not-break-renderer",
+      "missing-canvas-filter-uses-soft-css-light",
+      "null-context-keeps-business-initialization",
+      "throw-context-keeps-business-initialization",
+      "late-paint-failure-keeps-business-initialization",
+      "missing-script-keeps-business-initialization",
+      "layout-Regular-1280x840",
+      "layout-Boya-1280x840",
+      "layout-Logs-1280x840",
+      "layout-Regular-960x620",
+      "layout-Boya-960x620",
+      "layout-Logs-960x620",
+      "layout-Regular-768x900",
+      "layout-Boya-768x900",
+      "layout-Logs-768x900",
+      "layout-Regular-390x844",
+      "layout-Boya-390x844",
+      "layout-Logs-390x844"
+    ],
+    "details": {
+      "continuous_pixel_mean_difference": 7.839333333333333,
+      "pointer_pixel_mean_difference": 18.917333333333332,
+      "resumed_frames_in_one_second": 23,
+      "overflow_1280_Regular": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_1280_Boya": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_1280_Logs": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_960_Regular": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_960_Boya": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_960_Logs": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_768_Regular": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_768_Boya": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_768_Logs": {
+        "before": 0,
+        "after": 0
+      },
+      "overflow_390_Regular": {
+        "before": 26,
+        "after": 26
+      },
+      "overflow_390_Boya": {
+        "before": 26,
+        "after": 26
+      },
+      "overflow_390_Logs": {
+        "before": 26,
+        "after": 26
+      }
+    },
+    "page_errors": []
+  },
+  "compiled_windows": {
+    "passed": true,
+    "version": "1.2.7",
+    "platform": "win32",
+    "checks": [
+      "compiled-version-and-application-identity",
+      "private-synthetic-profile-and-management-boundary",
+      "initialization-and-paused-health",
+      "boya-tab-matches-displayed-data",
+      "boya-sign-and-signout-do-not-invent-exam-pass",
+      "account-modal-and-regular-sign-refresh",
+      "manual-popup-and-glass-controls",
+      "unknown-calendar-and-signinfo-cannot-invent-semester-pass",
+      "failed-autostart-keeps-system-state-and-shows-error",
+      "regular-window-and-unknown-state-disable-manual-button",
+      "unknown-capacity-category-and-partial-id-never-become-available-art-course",
+      "old-account-response-cannot-overwrite-new-view",
+      "click-injection-and-text-injection-inert",
+      "native-boya-sign",
+      "native-boya-signout-without-invented-assessment",
+      "native-account-switch",
+      "native-regular-sign",
+      "compiled-native-desktop-window"
+    ],
+    "real_school_writes": 0
+  },
+  "git_privacy": {
+    "passed": true,
+    "head_commit": "56761b65d5517b93e696fb469d1bcb38b219dcbf",
+    "findings": [],
+    "forbidden_public_files": [],
+    "counts": {
+      "git_objects": 674,
+      "working_files": 114,
+      "embedded_members": 0,
+      "bytes": 521984323
+    },
+    "known_values_supplied": 3,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  },
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 1,
+      "archive_members": 165,
+      "carchive_members": 864,
+      "pyz_members": 1154,
+      "bytes": 123885557
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33663530,
+        "sha256": "265ec4756ff93eee021bd8e9f6e1dcb263b7366c8714633201b56319423246f2"
+      }
+    ],
+    "known_values_supplied": 3,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "manual_computer_use": {
+    "performed": true,
+    "final_executable_rechecked": true,
+    "checks": [
+      "regular-sign-and-confirmed-check",
+      "appearance-menu-motion-off-on",
+      "escape-dismiss",
+      "boya-navigation-and-selected-tab",
+      "maximize-and-layered-cards",
+      "boya-sign-and-signout-confirmed",
+      "attendance-does-not-invent-assessment"
+    ],
+    "synthetic_only": true
+  },
+  "unchanged_user_configuration": true,
+  "real_school_writes": 0,
+  "wsl_installed_downloaded_or_used": false,
+  "published": false,
+  "mac_linux_native_retested": false,
+  "long_gpu_power_benchmark": false,
+  "visibility_test": "controlled document.hidden / visibilitychange simulation",
+  "unsupported_canvas_filter_test": "removed capability in Edge; not a WebKit native pass",
+  "public_visuals": [
+    "docs/ui/stitch-motion/motion-demo.gif",
+    "docs/ui/stitch-motion/native-success.png"
+  ],
+  "known_limitations": [
+    "390px viewport preserves pre-existing 26px horizontal overflow",
+    "No historical image OCR or unreachable remote Git object guarantee",
+    "Aesthetic approval remains with user"
+  ]
+}

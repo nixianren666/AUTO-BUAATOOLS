@@ -1,0 +1,535 @@
+{
+  "version": "1.2.12",
+  "date": "2026-10-17",
+  "status": "local_applied_unpublished",
+  "baseline": "local1.2.11",
+  "scope": "CSS floating glass consistency and full-screen modal backdrop blur; original business/DOM/engine unchanged except version metadata",
+  "checks": {
+    "source-comparison.json": {
+      "passed": true,
+      "direct_baseline": "local1.2.11",
+      "byte_identical": [
+        "app_icon.icns",
+        "app_icon.ico",
+        "BUAA-Signin-linux.spec",
+        "BUAA-Signin.spec",
+        "docker-compose.yml",
+        "Dockerfile",
+        "requirements-build.txt",
+        "requirements.txt",
+        "tray_icon.png",
+        "core/autostart.py",
+        "core/boya_actions.py",
+        "core/boya_client.py",
+        "core/boya_crypto.py",
+        "core/boya_scheduler.py",
+        "core/cas.py",
+        "core/domain.py",
+        "core/iclass.py",
+        "core/operations.py",
+        "core/profile.py",
+        "core/scheduler.py",
+        "core/service_cli.py",
+        "core/smoke.py",
+        "core/updates.py",
+        "core/vault.py",
+        "core/webvpn.py",
+        "core/__init__.py",
+        "scripts/build_macos.sh",
+        "scripts/build_release.py",
+        "scripts/check_release_format.py",
+        "scripts/fix_macos_gatekeeper.sh",
+        "scripts/install_linux_service.sh",
+        "scripts/install_macos_service.sh",
+        "scripts/privacy_artifacts.py",
+        "scripts/privacy_scan.py",
+        "scripts/smoke_test_mac.py",
+        "scripts/test_isolated.py",
+        "scripts/ui_acceptance.cjs",
+        "scripts/verify_compiled_exe_e2e.py",
+        "scripts/verify_installer.py",
+        "server/app.py",
+        "server/management.py",
+        "server/update_routes.py",
+        "server/__init__.py",
+        "systemd/auto-buaa.service",
+        "tests/boya_fixture.py",
+        "tests/test_autostart.py",
+        "tests/test_boya_api.py",
+        "tests/test_boya_categories_and_filters.py",
+        "tests/test_boya_crypto.py",
+        "tests/test_boya_lifecycle.py",
+        "tests/test_boya_scheduler.py",
+        "tests/test_core.py",
+        "tests/test_cross_platform_and_stats.py",
+        "tests/test_multi_account.py",
+        "tests/test_multi_student_survival_and_switch.py",
+        "tests/test_ui_interactions.py",
+        "tests/test_updates.py",
+        "tests/test_v122_comprehensive_fixes.py",
+        "tests/test_v126_refresh_and_heartbeat.py",
+        "tests/test_v127_boya.py",
+        "tests/test_v127_lifecycle.py",
+        "tests/test_v127_management.py",
+        "tests/test_v127_safety.py",
+        "tests/__init__.py",
+        "server/static/favicon.ico",
+        "server/static/css/style.css",
+        "server/static/images/app_logo.png",
+        "server/static/images/buaa_logo.svg",
+        "server/static/js/stitch-ambient.js",
+        "server/static/js/updates.js"
+      ],
+      "version_only": [
+        "BUAA-Signin-mac.spec",
+        "README.md",
+        "run.py",
+        "core/version.py",
+        "installer/setup.iss",
+        "installer/version_info.txt",
+        "scripts/verify_compiled.py",
+        "scripts/verify_native_service.py",
+        "tests/test_api.py",
+        "tests/test_v127_api.py",
+        "server/static/index.html",
+        "server/static/js/app.js",
+        ".github/workflows/build-macos.yml"
+      ],
+      "visual_only": [
+        "server/static/css/stitch-glass.css"
+      ],
+      "all_business_js_html_events_backend_and_update_modules_unchanged": true,
+      "source_sha256": {
+        "app_icon.icns": "b93b44d4d3844ba53aa1e6d5853087050200ab93c3a2fafa46fc90d7430b3b82",
+        "app_icon.ico": "cc741ede636086f4d0ab6bc7c5bf46a2d75e0f344e37dc47359ddb68f75add93",
+        "BUAA-Signin-linux.spec": "f9b350bc053146b3eb28ca0bba40acbf29c973a1b2222816c845e49ee11bd48d",
+        "BUAA-Signin-mac.spec": "f48ffa71e36f8fb97d68e4c6d38b39f58f5147f9bd26942265d980c06f7390c5",
+        "BUAA-Signin.spec": "95f3a2b61fcf2379ef0a8e1474a4b3fae5b62a2757bdec3d4b0c9d2fbc77d19c",
+        "docker-compose.yml": "34ca824c644d6b422a833126d582d0489f773fe5fc218d7ad5faa6bd5d1fb0c5",
+        "Dockerfile": "2eff702313dff1d039262fcfac1ec078e2ec318d40131ad5f61b756dcff855e4",
+        "README.md": "e744f4ee96aa9339466dbc65c36008761a98f04293a5befddc06e2afcee6ce42",
+        "requirements-build.txt": "d60fcc36f5841c4af837f6e129894e9f5e52b02f153a6f331eabf4fe67b2abaa",
+        "requirements.txt": "a4209f851e2e9e3b37f7c8cf25e0b7416d2697cd15c32b6643791fe18b5fc0b0",
+        "run.py": "5f7f53f6a814aec2174b36575325cb8660f653fb0138cfd0508415319d5ff7df",
+        "tray_icon.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+        "core/autostart.py": "ba1a0f9b9403f3fbf05eaac799874335f8f697ef77b67c104f92d42364d50790",
+        "core/boya_actions.py": "dbf4e214f87ba044db0fbf5a68d5b1b978fcdac11a5cb4f7423eaed8231006a4",
+        "core/boya_client.py": "f0de2c6639bb75c657a1a6e705f856dcc0d49b8f58b22e895977534a7b981d60",
+        "core/boya_crypto.py": "227497c8e6e6fcb0babc68a13a38664871904a21c14632ef5ea3951140bfc888",
+        "core/boya_scheduler.py": "955c0283a3ac280d5a948a410abee6de0e623ecf13e766d08c94384e35313749",
+        "core/cas.py": "fe3bcce3db9e28fcc5a50daa2f1e13164bfc6649d34d5672887bd88ac38f2ca9",
+        "core/domain.py": "e038688fddba4420b1591b906458280708ae4358096951b4119c51a1218fbb4e",
+        "core/iclass.py": "24a0cb00349e1b86deb723d175971bcd53f53446ee53bf0c60244a9b750ea70d",
+        "core/operations.py": "7a0274f0a0f6dd4c5851330cc084df28f3bd9c225b45d437a25362e5136b65aa",
+        "core/profile.py": "f5a1d061240853fe05bf82bfdcfbd491f3305c7918a28de552d30c4bb9239cd8",
+        "core/scheduler.py": "24d8a7e79484bd612e62bb100a2d10d07bd46e3646ab12efe53ad2d4d3d490ac",
+        "core/service_cli.py": "2d2a796a04ff46f65c64df8459f6bcb02b02c49cb82fa63f24974465a22ce6f7",
+        "core/smoke.py": "5cbca2cf6743ea97bf064fa843aad84a1cdf47be5ae7ece1813cf6430e53735b",
+        "core/updates.py": "7a7a91cac781dd3eed2047fd8f8735f58e409748717bcee6509f63bd6ce69a92",
+        "core/vault.py": "43768ec596410442ac2ae471246eeb3d7feabbf44405b6bb574e133bb564364e",
+        "core/version.py": "8f037854fa28489bc92a63e18e4fd5c5d459d1701cec4bd6003878c5a68d9af7",
+        "core/webvpn.py": "fb7430ef1785ecf79043a97fa177bac3306e1ddcb0981ff1ce9de35c992e7036",
+        "core/__init__.py": "6b2bf738aa3c543e4366f811042866e175b0d0cee606d6e0c7b3fc02f3db0104",
+        "installer/setup.iss": "45217b12e9d8f6c062767ac468e6002c37eec4004ccf0907d371705f18b0d7e2",
+        "installer/version_info.txt": "5d847e123427dfebe895b17d7fc8781763a447a5d64e48661a22889398c31fc2",
+        "scripts/build_macos.sh": "d1e369933f51f65c70c43cfea9c9b934637f20cb0032e0f3a1e055d4738c687c",
+        "scripts/build_release.py": "45848cdf4f33feeae2d5669284fcc7c0892ed832d0bd79a26030dd390f257de6",
+        "scripts/check_release_format.py": "b71defefa0cf63fddae7e41c13282cfbb9f65d14b0621788cd29e036f3ffae16",
+        "scripts/fix_macos_gatekeeper.sh": "263d86cfe6f7f486f1ed1629825bacb7c44eecd71d3e8040a94b91262c387c59",
+        "scripts/install_linux_service.sh": "e8dd37ab76e22e2e56cde446de6659f6e75f67611dcc51aa247ca961b0623b5c",
+        "scripts/install_macos_service.sh": "e8dd37ab76e22e2e56cde446de6659f6e75f67611dcc51aa247ca961b0623b5c",
+        "scripts/privacy_artifacts.py": "909736911ede0d4a5a2061ee0a8081556452e4c7438ce59635d36d678b3a75c7",
+        "scripts/privacy_scan.py": "d35d875fd0fe13745d5d56a0e70c0923d0e3aee3666872979295f86bf39f8603",
+        "scripts/smoke_test_mac.py": "61aa1a0230665d6f1f82703c94f3d64a11eab3fa3e195bcffcf819389acb2646",
+        "scripts/test_isolated.py": "3aa0a074a1384004662e84daf7312d0ef78671a0b1f1b62560a98790d15add8e",
+        "scripts/ui_acceptance.cjs": "4ceb6c1e3a8e13f4e9d0313a59d69dff805e63a24c9706dee96e0ce5266436ef",
+        "scripts/verify_compiled.py": "8339e54462c2e7fec01611349993aa06328425f1e1517f5af1a046c37045b339",
+        "scripts/verify_compiled_exe_e2e.py": "61aa1a0230665d6f1f82703c94f3d64a11eab3fa3e195bcffcf819389acb2646",
+        "scripts/verify_installer.py": "da00614fa78571f8a2dee81d6ede4046c6163a4b0a61092562a95dd366136574",
+        "scripts/verify_native_service.py": "f55fd9c4c19014b5d01cdc930d4ce866faf1dfbc9186c9efe6ca88918017b1f2",
+        "server/app.py": "89000af50b7fab884e5d55501b4f12d7fbd574e84eb8c9a0fddb9e81cef1d4d1",
+        "server/management.py": "a023c16fa049c33ed7a25419885a5f02ab66c49c4ab29d8ee78179d7266aa139",
+        "server/update_routes.py": "dd6495c73ebb00865a50b7b05093e67172877c0003d718c9fc13d35e8d44f15b",
+        "server/__init__.py": "99c4271bef29ac91a25a11c7c90debf4e905364dceeb46c2af5f0fa39e4e4726",
+        "systemd/auto-buaa.service": "9f4cfe7805dc5026204fd1ad479ba2cb0313dfc3c772c2ed351aaca15dcc4e0e",
+        "tests/boya_fixture.py": "2f620e5a9dde4894d640c4851e2cee1eb12ab19b9308a6a3e2b1c68914e6da2c",
+        "tests/test_api.py": "e88d0a8d3cc91dc2ac62775195f4e5c4c7b1e7922c8350348e7d623c69c64ff3",
+        "tests/test_autostart.py": "81be4fd51a4a4193c9d7305325dee6ebf8ab60fdd30410f90ec7fcfb75062d45",
+        "tests/test_boya_api.py": "65f73a9ded7a9cefea89c11b5794aec06377071edbd083fdde87f02b4e8fac67",
+        "tests/test_boya_categories_and_filters.py": "ebdaef714bd085739fecef360ca071d9d06e9fcb121cf38f72f5b9edba891f24",
+        "tests/test_boya_crypto.py": "6f05aa01de9edc86bc63037fa288679f8df3e354c72f92836ee762d325cebd20",
+        "tests/test_boya_lifecycle.py": "e152e137c10900ab58542e96858c4a113a607740078b2499bb36e55c950fbc7f",
+        "tests/test_boya_scheduler.py": "2804ed05d926c42fc8071ce9452d35b1767fe778f7a45b121653fbd185774f18",
+        "tests/test_core.py": "83e7d4a9071e5cb122b83085a66961d2201ac986bcc4bd3a839d6002d58c355f",
+        "tests/test_cross_platform_and_stats.py": "5b61083c40feeca06f262c8b7a0203314ee72ff5853be6486d3bd7df0a176e2e",
+        "tests/test_multi_account.py": "91f691ba06864f4f63a46c834b8ddac04a5bae75cb48b9649601881ad824d373",
+        "tests/test_multi_student_survival_and_switch.py": "c7b637c684e99a485cc0be75f7c676e20ef57d335cfff70f18cf888589e6acbc",
+        "tests/test_ui_interactions.py": "b6c4ac815c397903d121dfdeb3ff8c76160816c7b5872d6d1c8aaabbacdb7702",
+        "tests/test_updates.py": "9e1e97a559cc8694b6c5737bb0e7529109bd95af353096b064a6abea0deb1032",
+        "tests/test_v122_comprehensive_fixes.py": "69a6a298662c397b9a13a593d80c6741b67c310a777a1e8604bf60b559bcbacc",
+        "tests/test_v126_refresh_and_heartbeat.py": "a563ba5aaf4d7038ae014b7e261f84ee784be8fe0c67db9a6a37f9f8454fc185",
+        "tests/test_v127_api.py": "6469468d0148ca740093378b14ef1070b6adf0b1d94228124fc96a8dfaacb3de",
+        "tests/test_v127_boya.py": "77ff8024e483a6cf3994c7d31bd767233c3b39a002ecced08e34e90449567811",
+        "tests/test_v127_lifecycle.py": "28dd991d7a79fbc09251b5a70b4b26d29d991075ac38d10b858af0e785361fee",
+        "tests/test_v127_management.py": "e163c0792a54ee7ae2f2588e862e9f4a205365c59e77a655765c6504c43d06b4",
+        "tests/test_v127_safety.py": "a7d4d2f03fbd867cd5d8c852a2d246c2db0739c91d28426c7250fe85ec3ee3ce",
+        "tests/__init__.py": "d6ce9fa645413018714d72259432df97a0daf185d8453c012cd33d2ce613eebe",
+        "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+        "server/static/index.html": "c9b507fb08e2312271cfe7f5bba05a72409b5aee50a0b81079cc90b86952a149",
+        "server/static/css/stitch-glass.css": "083f4367b4635ddc29ddba48d1d77754c8f5e3dddb64b6dfa774ab2f5d406bab",
+        "server/static/css/style.css": "b51ad9fe2b2b2174ff1b52d52f97ef4a69a643578d2d3fb0ef7962e6c2698eba",
+        "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+        "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+        "server/static/js/app.js": "5f2f5a564aacc4f23ad7c2f178719b556369169ed67319eb5e566e4f3c636c50",
+        "server/static/js/stitch-ambient.js": "d51c3ae172ce23e5363b585031bab34c9a2942a11d081252c58f681aa38607c2",
+        "server/static/js/updates.js": "c8b5bb72f4dac3fb410084d2febf7c4d168aa78a17e2b1b66d67c987be13989f",
+        ".github/workflows/build-macos.yml": "4b886357bdf7bd4cde06ea99649ea9508c6c90e842faa073e1214c4402cb486e"
+      }
+    },
+    "regression-v1212/test-summary.json": {
+      "tests": 159,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "elapsed_seconds": 12.36,
+      "blocked_non_loopback_attempts": 2,
+      "failure_names": [],
+      "error_names": []
+    },
+    "regression-v1211/test-summary.json": {
+      "tests": 159,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true,
+      "elapsed_seconds": 12.29,
+      "blocked_non_loopback_attempts": 2,
+      "failure_names": [],
+      "error_names": []
+    },
+    "glass-check.json": {
+      "passed": true,
+      "checks": [
+        "same-popover-material",
+        "translucent-not-solid",
+        "same-bounded-frosting",
+        "one-percent-preserved",
+        "accountCardsModal-full-viewport-blur",
+        "accountCardsModal-foreground-text-not-filtered",
+        "accountCardsModal-Escape-removes-overlay",
+        "loginModal-full-viewport-blur",
+        "loginModal-foreground-text-not-filtered",
+        "loginModal-Escape-removes-overlay",
+        "manualSignModal-full-viewport-blur",
+        "manualSignModal-foreground-text-not-filtered",
+        "manualSignModal-Escape-removes-overlay",
+        "disclaimer-shares-global-blur",
+        "disclaimer-acknowledgement-still-required",
+        "toast-shares-popover-material",
+        "modal-within-width-390",
+        "modal-within-width-768",
+        "modal-within-width-1280",
+        "modal-within-width-2560",
+        "reduced-transparency-opaque-and-unblurred",
+        "same-material-pixels-at-identical-geometry"
+      ],
+      "details": {
+        "material": {
+          "glassPopover": {
+            "background": "linear-gradient(140deg, rgba(245, 249, 255, 0.09), rgba(0, 0, 0, 0) 70%), none",
+            "color": "rgba(18, 24, 43, 0.64)",
+            "filter": "blur(8px) saturate(1.3)",
+            "border": "rgba(225, 236, 255, 0.32)",
+            "shadow": "rgba(0, 0, 0, 0.4) 0px 16px 42px 0px, rgba(255, 255, 255, 0.35) 0px 1px 0px 0px inset"
+          },
+          "updatePanel": {
+            "background": "linear-gradient(140deg, rgba(245, 249, 255, 0.09), rgba(0, 0, 0, 0) 70%), none",
+            "color": "rgba(18, 24, 43, 0.64)",
+            "filter": "blur(8px) saturate(1.3)",
+            "border": "rgba(225, 236, 255, 0.32)",
+            "shadow": "rgba(0, 0, 0, 0.4) 0px 16px 42px 0px, rgba(255, 255, 255, 0.35) 0px 1px 0px 0px inset"
+          }
+        }
+      },
+      "synthetic_only": true,
+      "real_school_writes": 0
+    },
+    "app-motion-check.json": {
+      "passed": true,
+      "checks": [
+        "continuous-motion-changes-rendered-pixels",
+        "pointer-keeps-fluid-and-content-fixed",
+        "appearance-switches-stop-and-persist",
+        "reduced-motion-default-and-explicit-override",
+        "success-feedback-is-small-green-check-and-one-shot",
+        "hidden-window-stops-and-resumes-with-one-renderer",
+        "blocked-appearance-storage-does-not-break-renderer",
+        "missing-canvas-filter-uses-soft-css-light",
+        "null-context-keeps-business-initialization",
+        "throw-context-keeps-business-initialization",
+        "late-paint-failure-keeps-business-initialization",
+        "missing-script-keeps-business-initialization",
+        "layout-Regular-1280x840",
+        "layout-Boya-1280x840",
+        "layout-Logs-1280x840",
+        "layout-Regular-960x620",
+        "layout-Boya-960x620",
+        "layout-Logs-960x620",
+        "layout-Regular-768x900",
+        "layout-Boya-768x900",
+        "layout-Logs-768x900",
+        "layout-Regular-390x844",
+        "layout-Boya-390x844",
+        "layout-Logs-390x844"
+      ],
+      "details": {
+        "continuous_pixel_mean_difference": 12.379916666666666,
+        "pointer_pixel_mean_difference": 0,
+        "resumed_frames_in_one_second": 30,
+        "overflow_1280_Regular": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_1280_Boya": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_1280_Logs": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_960_Regular": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_960_Boya": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_960_Logs": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_768_Regular": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_768_Boya": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_768_Logs": {
+          "before": 0,
+          "after": 0
+        },
+        "overflow_390_Regular": {
+          "before": 26,
+          "after": 26
+        },
+        "overflow_390_Boya": {
+          "before": 26,
+          "after": 26
+        },
+        "overflow_390_Logs": {
+          "before": 26,
+          "after": 26
+        }
+      },
+      "page_errors": []
+    },
+    "feature-ui.json": {
+      "passed": true,
+      "checks": [
+        "startup-does-not-block-on-update-network",
+        "one-background-check-after-startup-delay",
+        "background-check-does-not-open-panel",
+        "slider-minimum-and-label-one-percent",
+        "one-percent-reaches-visual-css-and-storage",
+        "one-percent-restored-after-reload",
+        "invalid-and-out-of-range-values-clamped",
+        "existing-twenty-percent-preference-preserved",
+        "manual-update-uses-fixed-repository-link",
+        "new-version-state-shows-subtle-indicator",
+        "escape-closes-update-panel-and-restores-focus",
+        "automatic-check-opt-out-persists",
+        "opt-out-prevents-automatic-request",
+        "local-ahead-hides-download-and-update-indicator",
+        "failure-does-not-block-UI-unavailable",
+        "failure-does-not-block-UI-network-failure",
+        "concurrent-clicks-share-one-inflight-check",
+        "update-panel-within-viewport-1280",
+        "update-panel-within-viewport-960",
+        "update-panel-within-viewport-768",
+        "update-panel-within-viewport-390"
+      ],
+      "synthetic_only": true,
+      "real_school_writes": 0
+    },
+    "modal-performance.json": {
+      "passed": true,
+      "results": [
+        {
+          "label": "before",
+          "width": 1280,
+          "height": 840,
+          "raf_frames": 579,
+          "p95_raf_interval_ms": 6.2000000000000455,
+          "gaps_over_50ms": 0,
+          "visible_overlays": 1
+        },
+        {
+          "label": "before",
+          "width": 2560,
+          "height": 1440,
+          "raf_frames": 514,
+          "p95_raf_interval_ms": 6.300000000000182,
+          "gaps_over_50ms": 0,
+          "visible_overlays": 1
+        },
+        {
+          "label": "after",
+          "width": 1280,
+          "height": 840,
+          "raf_frames": 612,
+          "p95_raf_interval_ms": 3.300000000000182,
+          "gaps_over_50ms": 0,
+          "visible_overlays": 1
+        },
+        {
+          "label": "after",
+          "width": 2560,
+          "height": 1440,
+          "raf_frames": 526,
+          "p95_raf_interval_ms": 6.300000000000182,
+          "gaps_over_50ms": 0,
+          "visible_overlays": 1
+        }
+      ],
+      "method": "Short headless Edge RAF cadence with animated fluid and pointer beneath one modal; not native presented FPS or GPU/power guarantee; added global blur intentionally has GPU cost",
+      "checks": [
+        "frames-continue",
+        "one-fullscreen-overlay-only",
+        "account-to-login-does-not-stack-overlays",
+        "Escape-removes-overlay"
+      ]
+    },
+    "compiled/compiled-summary.json": {
+      "passed": true,
+      "version": "1.2.12",
+      "platform": "win32",
+      "checks": [
+        "compiled-version-and-application-identity",
+        "private-synthetic-profile-and-management-boundary",
+        "initialization-and-paused-health",
+        "boya-tab-matches-displayed-data",
+        "boya-sign-and-signout-do-not-invent-exam-pass",
+        "account-modal-and-regular-sign-refresh",
+        "manual-popup-and-glass-controls",
+        "unknown-calendar-and-signinfo-cannot-invent-semester-pass",
+        "failed-autostart-keeps-system-state-and-shows-error",
+        "regular-window-and-unknown-state-disable-manual-button",
+        "unknown-capacity-category-and-partial-id-never-become-available-art-course",
+        "old-account-response-cannot-overwrite-new-view",
+        "click-injection-and-text-injection-inert",
+        "native-boya-sign",
+        "native-boya-signout-without-invented-assessment",
+        "native-account-switch",
+        "native-regular-sign",
+        "compiled-native-desktop-window"
+      ],
+      "real_school_writes": 0
+    },
+    "compiled-static-integrity.json": {
+      "passed": true,
+      "version": "1.2.12",
+      "served_assets": {
+        "server/static/js/stitch-ambient.js": "d51c3ae172ce23e5363b585031bab34c9a2942a11d081252c58f681aa38607c2",
+        "server/static/css/stitch-glass.css": "083f4367b4635ddc29ddba48d1d77754c8f5e3dddb64b6dfa774ab2f5d406bab",
+        "server/static/js/updates.js": "c8b5bb72f4dac3fb410084d2febf7c4d168aa78a17e2b1b66d67c987be13989f"
+      }
+    },
+    "manual-native.json": {
+      "passed": true,
+      "version": "1.2.12",
+      "tool": "computer-use via sky",
+      "synthetic_only": true,
+      "checks": [
+        "correct-native-candidate",
+        "glass-popover-translucent-and-legible",
+        "update-popover-matches-material",
+        "account-modal-background-blurred-foreground-sharp",
+        "account-modal-close-restores-background"
+      ],
+      "real_school_writes": 0
+    },
+    "git-privacy.json": {
+      "passed": true,
+      "head_commit": "56761b65d5517b93e696fb469d1bcb38b219dcbf",
+      "findings": [],
+      "forbidden_public_files": [],
+      "counts": {
+        "git_objects": 674,
+        "working_files": 148,
+        "embedded_members": 0,
+        "bytes": 531166727
+      },
+      "known_values_supplied": 3,
+      "limitations": [
+        "No OCR of historical images",
+        "Compiled/archive inspection is a separate gate",
+        "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+      ]
+    },
+    "artifact-privacy.json": {
+      "passed": true,
+      "findings": [],
+      "counts": {
+        "files": 1,
+        "archive_members": 165,
+        "carchive_members": 865,
+        "pyz_members": 1156,
+        "bytes": 123933229
+      },
+      "assets": [
+        {
+          "name": "BUAA-Signin.exe",
+          "size": 33676253,
+          "sha256": "9685b380cd2d6606b4709ecd3c3300b1104b2f95b7ff1b060d7380ac02a9121a"
+        }
+      ],
+      "known_values_supplied": 3,
+      "limitations": [
+        "No OCR of image content",
+        "Setup compressed payload requires installer acceptance and matching portable hash",
+        "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+      ]
+    }
+  },
+  "source_glass_checks_before_compilation": 22,
+  "source_preserved_feature_ui_checks": 21,
+  "installed": {
+    "default_updated": true,
+    "method": "replace",
+    "named_portable_created": true,
+    "sha256": "9685b380cd2d6606b4709ecd3c3300b1104b2f95b7ff1b060d7380ac02a9121a",
+    "bytes": 33676253,
+    "old_executable_backup": true,
+    "config_same_during_update": true,
+    "config_same_as_start": true,
+    "running_user_process_terminated": false
+  },
+  "source_matches_sibling_git": true,
+  "real_school_writes": 0,
+  "user_reference_images_copied": false,
+  "wsl_used": false,
+  "published": false,
+  "limitations": [
+    "Mac/Linux native not rebuilt or verified",
+    "Windows installer not rebuilt",
+    "Headless RAF is not native presented FPS/GPU or power measurement",
+    "New public documentation/media delta separately privacy-scanned after full Git/artifact gate",
+    "No historical image OCR/unreachable Git objects or unknown-secret guarantee"
+  ],
+  "automation": "prior completed performance arrangement remains paused; no new arrangement"
+}

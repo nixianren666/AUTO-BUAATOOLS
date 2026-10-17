@@ -4,7 +4,8 @@ import datetime
 import logging
 import random
 from collections import defaultdict
-from core.domain import now as china_now, regular_start
+from core.domain import now as china_now, regular_start, regular_window, CHINA
+from core.regular_policy import MAX_POSTS, minimum_retry_delay
 
 logger = logging.getLogger("buaa_signin_scheduler")
 
@@ -22,6 +23,8 @@ class SigninScheduler:
         self.retry_counts = defaultdict(int)
         self.planned_targets = {}
         self.failed_permanently = set()
+        self.pending_notified = set()
+        self.window_closed_notified = set()
         self._tick_lock = asyncio.Lock()
         self._account_limit = asyncio.Semaphore(4)
 
@@ -37,7 +40,7 @@ class SigninScheduler:
         self.interval_seconds = max(10, min(60, interval_seconds))
         generation = self._generation
         self._task = asyncio.create_task(self._run_loop(generation))
-        self.log("常规课前十分钟签到守护已启动。")
+        self.log("常规签到守护已启动：课前随机优先，失败后下课前限次补尝试。")
 
     def stop(self):
         self.enabled = False
@@ -55,6 +58,7 @@ class SigninScheduler:
                 break
             except Exception as exc:
                 self.log("巡检异常：" + type(exc).__name__, "error")
+                await asyncio.sleep(self.interval_seconds)
 
     async def tick(self):
         await self._check_and_sign_all()
@@ -64,7 +68,7 @@ class SigninScheduler:
             for key in list(mapping):
                 if key[0] == username:
                     mapping.pop(key, None)
-        for values in (self.signed_courses, self.failed_permanently):
+        for values in (self.signed_courses, self.failed_permanently, self.pending_notified, self.window_closed_notified):
             values.difference_update(k for k in list(values) if k[0] == username)
 
     async def _check_and_sign_all(self, generation=None):
@@ -74,7 +78,7 @@ class SigninScheduler:
                 for key in list(mapping):
                     if len(key) != 3 or key[2] != today:
                         mapping.pop(key, None)
-            for values in (self.signed_courses, self.failed_permanently):
+            for values in (self.signed_courses, self.failed_permanently, self.pending_notified, self.window_closed_notified):
                 values.difference_update(k for k in list(values) if len(k) != 3 or k[2] != today)
             await asyncio.gather(*(self._check_account(acc, generation) for acc in self.get_active_accounts()), return_exceptions=False)
 
@@ -131,22 +135,57 @@ class SigninScheduler:
             return
         if str(course.get("signStatus")) != "0" or key in self.signed_courses or key in self.failed_permanently:
             return
-        start = self._parse_course_time(course.get("classBeginTime"), current)
-        if not start or start.date() != current.date():
+        start, deadline = regular_window(course, current)
+        if not start:
             return
-        if current > start:
-            self.failed_permanently.add(key)
+        if current > deadline:
+            if key not in self.window_closed_notified:
+                self.window_closed_notified.add(key)
+                self.log("当前课表的签到窗口已结束或下课时间未核实，不提交；继续同步官方课表。", "warning", item["username"], item.get("name"))
             return
+        self.window_closed_notified.discard(key)
         if current < start - datetime.timedelta(minutes=10):
             return
+        record_reader = getattr(item["client"], "signin_record", None)
+        record = record_reader(cid) if callable(record_reader) else None
+        if record:
+            state, attempts, updated = record
+            previous_attempts = self.retry_counts[key]
+            self.retry_counts[key] = attempts
+            if state == "success":
+                self.signed_courses.add(key)
+                return
+            if state in ("pending", "uncertain"):
+                if key not in self.pending_notified:
+                    self.pending_notified.add(key)
+                    self.log("先前签到结果待官方确认，仅同步课表，不重发请求。", "warning", item["username"], item.get("name"))
+                return
+            if attempts >= MAX_POSTS:
+                self.failed_permanently.add(key)
+                return
+            earliest = datetime.datetime.fromtimestamp(updated + minimum_retry_delay(attempts, self.clock() < start), CHINA).replace(tzinfo=None)
+            # A manual failure replaces the unexecuted random first target.
+            self.planned_targets[key] = earliest if attempts > previous_attempts else max(self.planned_targets.get(key, current), earliest)
         if key not in self.planned_targets:
             remaining = (start-current).total_seconds()
             offset = random.uniform(0, max(0, remaining-self.interval_seconds-5))
             self.planned_targets[key] = current + datetime.timedelta(seconds=offset)
-        if self.clock() < self.planned_targets[key] or not allowed() or self.clock() > start:
+        if self.clock() < self.planned_targets[key] or not allowed() or self.clock() > deadline:
             return
         before = getattr(item["client"], "actual_sign_posts", None)
-        success, message = await item["client"].perform_signin(cid, guard=allowed)
+        try:
+            success, message = await item["client"].perform_signin(cid, guard=allowed)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            after_record = record_reader(cid) if callable(record_reader) else None
+            if after_record and after_record[0] in ("pending", "uncertain"):
+                self.pending_notified.add(key)
+                self.log("签到请求结果不确定，仅同步官方课表，不盲目补发。", "warning", item["username"], item.get("name"))
+            else:
+                self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
+                self.log("签到预检未完成，将在窗口内退避检查：" + type(exc).__name__, "warning", item["username"], item.get("name"))
+            return
         if success:
             self.signed_courses.add(key)
             self.log("常规签到请求已接受：" + message, "success", item["username"], item.get("name"))
@@ -163,13 +202,16 @@ class SigninScheduler:
                 self.log("请求已接受，官方状态暂未同步；不会重发。", "warning", item["username"], item.get("name"))
         else:
             after = getattr(item["client"], "actual_sign_posts", None)
-            if not isinstance(before, int) or not isinstance(after, int) or after > before:
+            latest = record_reader(cid) if callable(record_reader) else None
+            if latest:
+                self.retry_counts[key] = latest[1]
+            elif not isinstance(before, int) or not isinstance(after, int) or after > before:
                 self.retry_counts[key] += 1
             self.log("常规签到未完成：" + message, "warning", item["username"], item.get("name"))
-            if self.retry_counts[key] >= 3:
+            if self.retry_counts[key] >= MAX_POSTS:
                 self.failed_permanently.add(key)
             else:
-                self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=random.randint(20, 40))
+                self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
                 if not getattr(item["client"], "session_id", None) and self.reconnect_account and item.get("account"):
                     await self.reconnect_account(item["account"])
 

@@ -1,0 +1,369 @@
+/* Visual skin only. Keep the existing grid, sizing, spacing and DOM contracts. */
+:root {
+  --canvas: #050508;
+  --text-secondary: #cbd3e0;
+  --text-muted: #b1bdd0;
+  --border: rgba(222, 229, 255, .18);
+  --border-hover: rgba(235, 242, 255, .34);
+  --stitch-panel-tint: calc(.18 + var(--glass-opacity, .65) * .24);
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --floating-glass-tint: rgba(18, 24, 43, .64);
+  --floating-glass-sheen: linear-gradient(140deg, rgba(245, 249, 255, .09), transparent 70%);
+  --floating-glass-blur: 8px;
+}
+.buaa-render-paused *, .buaa-render-paused *::before, .buaa-render-paused *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.ambient-particles-canvas {
+  background: radial-gradient(ellipse at 12% 76%, #34367a, transparent 55%),
+              radial-gradient(ellipse at 92% 70%, #3a285f, transparent 50%), #050508;
+}
+/* Older WebKit can animate Canvas paths without supporting Canvas blur. */
+.ambient-particles-canvas[data-optics="css-blur"] { filter: blur(24px); transform: scale(1.08); }
+.origin-glass-veil {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: rgba(4, 5, 12, calc(.04 + var(--glass-opacity, .65) * .12));
+  background-image: radial-gradient(rgba(163, 174, 210, .22) .7px, transparent 1px);
+  background-size: 16px 16px;
+}
+/* The crisp dot plane replaces the fallback grid, above the independent fluid. */
+.origin-glass-veil[data-dots="canvas"] { background-image: none; }
+.stitch-dot-plane { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.update-control { position: relative; }
+.update-panel { position: absolute; right: 0; top: calc(100% + 12px); width: min(320px, calc(100vw - 24px)); padding: 18px; z-index: 1000; border: 1px solid rgba(225,232,255,.23); border-radius: 16px; background: linear-gradient(135deg, rgba(237,245,255,.08), transparent 55%), rgba(17,21,35,.94); box-shadow: 0 18px 42px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.13); }
+.update-panel-heading, .update-panel-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.update-panel-heading strong { font-size: 14px; font-weight: 600; }
+.update-description { color: var(--text-muted); font-size: 11px; line-height: 1.6; margin-top: 8px; }
+.update-status { margin-top: 18px; font-size: 14px; line-height: 1.6; color: var(--text-primary); }
+.update-status[data-state="update_available"] { color: #86dfce; }
+.update-status[data-state="unavailable"] { color: #e9c78a; }
+.update-detail { color: var(--text-secondary); font-size: 12px; margin: 6px 0 16px; }
+.update-panel-actions { margin-top: 16px; flex-wrap: wrap; }
+.update-panel-actions a { text-decoration: none; }
+.update-indicator { width: 5px; height: 5px; border-radius: 50%; background: #86dfce; }
+@media (max-width: 960px) { #updateCheckLabel { display: none; } }
+/* Small windows keep the existing utility bar width. The new update shortcut
+   sits in the otherwise empty lower navigation rail instead of widening it. */
+@media (max-width: 640px) {
+  .origin-topbar { z-index: 11; }
+  .update-control { position: fixed; left: 12px; bottom: 142px; z-index: 1001; }
+  #updateCheckBtn { width: 36px; height: 32px; padding: 0; justify-content: center; }
+  .update-panel { position: fixed; right: 12px; top: 72px; }
+}
+
+/* A sibling optical plane avoids flattening the controls into their parent blur.
+   ::after is decorative and inert. Feed-card ::before remains its status stripe. */
+.origin-card, .feed-card, .origin-sidebar, .origin-topbar, .origin-modal-dialog {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgba(225, 232, 255, .17);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .23),
+              inset 0 1px 0 rgba(255, 255, 255, .13),
+              inset 1px 0 0 rgba(211, 226, 255, .09);
+}
+.origin-card::after, .feed-card::after, .origin-sidebar::after,
+.origin-topbar::after, .origin-modal-dialog::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(240, 246, 255, .11), transparent 27%,
+                    transparent 75%, rgba(151, 172, 239, .045)),
+              rgba(17, 20, 34, var(--stitch-panel-tint));
+  backdrop-filter: blur(var(--glass-blur, 40px)) saturate(125%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 40px)) saturate(125%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .18),
+              inset 1px 0 1px rgba(211, 232, 255, .08),
+              inset 0 -1px 1px rgba(20, 23, 41, .45);
+}
+.origin-sidebar::after { background-color: rgba(12, 15, 26, .43); }
+.origin-topbar::after { background-color: rgba(12, 15, 26, .32); }
+.origin-card:hover, .feed-card:hover {
+  border-color: rgba(231, 238, 255, .36);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .28),
+              inset 0 1px 0 rgba(255, 255, 255, .31),
+              inset 1px 0 0 rgba(211, 226, 255, .13);
+}
+
+/* Second glass slab: inset modules. Keep padding and border widths unchanged. */
+.hero-metric-tile, .boya-controls-group, .boya-progress-wrapper,
+.feed-card-body, .milestone-pill, .origin-switch-capsule,
+.origin-segmented-control, .origin-filter-matrix, .selected-time-filter-strip,
+.origin-user-capsule, .origin-autostart-widget, .origin-clock {
+  background: linear-gradient(135deg, rgba(239, 246, 255, .05), rgba(125, 146, 204, .025)),
+              rgba(17, 22, 40, .24);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border-color: rgba(224, 234, 255, .16);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .13),
+              inset 0 1px 0 rgba(255, 255, 255, .15),
+              inset 1px 0 0 rgba(224, 237, 255, .07),
+              inset 0 -1px 0 rgba(12, 16, 35, .3);
+}
+
+/* Third glass slab: controls. Inset shadows add edges without changing hit boxes. */
+.origin-nav-item, .origin-btn, .segmented-btn, .filter-pill, .feature-toggle-pill,
+.origin-pill-btn, .origin-icon-btn, .origin-network-btn,
+.origin-search-box, .origin-input, .origin-select {
+  background: linear-gradient(145deg, rgba(244, 249, 255, .075), rgba(132, 159, 232, .025)),
+              rgba(20, 25, 45, .16);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border-color: rgba(224, 235, 255, .17);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .17),
+              inset 0 0 0 1px rgba(221, 232, 255, .05),
+              inset 0 -1px 0 rgba(10, 16, 35, .28),
+              0 3px 9px rgba(0, 0, 0, .1);
+}
+.origin-nav-item:hover, .origin-btn:not(:disabled):hover,
+.segmented-btn:hover, .filter-pill:hover, .feature-toggle-pill:hover,
+.origin-pill-btn:hover, .origin-icon-btn:hover, .origin-network-btn:hover {
+  background-color: rgba(208, 224, 255, .13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45),
+              inset 0 0 0 1px rgba(230, 239, 255, .22),
+              0 4px 13px rgba(0, 0, 0, .16);
+}
+.origin-nav-item.active, .segmented-btn.active, .filter-pill.active {
+  background: linear-gradient(140deg, rgba(246, 250, 255, .22), rgba(174, 195, 247, .09));
+  color: #f8faff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38),
+              inset 0 0 0 1px rgba(236, 243, 255, .2),
+              0 4px 14px rgba(6, 12, 33, .2);
+}
+.segmented-btn.active .seg-count { color: #eef3ff; background: rgba(15, 22, 42, .25); }
+.origin-nav-item:not(.active):not(:hover) {
+  background: linear-gradient(145deg, rgba(244, 249, 255, .025), transparent), rgba(20, 25, 45, .1);
+  border-color: rgba(224, 235, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 2px 7px rgba(0, 0, 0, .08);
+}
+.feature-toggle-pill.active { background-color: rgba(56, 189, 248, .18); }
+.origin-btn-primary {
+  background: linear-gradient(140deg, rgba(246, 250, 255, .24), rgba(174, 195, 247, .11));
+  color: #f8faff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4),
+              inset 0 0 0 1px rgba(236, 243, 255, .22),
+              0 4px 13px rgba(6, 12, 33, .2);
+}
+.origin-btn-primary:not(:disabled):hover { background-color: rgba(218, 233, 255, .23); }
+.origin-btn:disabled {
+  background: rgba(28, 32, 46, .28);
+  color: #969fb2;
+  box-shadow: inset 0 0 0 1px rgba(218, 226, 247, .1);
+  cursor: not-allowed;
+}
+.origin-btn-danger-ghost:hover, .origin-icon-btn.exit-btn:hover {
+  color: #fb7185;
+  background-color: rgba(244, 63, 94, .16);
+}
+.origin-slider {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .22),
+              inset 0 0 0 1px rgba(232, 240, 255, .2);
+}
+.origin-slider::before {
+  background: linear-gradient(145deg, #fff, #d6e0f2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+.origin-toggle input:focus-visible + .origin-slider { outline: 2px solid #b7d8ff; outline-offset: 3px; }
+.origin-btn:focus-visible, .origin-nav-item:focus-visible, .segmented-btn:focus-visible,
+.filter-pill:focus-visible, .feature-toggle-pill:focus-visible, .origin-icon-btn:focus-visible,
+.origin-pill-btn:focus-visible { outline: 2px solid #b7d8ff; outline-offset: 3px; }
+
+/* Floating planes stay legible and retain the original modal/popover z-index. */
+.origin-modal-backdrop {
+  background: rgba(3, 5, 12, .38);
+  backdrop-filter: blur(10px) saturate(110%);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+}
+/* The full-screen plane already softens the page. Keep dialog text sharp and
+   avoid paying for a second blur across the dialog itself. */
+.origin-modal-dialog::after {
+  background: var(--floating-glass-sheen), var(--floating-glass-tint);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.glass-popover, .update-panel, .origin-toast {
+  background: var(--floating-glass-sheen), var(--floating-glass-tint);
+  backdrop-filter: blur(var(--floating-glass-blur)) saturate(130%);
+  -webkit-backdrop-filter: blur(var(--floating-glass-blur)) saturate(130%);
+  border-color: rgba(225, 236, 255, .32);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.terminal-header { background: rgba(16, 21, 38, .35); }
+.origin-disclaimer-text { background: rgba(7, 12, 27, .46); }
+.origin-select option { background: #151b2d; color: #f1f3f4; }
+
+/* Nested shapes, without changing hit boxes or grid dimensions. */
+.origin-card, .feed-card { border-radius: var(--radius-xl); }
+.feed-card-body, .hero-metric-tile, .boya-controls-group, .boya-progress-wrapper { border-radius: 12px; }
+.ambient-preferences { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.ambient-preference { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 5px 0; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.ambient-preference .origin-toggle { flex: 0 0 32px; }
+.ambient-preference .origin-toggle input { width: 100%; height: 100%; inset: 0; }
+.ambient-preference .origin-slider { pointer-events: none; }
+.ambient-preference .origin-toggle input:checked + .origin-slider { background: rgba(134, 188, 212, .5); }
+.ambient-preference .origin-toggle input:disabled + .origin-slider { opacity: .4; cursor: default; }
+#ambientMotionHint { margin-top: 8px; font-size: 11px; line-height: 1.6; color: var(--text-muted); }
+.confirmed-check { display: inline-block; width: 18px; height: 18px; flex: 0 0 18px; vertical-align: middle; }
+.origin-confirmed-status .confirmed-check { width: 16px; height: 16px; flex-basis: 16px; }
+.origin-btn.origin-confirmed-status:disabled {
+  color: #9de7c3; opacity: 1; cursor: default;
+  background: linear-gradient(140deg, rgba(142, 230, 191, .1), rgba(45, 103, 88, .045));
+  border-color: rgba(144, 226, 189, .3);
+  box-shadow: inset 0 1px 0 rgba(196, 255, 225, .17), 0 2px 8px rgba(0, 0, 0, .08);
+}
+.toast-confirmed-mark { position: relative; display: inline-flex; color: #9de7c3; }
+.toast-confirmed-mark::after {
+  content: ""; position: absolute; inset: -3px; border: 1px solid rgba(157, 231, 195, .65);
+  border-radius: 50%; pointer-events: none; opacity: 0;
+  animation: confirmed-halo 580ms var(--ease-out) 1;
+}
+.origin-toast.success { border-color: rgba(144, 226, 189, .4); }
+@keyframes confirmed-halo { from { opacity: .7; transform: scale(.7); } to { opacity: 0; transform: scale(1.6); } }
+
+/* One motion vocabulary for navigation, utilities and dialogs. Animate only
+   paint/compositing properties, never dimensions, blur or business state.
+   Feed cards deliberately have no entry animation: polling replaces their DOM. */
+:root {
+  --motion-quick: 120ms;
+  --motion-control: 220ms;
+  --motion-reveal: 260ms;
+  --motion-settle: cubic-bezier(.2, .8, .2, 1);
+}
+.origin-nav-item, .origin-btn, .segmented-btn, .filter-pill,
+.feature-toggle-pill, .origin-pill-btn, .origin-icon-btn,
+.origin-network-btn, .origin-user-capsule, .origin-autostart-widget {
+  transition: transform var(--motion-quick) var(--motion-settle),
+    background-color var(--motion-control) ease-out,
+    border-color var(--motion-control) ease-out,
+    color var(--motion-quick) ease-out,
+    box-shadow var(--motion-control) ease-out;
+}
+.origin-input, .origin-select, .origin-search-box {
+  transition: border-color var(--motion-control) ease-out,
+    box-shadow var(--motion-control) ease-out, background-color var(--motion-control) ease-out;
+}
+.origin-slider { transition: background-color var(--motion-control) ease-out; }
+.origin-slider::before { transition: transform var(--motion-control) var(--motion-settle); }
+.feed-card { transition: transform 180ms var(--motion-settle), border-color 220ms ease-out, box-shadow 220ms ease-out; }
+.feed-card:hover { transform: translateY(-.2px); }
+.origin-btn:disabled, .origin-icon-btn:disabled, .segmented-btn:disabled,
+.filter-pill:disabled, .feature-toggle-pill:disabled { transform: none !important; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .origin-btn:not(:disabled):hover, .origin-pill-btn:not(:disabled):hover,
+  .origin-icon-btn:not(:disabled):hover, .filter-pill:not(:disabled):hover,
+  .feature-toggle-pill:not(:disabled):hover { transform: translateY(-.1px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .origin-view-section { animation: stitch-view-reveal var(--motion-reveal) var(--motion-settle); }
+  .glass-popover, .update-panel { animation: stitch-float-reveal 220ms var(--motion-settle); transform-origin: top right; }
+  .origin-modal-backdrop { animation: modalOverlayFade 180ms ease-out; }
+  .origin-modal-dialog { animation: stitch-dialog-reveal var(--motion-reveal) var(--motion-settle); }
+  .origin-toast { animation: stitch-toast-reveal 220ms var(--motion-settle); }
+}
+@keyframes stitch-view-reveal { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes stitch-float-reveal { from { opacity: 0; transform: translateY(5px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes stitch-dialog-reveal { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes stitch-toast-reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Managed surfaces use cancellable, on-demand motion instead of competing CSS
+   entry keyframes. Closing layers are visual only, never interactive ghosts. */
+[data-ui-managed], [data-ui-managed] > .origin-modal-dialog { animation: none; }
+.glass-popover.hidden[data-ui-exiting],
+.origin-modal-backdrop.hidden[data-ui-exiting] { display: flex !important; pointer-events: none; }
+.update-panel.hidden[data-ui-exiting] { display: block !important; pointer-events: none; }
+[data-ui-exiting] * { pointer-events: none !important; }
+
+@supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+  .glass-popover, .update-panel, .origin-toast { background-color: rgba(20, 25, 42, .94); }
+  .origin-modal-backdrop { background-color: rgba(3, 5, 12, .72); }
+  .origin-card::after, .feed-card::after, .origin-sidebar::after,
+  .origin-topbar::after, .origin-modal-dialog::after { background-color: rgba(20, 25, 42, .94); }
+  .hero-metric-tile, .boya-controls-group, .boya-progress-wrapper, .feed-card-body,
+  .origin-switch-capsule, .origin-segmented-control, .origin-filter-matrix,
+  .origin-nav-item, .origin-btn, .segmented-btn, .filter-pill { background-color: rgba(40, 48, 70, .9); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-popover, .update-panel, .origin-toast { background-color: rgba(20, 25, 42, .97); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .origin-modal-backdrop { background-color: rgba(3, 5, 12, .72); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .origin-card::after, .feed-card::after, .origin-sidebar::after,
+  .origin-topbar::after, .origin-modal-dialog::after { background-color: rgba(20, 25, 42, .97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .origin-view-section, .origin-modal-backdrop, .origin-modal-dialog, .glass-popover, .update-panel, .origin-toast,
+  .origin-nav-item, .origin-btn, .segmented-btn, .filter-pill, .feature-toggle-pill,
+  .origin-pill-btn, .origin-icon-btn, .origin-network-btn, .origin-user-capsule,
+  .origin-autostart-widget, .origin-input, .origin-select, .origin-search-box,
+  .origin-slider, .origin-slider::before, .nav-badge.highlight, .origin-logo-mark, .feed-card { animation: none; transition: none; }
+  .feed-card:hover { transform: none; }
+  .origin-btn:active, .origin-icon-btn:active, .origin-pill-btn:active,
+  .filter-pill:active, .feature-toggle-pill:active, .segmented-btn:active,
+  .origin-nav-item:active, .origin-user-capsule:active { transform: none !important; }
+  .toast-confirmed-mark::after { animation: none; }
+}
+
+/* Controls share the existing floating glass, including their option list. */
+.ui-select-shell { display: block; position: relative; width: 100%; }
+.ui-select-native { opacity: 0; pointer-events: none; }
+.ui-select-trigger { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; cursor: pointer; font-family: inherit; }
+.ui-select-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-select-chevron { display: flex; flex: 0 0 auto; transition: transform 240ms cubic-bezier(.22,1,.36,1); }
+.ui-select-trigger[aria-expanded="true"] .ui-select-chevron { transform: rotate(180deg); }
+.ui-select-trigger:focus-visible { outline: 2px solid #b7d8ff; outline-offset: 3px; }
+.ui-select-trigger:disabled { opacity: .5; cursor: not-allowed; }
+.ui-select-menu { position: fixed; z-index: 10010; min-width: 0; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 6px; border: 1px solid rgba(225,236,255,.32); border-radius: 12px; color: var(--text-primary); background: var(--floating-glass-sheen), var(--floating-glass-tint); backdrop-filter: blur(8px) saturate(130%); -webkit-backdrop-filter: blur(8px) saturate(130%); box-shadow: 0 16px 42px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.35); scrollbar-width: thin; }
+.ui-select-option { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; box-sizing: border-box; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; line-height: 1.5; transition: background-color 160ms ease-out; }
+.ui-select-option[aria-selected="true"] { background: rgba(205,225,255,.13); }
+.ui-select-check { opacity: 0; color: #b6e2ff; }
+.ui-select-option[aria-selected="true"] .ui-select-check { opacity: 1; }
+.ui-select-option[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
+.ui-select-menu { scrollbar-color: rgba(204,219,247,.36) transparent; }
+.ui-select-menu::-webkit-scrollbar { width: 6px; background: transparent; }
+.ui-select-menu::-webkit-scrollbar-thumb { background: rgba(204,219,247,.36); border-radius: 6px; }
+
+/* Local breathing room: do not move the application's main layout. */
+#manualSignModal .modal-body { padding: 28px 26px 30px; }
+#manualSignModal .form-group { display: flex; flex-direction: column; gap: 11px; }
+#manualSignModal .field-hint { display: block; color: var(--text-secondary); font-size: 12px; font-weight: 400; line-height: 1.8; margin-top: 2px; max-width: 56ch; }
+#manualSignModal .modal-footer { padding-top: 18px; padding-bottom: 18px; }
+.origin-modal-dialog { max-height: calc(100vh - 40px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.origin-modal-dialog { scrollbar-color: rgba(204,219,247,.36) transparent; }
+.origin-modal-dialog::-webkit-scrollbar { width: 6px; background: transparent; }
+.origin-modal-dialog::-webkit-scrollbar-thumb { background: rgba(204,219,247,.36); border-radius: 6px; }
+
+/* Shared-highlight flights keep all text and final active styles untouched. */
+.ui-flight-host { position: relative; isolation: isolate; }
+.ui-flight-item { position: relative; z-index: 1; }
+.ui-selection-flight { position: absolute; z-index: 0; pointer-events: none; box-sizing: border-box; border-style: solid; transform-origin: top left; }
+.ui-highlight-target { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.ui-accordion-moving { overflow: hidden; }
+.ui-ripple-host { position: relative; overflow: hidden; }
+.ui-glass-ripple { position: absolute; pointer-events: none; border-radius: 50%; border: 1px solid rgba(228,242,255,.24); background: rgba(228,242,255,.10); }
+@media (prefers-reduced-motion: no-preference) { .origin-view-section { animation: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .origin-slider::before { transition: transform 360ms cubic-bezier(.34,1.3,.64,1); }
+  .confirmed-check path { stroke-dasharray: 28; animation: ui-check-draw 420ms cubic-bezier(.22,1,.36,1); }
+}
+@keyframes ui-check-draw { from { stroke-dashoffset: 28; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-select-chevron, .ui-select-option { transition: none; }
+}
+@supports not ((backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px))) {
+  .ui-select-menu { background-color: rgba(20,25,42,.97); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ui-select-menu { background-color: rgba(20,25,42,.97); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

@@ -1,0 +1,275 @@
+{
+  "status": "local_source_and_default_executable_updated_unpublished",
+  "version": "1.2.7",
+  "date": "2026-10-16",
+  "source_sha256": {
+    "server/static/index.html": "abf239ee12f838ed4d9e13f9b854d3d018189f1519e06ebb65c3aa17dfd3ba30",
+    "server/static/js/app.js": "077596bf5921b4b0065ef8600861829542dc6c3d3f857cebc49be8dacfe24e68",
+    "server/static/css/stitch-glass.css": "d7e27a0dbc52db1b79041375039938e94571b9f9817c3c5ee0c8e23047358d4f",
+    "server/static/js/stitch-ambient.js": "46a68991c7cf4ce2152a6ce5b06b70d4a819c2b23b17324ff121064ed8109c30"
+  },
+  "windows_executable": {
+    "sha256": "f0627950b856206043931d4ac271fccff8928943763dc2a6717a911577222159",
+    "size": 33662715,
+    "matches_verified_build": true,
+    "previous_default_backed_up": true,
+    "backup_sha256": "fddee0f48a4be64402ee5d8c23daccfb2081c35045f9e4badd9e8e4b3d0b9ceb"
+  },
+  "regression": {
+    "tests": 143,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 43.3,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "layout_and_interaction": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "layout_unchanged_1280_840_regular",
+        "passed": true,
+        "detail": {
+          "elements": 22,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_1280_840_boya",
+        "passed": true,
+        "detail": {
+          "elements": 48,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_1280_840_logs",
+        "passed": true,
+        "detail": {
+          "elements": 17,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_960_620_regular",
+        "passed": true,
+        "detail": {
+          "elements": 22,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_960_620_boya",
+        "passed": true,
+        "detail": {
+          "elements": 48,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_960_620_logs",
+        "passed": true,
+        "detail": {
+          "elements": 17,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_768_900_regular",
+        "passed": true,
+        "detail": {
+          "elements": 22,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_768_900_boya",
+        "passed": true,
+        "detail": {
+          "elements": 48,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_768_900_logs",
+        "passed": true,
+        "detail": {
+          "elements": 17,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_390_844_regular",
+        "passed": true,
+        "detail": {
+          "elements": 22,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_390_844_boya",
+        "passed": true,
+        "detail": {
+          "elements": 48,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "layout_unchanged_390_844_logs",
+        "passed": true,
+        "detail": {
+          "elements": 17,
+          "maxTolerancePixels": 0.55
+        }
+      },
+      {
+        "name": "popover_above_cards_and_slider_receives_input",
+        "passed": true
+      },
+      {
+        "name": "glass_slider_extremes",
+        "passed": true
+      },
+      {
+        "name": "manual_modal_and_escape",
+        "passed": true
+      },
+      {
+        "name": "account_modal_clicks_reach_backend",
+        "passed": true
+      },
+      {
+        "name": "reduced_motion_stops_canvas",
+        "passed": true
+      },
+      {
+        "name": "animated_canvas_advances",
+        "passed": true
+      },
+      {
+        "name": "no_javascript_errors",
+        "passed": true
+      }
+    ],
+    "scope": "Unchanged production DOM and API connected to existing encrypted school MockTransport; no real school writes."
+  },
+  "visual_fault_fallback": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "missing-renderer-script",
+        "passed": true,
+        "account_api_ready": true,
+        "boya_api_ready": true
+      },
+      {
+        "name": "unavailable-canvas",
+        "passed": true,
+        "account_api_ready": true,
+        "boya_api_ready": true
+      },
+      {
+        "name": "throwing-canvas",
+        "passed": true,
+        "account_api_ready": true,
+        "boya_api_ready": true
+      }
+    ]
+  },
+  "compiled_windows": {
+    "passed": true,
+    "version": "1.2.7",
+    "platform": "win32",
+    "checks": [
+      "compiled-version-and-application-identity",
+      "private-synthetic-profile-and-management-boundary",
+      "initialization-and-paused-health",
+      "boya-tab-matches-displayed-data",
+      "boya-sign-and-signout-do-not-invent-exam-pass",
+      "account-modal-and-regular-sign-refresh",
+      "manual-popup-and-glass-controls",
+      "unknown-calendar-and-signinfo-cannot-invent-semester-pass",
+      "failed-autostart-keeps-system-state-and-shows-error",
+      "regular-window-and-unknown-state-disable-manual-button",
+      "unknown-capacity-category-and-partial-id-never-become-available-art-course",
+      "old-account-response-cannot-overwrite-new-view",
+      "click-injection-and-text-injection-inert",
+      "native-boya-sign",
+      "native-boya-signout-without-invented-assessment",
+      "native-account-switch",
+      "native-regular-sign",
+      "compiled-native-desktop-window"
+    ],
+    "real_school_writes": 0
+  },
+  "integrity": {
+    "passed": true,
+    "changed_existing_public_files": [
+      "server/static/js/app.js",
+      "server/static/index.html"
+    ],
+    "config_unchanged": true,
+    "business_js_outside_visual_initializer_unchanged": true,
+    "html_structure_content_event_handlers_unchanged": true,
+    "original_stylesheet_unchanged": true,
+    "backend_core_schedulers_tests_scripts_unchanged": true,
+    "new_runtime_files": [
+      "server/static/css/stitch-glass.css",
+      "server/static/js/stitch-ambient.js"
+    ]
+  },
+  "privacy": {
+    "git_and_working_tree": {
+      "passed": true,
+      "findings": 0,
+      "counts": {
+        "git_objects": 674,
+        "working_files": 114,
+        "embedded_members": 0,
+        "bytes": 521977497
+      }
+    },
+    "decompressed_executable": {
+      "passed": true,
+      "findings": 0,
+      "counts": {
+        "files": 1,
+        "archive_members": 165,
+        "carchive_members": 864,
+        "pyz_members": 1154,
+        "bytes": 123877916
+      }
+    },
+    "limitations": [
+      "No OCR of historical images",
+      "Known values available from current local configuration plus credential patterns only",
+      "No remote or unreachable Git object guarantees"
+    ]
+  },
+  "computer_use_native": {
+    "performed": true,
+    "synthetic_accounts_only": true,
+    "checks": [
+      "native-window-and-maximize",
+      "glass-popover-and-slider-65-to-80",
+      "escape-closes-popover",
+      "boya-all-selected-tabs",
+      "course-area-scroll",
+      "account-modal-open-close",
+      "mock-boya-sign-confirmed",
+      "mock-boya-signout-confirmed",
+      "semester-assessment-remains-zero"
+    ],
+    "real_school_writes": 0,
+    "screenshot": "../ui/stitch-glass/native-window.png"
+  },
+  "limitations": [
+    "No new macOS/Linux native build or GUI validation",
+    "No real school writes or long-duration GPU/power benchmark",
+    "New skin not pushed or released on GitHub",
+    "Prior v1.2.7 release assets unchanged"
+  ]
+}

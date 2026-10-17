@@ -148,9 +148,19 @@ def regular_start(value, current=None):
         except ValueError:
             return None
 
-def regular_allowed(course, current):
+def regular_window(course, current):
     start = regular_start(course.get("classBeginTime"), current)
-    return bool(start and start.date() == current.date() and start - timedelta(minutes=10) <= current <= start and str(course.get("signStatus", "")) == "0")
+    if not start or start.date() != current.date():
+        return None, None
+    end = regular_start(course.get("classEndTime"), start)
+    # An unknown/malformed end must never invent a whole lesson of permission.
+    deadline = end if end and end > start else start
+    return start, deadline
+
+
+def regular_allowed(course, current):
+    start, deadline = regular_window(course, current)
+    return bool(start and start - timedelta(minutes=10) <= current <= deadline and str(course.get("signStatus", "")) == "0")
 
 def trusted_url(url):
     from urllib.parse import urlsplit

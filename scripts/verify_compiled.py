@@ -41,7 +41,7 @@ def main():
                         if proc.poll() is not None: raise RuntimeError("Built process exited before readiness")
                         try:
                             health=client.get("/api/health").json()
-                            if health.get("version")=="1.2.7":break
+                            if health.get("version")=="1.3.8":break
                         except (httpx.HTTPError,ValueError):pass
                         time.sleep(0.2)
                     else: raise RuntimeError("Built process readiness timeout")
@@ -89,10 +89,12 @@ def main():
         state=json.loads(native.read_text(encoding="utf-8"))
         assert state["passed"] and state["native_gui"]
         expected_native={"native-boya-sign","native-boya-signout-without-invented-assessment","native-account-switch","native-regular-sign"}
+        if sys.platform == "win32":
+            expected_native.update({"native-render-visible", "native-minimized-no-render", "native-minimized-resume", "native-tray-no-render", "native-tray-resume"})
         assert set(state.get("checks",[]))==expected_native,"Native engine must exercise all required interactions"
         checks.extend(state["checks"])
         checks.append("compiled-native-desktop-window")
-    summary={"passed":True,"version":"1.2.7","platform":sys.platform,"checks":checks,"real_school_writes":0}
+    summary={"passed":True,"version":"1.3.8","platform":sys.platform,"checks":checks,"real_school_writes":0}
     (output/"compiled-summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps(summary,ensure_ascii=False))
 

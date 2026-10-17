@@ -25,7 +25,7 @@ class OperationLedger:
     def key(user, action, cid, day):
         return hashlib.sha256(json.dumps([user, action, str(cid), str(day)]).encode()).hexdigest()
 
-    def claim(self, key, limit=3, group=None, block_group_success=False):
+    def claim(self, key, limit=3, group=None, block_group_success=False, retry_delay=None):
         with self.lock:
             if time.monotonic() - self._last_prune >= 86400:
                 self.prune()
@@ -39,12 +39,17 @@ class OperationLedger:
                     if block_group_success and "success" in states:
                         self.db.commit()
                         return False
-                row = self.db.execute("SELECT state, attempts FROM operations WHERE key=?", (key,)).fetchone()
+                row = self.db.execute("SELECT state, attempts, updated FROM operations WHERE key=?", (key,)).fetchone()
                 if row and row[0] == "success":
                     self.db.commit()
                     return False
                 if row and (row[0] in ("pending", "uncertain") or row[1] >= limit):
                     raise OperationBusy("操作正在进行、结果待官方复核或已达请求上限")
+                if row and retry_delay is not None:
+                    remaining = row[2] + retry_delay(row[1]) - time.time()
+                    if remaining > 0:
+                        import math
+                        raise OperationBusy(f"防重复提交冷却中，请在约{math.ceil(remaining)}秒后再试")
                 attempts = (row[1] if row else 0) + 1
                 self.db.execute("INSERT OR REPLACE INTO operations VALUES (?, 'pending', ?, ?)", (key, time.time(), attempts))
                 if group:
