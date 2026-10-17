@@ -531,11 +531,14 @@ def main():
                     if sys.platform == "win32":
                         window.on_top = True
                         wait_native("!document.documentElement.classList.contains('startup-running') && window.BUAARenderLifecycle?.visible")
+                        report["render_environment"] = window.evaluate_js("({reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,reducedTransparency:matchMedia('(prefers-reduced-transparency: reduce)').matches,motionDisabled:document.getElementById('ambientMotionToggle').disabled,initialFrames:Number(document.getElementById('ambientParticlesCanvas').dataset.frames||0)})")
+                        # Exercise explicit animation opt-in in the isolated profile;
+                        # hosted desktops may default to system reduced motion.
+                        window.evaluate_js("{const control=document.getElementById('ambientMotionToggle');if(!control.checked&&!control.disabled)control.click();}")
                         def fluid_frames():
                             return window.evaluate_js("Number(document.getElementById('ambientParticlesCanvas').dataset.frames || 0)")
                         start_frames = fluid_frames()
-                        time.sleep(0.7)
-                        assert fluid_frames() > start_frames, "Visible canvas must animate"
+                        wait_native(f"Number(document.getElementById('ambientParticlesCanvas').dataset.frames||0)>{start_frames}")
                         report["checks"].append("native-render-visible")
                         for mode in ("minimized", "tray"):
                             (window.minimize if mode == "minimized" else window.hide)()
@@ -548,11 +551,10 @@ def main():
                             window.restore()
                             wait_native("window.BUAARenderLifecycle?.visible === true")
                             resumed_frames = fluid_frames()
-                            time.sleep(0.7)
-                            assert fluid_frames() > resumed_frames, "Restored canvas must resume"
+                            wait_native(f"Number(document.getElementById('ambientParticlesCanvas').dataset.frames||0)>{resumed_frames}")
                             report["checks"].append(f"native-{mode}-resume")
                 except Exception as exc:
-                    report.update({"passed":False,"error_type":type(exc).__name__})
+                    report.update({"passed":False,"error_type":type(exc).__name__,"error_message":str(exc)[:240]})
                 finally:
                     if args.smoke_report:
                         pathlib.Path(args.smoke_report).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
