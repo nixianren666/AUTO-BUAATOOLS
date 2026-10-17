@@ -91,8 +91,8 @@ class UpdateChecker:
                 latest = release_version(release.get("tag_name"))
                 a, b = version_tuple(latest), version_tuple(self.current)
                 status = "update_available" if a > b else "up_to_date" if a == b else "local_ahead"
-                messages = {"update_available": f"发现新版本 v{latest}", "up_to_date": "当前已是最新正式版",
-                            "local_ahead": "当前本地版本高于已发布正式版，无需降级"}
+                messages = {"update_available": f"发现新版本 v{latest}", "up_to_date": "当前已是最新版本",
+                            "local_ahead": "当前已是最新版本"}
                 result.update(status=status, latest_version=latest,
                               release_url=f"{RELEASES_URL}/tag/v{latest}", message=messages[status])
             except (httpx.HTTPError, ValueError, TypeError, UpdateUnavailable) as error:

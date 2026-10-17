@@ -25,10 +25,15 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(UpdateChecker("1.2.9", lambda: release()).check()["status"], "update_available")
 
     def test_same_version(self):
-        self.assertEqual(UpdateChecker("1.2.10", lambda: release()).check()["status"], "up_to_date")
+        result = UpdateChecker("1.2.10", lambda: release()).check()
+        self.assertEqual(result["status"], "up_to_date")
+        self.assertEqual(result["message"], "当前已是最新版本")
 
     def test_local_candidate_never_downgrades(self):
-        self.assertEqual(UpdateChecker("1.2.11", lambda: release()).check()["status"], "local_ahead")
+        result = UpdateChecker("1.2.11", lambda: release()).check()
+        self.assertEqual(result["status"], "local_ahead")
+        self.assertEqual(result["message"], "当前已是最新版本")
+        self.assertEqual(result["latest_version"], "1.2.10")
 
     def test_tags_are_strict_stable_semver(self):
         for tag in [None, True, 12, "1.2.10", "v01.2.10", "v1.2.10-rc.1", "v1.2.10+build", "v1.2", "v1.2.3/other", "v1.2.3\n"]:
