@@ -70,7 +70,7 @@ class TestApiServer(unittest.TestCase):
     def test_health_current_version(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.3.8")
+        self.assertEqual(resp.json()["version"], "1.3.9")
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")

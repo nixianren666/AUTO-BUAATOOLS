@@ -49,7 +49,7 @@ class APIContracts(unittest.TestCase):
 
     def test_public_health_contains_no_account_identity(self):
         response = self.client.get("/api/health").json()
-        self.assertEqual(response["version"], "1.3.8")
+        self.assertEqual(response["version"], "1.3.9")
         self.assertNotIn("active_username", response)
         self.assertNotIn(self.account.username, str(response))
 

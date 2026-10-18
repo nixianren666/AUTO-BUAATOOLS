@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.3.8 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.3.9 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -39,6 +39,9 @@ let appState = {
 const nativeFetch = window.fetch.bind(window);
 let managementSession = null;
 let viewGeneration = 0;
+// The first login waits for both independent startup responses. Never queue a
+// second prompt after the user has deliberately closed the initial login card.
+const firstLoginState = { disclaimerAccepted: false, accountsReady: false, prompted: false, accepting: false };
 async function establishManagementSession() {
   let response = await nativeFetch("/api/session", { credentials: "same-origin" });
   if (response.status === 401) {
@@ -218,6 +221,13 @@ function switchMainView(viewName) {
 }
 
 // 获取全系统初始状态
+function maybeOpenFirstLogin() {
+  if (!firstLoginState.disclaimerAccepted || !firstLoginState.accountsReady || firstLoginState.prompted ||
+      appState.authenticated || appState.accounts.length > 0) return;
+  const modal = document.getElementById("loginModal");
+  if (modal && setUISurface("loginModal", true)) firstLoginState.prompted = true;
+}
+
 async function fetchInitialState() {
   const requestedUsername = appState.activeUsername;
   const requestedGeneration = viewGeneration;
@@ -231,6 +241,7 @@ async function fetchInitialState() {
 
     if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
     appState.accounts = accountsRes.accounts || [];
+    firstLoginState.accountsReady = Array.isArray(accountsRes.accounts);
     appState.activeUsername = accountsRes.active_username || "";
     viewGeneration++;
     appState.activeUser = appState.accounts.find(a => a.username === appState.activeUsername) || null;
@@ -245,7 +256,7 @@ async function fetchInitialState() {
       fetchClasses();
       fetchBoyaData(false);
     } else if (appState.accounts.length === 0) {
-      openLoginModal();
+      maybeOpenFirstLogin();
     }
   } catch (err) {
     console.error("fetchInitialState error:", err);
@@ -1351,6 +1362,8 @@ async function checkDisclaimerStatus() {
   try {
     const res = await apiFetch("/api/system/disclaimer");
     const data = await res.json();
+    if (typeof data.accepted !== "boolean") throw new Error("免责声明状态未确认");
+    firstLoginState.disclaimerAccepted = data.accepted;
     const modal = document.getElementById("disclaimerModal");
     if (modal) {
       if (!data.accepted) {
@@ -1359,25 +1372,38 @@ async function checkDisclaimerStatus() {
         setUISurface("disclaimerModal", false);
       }
     }
-  } catch (e) {}
+    maybeOpenFirstLogin();
+  } catch (e) {
+    // An unavailable status must not silently bypass the first-use notice.
+    setUISurface("disclaimerModal", true);
+    showToast("免责声明状态暂未确认，请阅读后重试确认", "error");
+  }
 }
 
 function handleDisclaimerCheckChange(checkbox) {
   const btn = document.getElementById("disclaimerAgreeBtn");
-  if (btn) btn.disabled = !checkbox.checked;
+  if (btn) btn.disabled = !checkbox.checked || firstLoginState.accepting;
 }
 
 async function handleDisclaimerAccept() {
+  const checkbox = document.getElementById("disclaimerCheck");
+  if (firstLoginState.accepting || !checkbox?.checked) return;
+  firstLoginState.accepting = true;
+  handleDisclaimerCheckChange(checkbox);
   const modal = document.getElementById("disclaimerModal");
-  if (modal) setUISurface("disclaimerModal", false);
   try {
     const res = await apiFetch("/api/system/disclaimer/accept", { method: "POST" });
     const data = await res.json();
-    if (data.accepted) {
-      showToast("欢迎使用 BUAA 课程独立签到助手！", "success");
-    }
+    if (data.status !== "ok" || data.accepted !== true) throw new Error("免责声明未确认保存");
+    firstLoginState.disclaimerAccepted = true;
+    if (modal) setUISurface("disclaimerModal", false);
+    maybeOpenFirstLogin();
+    showToast("欢迎使用 BUAA 课程独立签到助手！", "success");
   } catch (e) {
     showToast("保存免责声明状态失败", "error");
+  } finally {
+    firstLoginState.accepting = false;
+    handleDisclaimerCheckChange(checkbox);
   }
 }
 

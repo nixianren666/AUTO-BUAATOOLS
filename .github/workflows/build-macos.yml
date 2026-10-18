@@ -1,4 +1,4 @@
-name: Native v1.3.8 verification and builds
+name: Native v1.3.9 verification and builds
 on:
   workflow_dispatch:
 permissions:

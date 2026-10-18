@@ -1461,8 +1461,14 @@ async def get_disclaimer():
 
 @app.post("/api/system/disclaimer/accept")
 async def accept_disclaimer():
+    previous = config.get("disclaimer_accepted", False)
     config["disclaimer_accepted"] = True
-    save_config(config)
+    try:
+        save_config(config)
+    except Exception:
+        config["disclaimer_accepted"] = previous
+        add_log("error", "免责声明确认保存失败，请重试。")
+        raise HTTPException(status_code=500, detail="免责声明确认保存失败")
     add_log("info", "用户已阅读并签署同意免责声明与使用条款。")
     return {"status": "ok", "accepted": True}
 

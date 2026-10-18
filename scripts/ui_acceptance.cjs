@@ -129,10 +129,11 @@ const fs = require('node:fs');
       assert.equal(await page.evaluate(() => globalThis.injected), undefined);
       assert.equal(await page.locator('#classesFeed img').count(), 0);
     });
+    await require('./onboarding_acceptance.cjs').verifyOnboarding(browser, url, check);
     assert.deepEqual(errors, []);
     fs.writeFileSync(reportPath, JSON.stringify({ passed: true, checks, script_errors: errors }, null, 2));
   } catch (error) {
-    fs.writeFileSync(reportPath, JSON.stringify({ passed: false, checks, error: error.message, script_errors: errors }, null, 2));
+    fs.writeFileSync(reportPath, JSON.stringify({ passed: false, checks, error: error.message, stack: error.stack, script_errors: errors }, null, 2));
     throw error;
   } finally {
     await browser.close();
