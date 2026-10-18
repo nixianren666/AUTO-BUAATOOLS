@@ -1,3 +1,5 @@
+> 历史候选记录：v1.3.9已发布，当前状态见V139_RELEASE.md；不得重放本文件中的待办。
+
 # v1.3.9 首次登录引导修复候选
 
 2026-10-19。用户明确授权修复最新版并发布，同时完善README免责声明。直接基线是署名纠正后的main `79be599507fb15181eb3a5b64923bbf4ffafc7e3`；v1.3.8标签为`b75caf88f1219aa0dfbc9448d7060681bfb5e741`，旧构建身份见署名迁移对照。禁止恢复旧署名历史、微信或遮挡检测；不下载安装使用WSL。
@@ -20,3 +22,7 @@
 首个最终文案批次39159743411中Windows/Linux/Mac ARM通过；Mac Intel在源码浏览器进程的旧90秒总时限到期，194项中1项TimeoutExpired，无功能断言报告，不能记为通过。新增12个独立首次使用上下文后，源码与成品浏览器总时限统一240秒；每组写入当前检查及已完成检查，超时保留进度，失败仍阻止发布。需要从更新后的同一提交重跑全部平台，不能混用该批三个成功平台的旧产物。
 
 本轮私有证据：`C:/Users/cjt16/.codex/tmp/ubaa-v139-onboarding-20261019`。既有GitHub认证仅进程内复用，所有提交作者/提交者必须为`nixianren666 <119742868+nixianren666@users.noreply.github.com>`。
+
+2026-10-19暂停检查点：最终946eed1f、run39161414750四平台全通过，Windows58/其余53成品、各194源码；最终10项Edge首次使用走查通过，23模块/18资源一致，隐私已通过。15附件已完整上传并校验摘要，草稿Release416690979，尚未正式发布、未替换本地默认程序。usedPercent96，resetsAt1792356188（北京时间04:43:08），按5%线暂停。恢复读取项目外审查目录progress.json；不要重复构建/上传。发布后依次执行post-publish-update.py、finalize-local.py、final-handoff.py；后两脚本有完成发布/更新核验闸门，不提前执行。
+
+2026-10-19恢复后最新检查点：v1.3.9已正式发布，Release416690979、tag和main均指向946eed1f，15附件摘要一致；local-sync.json通过，默认EXE/便携/Setup/dist已同步且配置保留。匿名真实更新复验被GitHub出口限流阻止：两版均正确显示unavailable和限流提示；GitHub回复HTTP403、remaining0、reset1792358881（北京时间05:28:01），不得冒充通过或用PAT注入客户端规避。progress.json改为等待外部限流；恢复后只运行post-publish-update.py，不重发布、不重建。通过后运行final-handoff.py，提交/隐私扫描/push-handoff.py发布文档收尾，精确v1.3.9标签保持不动；之后停止自动安排。
