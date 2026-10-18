@@ -52,7 +52,16 @@ class TestUIInteractions(unittest.TestCase):
                 self.assertTrue(server.started,"Isolated API must start")
                 env = dict(os.environ)
                 env["NODE_PATH"] = modules
-                result = subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),f"http://127.0.0.1:{port}/",browser,str(report)],env=env,capture_output=True,text=True,timeout=90)
+                try:
+                    # Includes twelve fresh first-use contexts; Intel runners can
+                    # exceed the former whole-process budget even without failures.
+                    result = subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),f"http://127.0.0.1:{port}/",browser,str(report)],env=env,capture_output=True,text=True,timeout=240)
+                except subprocess.TimeoutExpired:
+                    output_dir = os.environ.get("BUAA_TEST_REPORT_DIR")
+                    if output_dir and report.exists():
+                        pathlib.Path(output_dir).mkdir(parents=True,exist_ok=True)
+                        shutil.copy2(report,pathlib.Path(output_dir)/"browser-summary.json")
+                    raise
                 if report.exists():
                     import json
                     evidence = json.loads(report.read_text(encoding="utf-8"))

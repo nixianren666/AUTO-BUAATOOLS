@@ -15,7 +15,11 @@ const fs = require('node:fs');
   const errors = [];
   const checks = [];
   page.on('pageerror', error => errors.push(error.message));
-  const check = async (name, action) => { await action(); checks.push(name); };
+  const check = async (name, action) => {
+    fs.writeFileSync(reportPath, JSON.stringify({ passed: false, in_progress: true, current_check: name, checks, script_errors: errors }, null, 2));
+    await action();
+    checks.push(name);
+  };
   try {
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => typeof appState === 'object' && appState.accounts.length === 2);

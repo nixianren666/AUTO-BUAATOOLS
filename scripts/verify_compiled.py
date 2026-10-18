@@ -64,7 +64,7 @@ def main():
                     browser_env=dict(env)
                     if os.environ.get("BUAA_NODE_MODULES"):
                         browser_env["NODE_PATH"]=os.environ["BUAA_NODE_MODULES"]
-                    result=subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),base+"/",browser,str(output/"compiled-browser.json")],env=browser_env,capture_output=True,text=True,timeout=100)
+                    result=subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),base+"/",browser,str(output/"compiled-browser.json")],env=browser_env,capture_output=True,text=True,timeout=240)
                     assert result.returncode==0,result.stderr[-2000:]
                     browser_result=json.loads((output/"compiled-browser.json").read_text(encoding="utf-8"))
                     assert browser_result["passed"]
