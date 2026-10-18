@@ -1,0 +1,596 @@
+{
+  "date": "2026-10-19",
+  "scope": "Git author/committer correction only; identical file tree for each historical commit",
+  "identity": "nixianren666 <119742868+nixianren666@users.noreply.github.com>",
+  "historical_commits": [
+    {
+      "old": "284e8fcb6be79c49e3e425a136f35a89f628d85d",
+      "new": "4598532f350f0b17972a8fae63243f457df974c4",
+      "file_tree_identical": true
+    },
+    {
+      "old": "2cba8420b7e15f63c93b7b6cd552a2d43e43a86e",
+      "new": "43ac19e5bf53d8d4c524944925dea2b54a65b02d",
+      "file_tree_identical": true
+    },
+    {
+      "old": "91b5e537eb2d14f75bf81bcd4136e9308684c88f",
+      "new": "68840ca62c87e5e4441209925f6f32b37d6d6df7",
+      "file_tree_identical": true
+    },
+    {
+      "old": "d82bc8050f3d3f52daee0a1510a43d2d3819dc9e",
+      "new": "9b41b1e4fdbc7b0647f5bfd08ce69dd25775cd92",
+      "file_tree_identical": true
+    },
+    {
+      "old": "565b09a193b0af47aec545705918bfd155c1e40c",
+      "new": "30f9cbf7a64293b82797400708172877f19283a7",
+      "file_tree_identical": true
+    },
+    {
+      "old": "37d14b9058bb4b7fe2c56405d0623b776538c5cb",
+      "new": "72648e75cd052c58a2f6d9930ccf0b56c83bc140",
+      "file_tree_identical": true
+    },
+    {
+      "old": "d16b3673501894e3e5af880044c2d4bca30f9d20",
+      "new": "89bf65f9707d21ba62429e128642aa145c7b2d3e",
+      "file_tree_identical": true
+    },
+    {
+      "old": "7dd710fda0611c27d0e7e03898ca8f5a25c19044",
+      "new": "e202da106cdc84dec0d24e59394f4c28e3c783d6",
+      "file_tree_identical": true
+    },
+    {
+      "old": "7b6b681a89718db9ab164fa7d144b4fe50ad5d68",
+      "new": "8a1a791b6a4bfa07ce59c3e7b19590d625d23140",
+      "file_tree_identical": true
+    },
+    {
+      "old": "b936292069dc0343a19358f721c17a8b6e31bdda",
+      "new": "377a08c0c98d96996006608f5d76e9ec7e003e5d",
+      "file_tree_identical": true
+    },
+    {
+      "old": "62482afe160dfdf55b1343792525c4387086dc1b",
+      "new": "c250ec78df7b72d7f52fa7961f1116b669bfdddb",
+      "file_tree_identical": true
+    },
+    {
+      "old": "917ed58c7f0e8b272153f2cfbba49d0ae1aa7863",
+      "new": "78bd20f75d4388971399d98ff60f68aaa1c913b7",
+      "file_tree_identical": true
+    },
+    {
+      "old": "0ee8416310ad42bf570eabbdecc49ca626ae5bcd",
+      "new": "52a7b64a0ced0485a6cabd5bc48147c175cd4959",
+      "file_tree_identical": true
+    },
+    {
+      "old": "7a6e8562419f169ca6617f4597184097e40dc668",
+      "new": "b9571738d1f3935a36a997f9f11313264bbea65d",
+      "file_tree_identical": true
+    },
+    {
+      "old": "0236dcad7a30d8f4d0e5df48cc7494a2a9479fd2",
+      "new": "868d1f85e0ffc1f32bc8ed6e58e61543c3f2fb27",
+      "file_tree_identical": true
+    },
+    {
+      "old": "f907d5d3f08ea0571c872e3db265f106cf0d3d6d",
+      "new": "b3c049ddeb656d4e2cef8cb131c63108c09e8738",
+      "file_tree_identical": true
+    },
+    {
+      "old": "fa48637d9fc4764500188db482fd4eeceb9cb961",
+      "new": "d0003d9992bb2413ee15a2f8865e80d0a8f2f6f9",
+      "file_tree_identical": true
+    },
+    {
+      "old": "3e5200516d7123d53d2c6269ed8e280d2fbcda20",
+      "new": "a0c02009569f61722c3f44a23cf228ce79be6b9e",
+      "file_tree_identical": true
+    },
+    {
+      "old": "6f518a438691887b62df1504024f032cf6edd676",
+      "new": "4e0d6a71e3ab58635e7d75819df1d07bf44c5197",
+      "file_tree_identical": true
+    },
+    {
+      "old": "2778d1bb130982f5f1488ee313e2bbf577f3363b",
+      "new": "76968b7a0b53e7790c246c9cdeb28fcb80920569",
+      "file_tree_identical": true
+    },
+    {
+      "old": "7dc0334f17772e16e299a97fb49e3bd5b2ccb656",
+      "new": "82aaea028758bec583a15e8f8c6cb63f6f6ae860",
+      "file_tree_identical": true
+    },
+    {
+      "old": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+      "new": "6f5a1140552163b7049f8fdd0e93faad220e7f83",
+      "file_tree_identical": true
+    },
+    {
+      "old": "29b7e55f97caf3bcf20c9cb1e55e837de7f76a65",
+      "new": "42d0884667df530a7490c59848a911de0f77caa5",
+      "file_tree_identical": true
+    },
+    {
+      "old": "e60310b776e0ba4053d3856d335c7ee428318a74",
+      "new": "a316b18883e41b365ea7b5ce2aa04499ba453755",
+      "file_tree_identical": true
+    },
+    {
+      "old": "2fbf7f39b785c58d42986c259a8458435844de3c",
+      "new": "5e8eaefdc7a8602a4d2a759842ec395411c24111",
+      "file_tree_identical": true
+    },
+    {
+      "old": "ae7acde604f949133f4add3a909a5cf81807f426",
+      "new": "bc5116567a79adfa3bb02526504df701c9f31535",
+      "file_tree_identical": true
+    },
+    {
+      "old": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+      "new": "508eb7209fc73f4c8f36d47c15b200a2c9fba6d4",
+      "file_tree_identical": true
+    },
+    {
+      "old": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "new": "334ecd10960a4dd12639a5a9c277d439041655ac",
+      "file_tree_identical": true
+    },
+    {
+      "old": "dbf73f857856e61538d34a41f4187d68a5451231",
+      "new": "bf104b9184895435d7d305f8351ef61cac921f40",
+      "file_tree_identical": true
+    },
+    {
+      "old": "a52cef3640198dad69ba45f40fa917502c154d35",
+      "new": "4887d7cdddf828a552839abb8d18eccdbd31da29",
+      "file_tree_identical": true
+    },
+    {
+      "old": "eba88e6ba47e18a7cd9098c02081bb03bea2cf81",
+      "new": "6b8fb8d8bd14aab577af4d5f17841708a6cdea44",
+      "file_tree_identical": true
+    },
+    {
+      "old": "cf65b2e6e5a0dfb43347a61d55453623eabbaed9",
+      "new": "fe0c197476a82448c3bcb233c1de3e6f47e89284",
+      "file_tree_identical": true
+    },
+    {
+      "old": "4ef5ad57b3107622644988ee355411c383829e91",
+      "new": "db8db6d138c22ea7e0d98cf02b419298fe2633bf",
+      "file_tree_identical": true
+    },
+    {
+      "old": "850783d10a6cf974af1e0bacb289309b7d21340d",
+      "new": "d2259142e04ac3aefccb36ea4bafbc58580ad5cf",
+      "file_tree_identical": true
+    },
+    {
+      "old": "f9f09b5abf76945df4875c17ff6f52bf708a6f51",
+      "new": "2497f8f890e7969b51f0bf29534901f6099397f5",
+      "file_tree_identical": true
+    },
+    {
+      "old": "c379c018a66d882698051d01616d0700c3e46950",
+      "new": "26a53cd6596460200f65edde37e1df7d70092e1f",
+      "file_tree_identical": true
+    },
+    {
+      "old": "341157bbfdbdc8dd20b34913e772a42fe30c71cc",
+      "new": "b052d254622f536484cb702618939b110246dd92",
+      "file_tree_identical": true
+    },
+    {
+      "old": "ff7957c22a04522bcf65b689490f3172a13620a8",
+      "new": "0e3a13c837378f2aa6768bb26d3cec5f90173403",
+      "file_tree_identical": true
+    },
+    {
+      "old": "a5306249e49431870028cb20069aef08c7d2c355",
+      "new": "516bdee0e4267776a5d5c568478e4cfd646702c9",
+      "file_tree_identical": true
+    },
+    {
+      "old": "0a4fc84888a4c4731efa3c9cf285132139c25b99",
+      "new": "ba2a537bba404bdc553b68de00771f940ead4555",
+      "file_tree_identical": true
+    },
+    {
+      "old": "125d2adff604820dc14c106c6cca287934400f06",
+      "new": "ca40e8debb94fd7f0b9f70d1190cb99af30fc86e",
+      "file_tree_identical": true
+    },
+    {
+      "old": "56761b65d5517b93e696fb469d1bcb38b219dcbf",
+      "new": "312438a207907cfca083548a1052bc24a5afe1c3",
+      "file_tree_identical": true
+    },
+    {
+      "old": "6198dca6902a175780d2775ff5a8f92568c28633",
+      "new": "6dcb52be053fb31cae64b6f6033e02ad7ef6027c",
+      "file_tree_identical": true
+    },
+    {
+      "old": "910e40b3a06f5dc3081d7d416655c518331c2038",
+      "new": "043325b8463bb75e6b4596fe5f24acf66d03d3b8",
+      "file_tree_identical": true
+    },
+    {
+      "old": "eb238af862aa878490426f07bf63e54209bdb095",
+      "new": "8d10e0874511470c0d6453f0b34801c266078270",
+      "file_tree_identical": true
+    },
+    {
+      "old": "3bcd92873048d70000f35970079caf461cbe0896",
+      "new": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "file_tree_identical": true
+    },
+    {
+      "old": "4a5adc1a3891457303e279323235d8bacc6ea767",
+      "new": "628c38ab46c1ca6f4b6ab4a27a9bd05f9636418a",
+      "file_tree_identical": true
+    }
+  ],
+  "refs": {
+    "refs/heads/fix/v1.2.7": {
+      "old_target_commit": "341157bbfdbdc8dd20b34913e772a42fe30c71cc",
+      "proposed_target_commit": "b052d254622f536484cb702618939b110246dd92",
+      "old_ref_object": "341157bbfdbdc8dd20b34913e772a42fe30c71cc",
+      "new_ref_object": "b052d254622f536484cb702618939b110246dd92",
+      "ref_type_preserved": "commit"
+    },
+    "refs/heads/main": {
+      "old_target_commit": "4a5adc1a3891457303e279323235d8bacc6ea767",
+      "proposed_target_commit": "628c38ab46c1ca6f4b6ab4a27a9bd05f9636418a",
+      "old_ref_object": "4a5adc1a3891457303e279323235d8bacc6ea767",
+      "new_ref_object": "628c38ab46c1ca6f4b6ab4a27a9bd05f9636418a",
+      "ref_type_preserved": "commit"
+    },
+    "refs/heads/release/v1.3.8": {
+      "old_target_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+      "proposed_target_commit": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "old_ref_object": "3bcd92873048d70000f35970079caf461cbe0896",
+      "new_ref_object": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "ref_type_preserved": "commit"
+    },
+    "refs/tags/v1.3.8": {
+      "old_target_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+      "proposed_target_commit": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "old_ref_object": "3bcd92873048d70000f35970079caf461cbe0896",
+      "new_ref_object": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "ref_type_preserved": "commit"
+    },
+    "refs/tags/v1.2.7": {
+      "old_target_commit": "c379c018a66d882698051d01616d0700c3e46950",
+      "proposed_target_commit": "26a53cd6596460200f65edde37e1df7d70092e1f",
+      "old_ref_object": "7b912a486fa022efcfff75743a4cc5f624e9d991",
+      "new_ref_object": "d6e8c514a66c379dd6b5b9f0d02499b2c0e6d1af",
+      "ref_type_preserved": "tag"
+    },
+    "refs/tags/v1.2.6": {
+      "old_target_commit": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "proposed_target_commit": "334ecd10960a4dd12639a5a9c277d439041655ac",
+      "old_ref_object": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "new_ref_object": "334ecd10960a4dd12639a5a9c277d439041655ac",
+      "ref_type_preserved": "commit"
+    },
+    "refs/tags/v1.2.5": {
+      "old_target_commit": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+      "proposed_target_commit": "508eb7209fc73f4c8f36d47c15b200a2c9fba6d4",
+      "old_ref_object": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+      "new_ref_object": "508eb7209fc73f4c8f36d47c15b200a2c9fba6d4",
+      "ref_type_preserved": "commit"
+    },
+    "refs/tags/v1.2.2": {
+      "old_target_commit": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+      "proposed_target_commit": "6f5a1140552163b7049f8fdd0e93faad220e7f83",
+      "old_ref_object": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+      "new_ref_object": "6f5a1140552163b7049f8fdd0e93faad220e7f83",
+      "ref_type_preserved": "commit"
+    },
+    "refs/tags/v1.2.0": {
+      "old_target_commit": "284e8fcb6be79c49e3e425a136f35a89f628d85d",
+      "proposed_target_commit": "4598532f350f0b17972a8fae63243f457df974c4",
+      "old_ref_object": "284e8fcb6be79c49e3e425a136f35a89f628d85d",
+      "new_ref_object": "4598532f350f0b17972a8fae63243f457df974c4",
+      "ref_type_preserved": "commit"
+    }
+  },
+  "source_tree_changes": 0,
+  "release_assets_rebuilt": false,
+  "releases": [
+    {
+      "tag": "v1.3.8",
+      "id": 415982295,
+      "old_build_commit": "3bcd92873048d70000f35970079caf461cbe0896",
+      "corrected_commit": "b75caf88f1219aa0dfbc9448d7060681bfb5e741",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "AUTO-BUAATOOLS-v1.3.8-source.zip",
+          "size": 38760542,
+          "sha256": "sha256:f1cb054ac3dd0648531f2e449470687d54c943de4d2335753a663bdbd52c2859"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.3.8.exe",
+          "size": 31792943,
+          "sha256": "sha256:d14ba4b39cfec6bc9a470f692a90da45d6d6bf5f4e2bdce71223aabdb3d635eb"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-Linux-x86_64.tar.gz",
+          "size": 246443485,
+          "sha256": "sha256:8fb796dc18a129cda310db0a7f1248970145a81eab88ef2e03f7d9dbc4f2db0a"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-macOS-arm64.dmg",
+          "size": 31720362,
+          "sha256": "sha256:db32d35ddada733c0910eea8eddb7e42bbedf771dd01fafa6a52ea575c38f760"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-macOS-arm64.zip",
+          "size": 28021345,
+          "sha256": "sha256:d680198135ac688fcd31bda020560204b2a54a84e2f149f00773fe062bfad033"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-macOS-x86_64.dmg",
+          "size": 31403575,
+          "sha256": "sha256:242b271a6e422623567da9420ac7aaa6f29edecfdab668d112367e1a2495df07"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-macOS-x86_64.zip",
+          "size": 27852920,
+          "sha256": "sha256:12137e9085a8ff09232d06a11da2b081148ce8e55990a938d4c3b8f2404fb29f"
+        },
+        {
+          "name": "BUAA-Signin-v1.3.8-portable.exe",
+          "size": 30307175,
+          "sha256": "sha256:1f7f6238700e271c5c95581a69b4cbe5052908e0f61d52b130415533fede01df"
+        },
+        {
+          "name": "manifest-Linux-x86_64.json",
+          "size": 1607,
+          "sha256": "sha256:369dd9cb3aabc4859e4491ff38853b93c47689f8b3d362a1e0a643c68c331546"
+        },
+        {
+          "name": "manifest-macOS-arm64.json",
+          "size": 1805,
+          "sha256": "sha256:0c38b50384e67810231bcb95bcbb52374ba005445c194d29437510be684737ef"
+        },
+        {
+          "name": "manifest-macOS-x86_64.json",
+          "size": 1808,
+          "sha256": "sha256:fb7475e92c94aba3c64d2f96bc83e29618b27a33d135d7e2d780fad2e47e27fc"
+        },
+        {
+          "name": "manifest-Windows-x64.json",
+          "size": 1850,
+          "sha256": "sha256:f06303e0e7937571f9bc92b8897889866f6a90a876cd6a18ece76475d6b9e344"
+        },
+        {
+          "name": "public-gnutls-selftest-review.json",
+          "size": 1296,
+          "sha256": "sha256:9500dd97805529401eef964c44db28f7a45d7d831f369cd05390a06c9a2a58dc"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 1377,
+          "sha256": "sha256:845de4c10e879c1e9a6c278688693ca9d6cec1d01364dad1c36f8d5b78e58aae"
+        },
+        {
+          "name": "v1.3.8-acceptance.json",
+          "size": 17197,
+          "sha256": "sha256:797681a5d7838612db26c4b0f99703f6c783221245698839ac77bf5070ee708e"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.7",
+      "id": 412406275,
+      "old_build_commit": "c379c018a66d882698051d01616d0700c3e46950",
+      "corrected_commit": "26a53cd6596460200f65edde37e1df7d70092e1f",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "AUTO-BUAATOOLS-v1.2.7-source.zip",
+          "size": 1777499,
+          "sha256": "sha256:db3ed6b1c6d19936dcbd8a14d839ea5a8d209ae2bc9de01f9e9bf999cde90024"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.7.exe",
+          "size": 31712428,
+          "sha256": "sha256:77370602054df5dd5252b7d2c204f71bc58794fa0e38e6cfe466964c674d7576"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-Linux-x86_64.tar.gz",
+          "size": 246362323,
+          "sha256": "sha256:095562723ee4ccc8ee7b657250a3afb963b7e8b1e1171e0391e97a94bbf99283"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-macOS-arm64.dmg",
+          "size": 31565472,
+          "sha256": "sha256:03c7d7b54483d8d03843ddeab6341afadce155a4cdf5c21b2b40d5f2988113c2"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-macOS-arm64.zip",
+          "size": 27942390,
+          "sha256": "sha256:61fbd87c7ba186feb2a787893b2e376569d39bdbc0bd93b9f86f2c4020db9748"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-macOS-x86_64.dmg",
+          "size": 31418449,
+          "sha256": "sha256:4b96e33c4419fa29747285aad2a5593a2b39f4345a7c40f73161b0b9f2336dd6"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-macOS-x86_64.zip",
+          "size": 27775533,
+          "sha256": "sha256:badc5a8184fe181adbc08a8782a87d54ca73e7ca2e9925b2c7ba4e69945aa75d"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.7-portable.exe",
+          "size": 30231457,
+          "sha256": "sha256:fddee0f48a4be64402ee5d8c23daccfb2081c35045f9e4badd9e8e4b3d0b9ceb"
+        },
+        {
+          "name": "manifest-Linux-x86_64.json",
+          "size": 1607,
+          "sha256": "sha256:ff56db7279b3ab57bd9ce9421b6e257e4f52b6261a47fe579157fb27d32c728c"
+        },
+        {
+          "name": "manifest-macOS-arm64.json",
+          "size": 1805,
+          "sha256": "sha256:909b33919950ae257cce2a3c9a0b439e47eb8da953fe96a76988dfbdb9cb2e25"
+        },
+        {
+          "name": "manifest-macOS-x86_64.json",
+          "size": 1808,
+          "sha256": "sha256:f4041ae58edc7483289095b468e27035935883e6d10a2c32c5971f92826bb66c"
+        },
+        {
+          "name": "manifest-Windows-x64.json",
+          "size": 1849,
+          "sha256": "sha256:fe8b33c009f86f10cf3af6231428362433c0f5e2520db569a7c3346feb6733d4"
+        },
+        {
+          "name": "public-gnutls-selftest-review.json",
+          "size": 1344,
+          "sha256": "sha256:d99c27fd662394b529f49900b2a451d4a6ce90422dd5ee561206e9b8009ea125"
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 1379,
+          "sha256": "sha256:fd4e202aa6ca78c43f5acbd3cd0d6fef0cf47f421b5a3d3b0bd8032e44146ea9"
+        },
+        {
+          "name": "verification-v1.2.7.json",
+          "size": 8035,
+          "sha256": "sha256:dd254fa29541aa790b0cb71c7e24647b609594ba0b06cc4948661297b5252065"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.6",
+      "id": 388930110,
+      "old_build_commit": "5158df8da851ce53d64e8ea3a55438aad96aeef0",
+      "corrected_commit": "334ecd10960a4dd12639a5a9c277d439041655ac",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267976,
+          "sha256": "sha256:503052882db0212e688005edce6e4146061dedbdc6372c974f2cb9581742e4de"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26823492,
+          "sha256": "sha256:6bae0c71443e233680b49ebc49e9129c0a1385f271c657c1b5ee699261e490f6"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.6.exe",
+          "size": 32741258,
+          "sha256": "sha256:c6a3adce95302698e2d741cbb31bf0baa68eda57786632b4f1be0fccee65a2ab"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.6-portable.exe",
+          "size": 31141664,
+          "sha256": "sha256:fea365aecab6527a2824432b8bf2d95706f67c05342fa99494e133629e4bf632"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.5",
+      "id": 388402178,
+      "old_build_commit": "c2d9f3c580544fea23e4873c6645c09ddd31cb86",
+      "corrected_commit": "508eb7209fc73f4c8f36d47c15b200a2c9fba6d4",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29267496,
+          "sha256": "sha256:fad0ce5ffa8a9e5906faf0b540f348c6c0badb9f017a2b655a1ae0d102fedadf"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26822072,
+          "sha256": "sha256:ff41a8c6761f677d8743eed6d030259b199881d6e39ecc66c5fae067ecb6f22e"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.5.exe",
+          "size": 32740094,
+          "sha256": "sha256:e329f3a20c510992c432e35ef2cbf147ad99363517c6dc2a46e7486cc0484fd4"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.5-portable.exe",
+          "size": 31140480,
+          "sha256": "sha256:3ff24474659e62dfc8c41af8e8fd18e1c4af83d5c830b3a30930f75be916c2c9"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.2",
+      "id": 387973739,
+      "old_build_commit": "41ae89e5e164db7f20948a8eef1feb6f48ce2a0b",
+      "corrected_commit": "6f5a1140552163b7049f8fdd0e93faad220e7f83",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 29296446,
+          "sha256": "sha256:307331e5852d5a9e3ca3fcc4ebdc8764ce25fb11659e3213664dcec31854be33"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 26855340,
+          "sha256": "sha256:6c67a27e8f0f93225020d65b64555cbd1fbb9dbb1759491670966d552e141dfd"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.2.exe",
+          "size": 32730600,
+          "sha256": "sha256:6bb26ea525091b04ba1a445699cc4c18bada41ada97adcae8f3ec74b38f93a32"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.2-portable.exe",
+          "size": 31133799,
+          "sha256": "sha256:94ceb31f755047209666fb80c68008799721fc504f92f97a3a4155ed7283a629"
+        }
+      ]
+    },
+    {
+      "tag": "v1.2.0",
+      "id": 386902450,
+      "old_build_commit": "284e8fcb6be79c49e3e425a136f35a89f628d85d",
+      "corrected_commit": "4598532f350f0b17972a8fae63243f457df974c4",
+      "asset_ids_sizes_digests_unchanged": true,
+      "assets": [
+        {
+          "name": "BUAA-Signin-macOS-arm64.dmg",
+          "size": 28074464,
+          "sha256": "sha256:116dd99f9da7bb66945633f1ba43b9e7d0aef088fff62b59bcf86015d77aaf04"
+        },
+        {
+          "name": "BUAA-Signin-macOS-arm64.zip",
+          "size": 25508183,
+          "sha256": "sha256:21d8f8bd7173dde4c8a1a25b93c9bbf32e924445999d7ab174be7cba41806344"
+        },
+        {
+          "name": "BUAA-Signin-Setup-v1.2.0.exe",
+          "size": 32465072,
+          "sha256": "sha256:988df6b6eb07f0baaa9fbfcccc5051fe58faf360593c83f6e40172073f11786d"
+        },
+        {
+          "name": "BUAA-Signin-v1.2.0-portable.exe",
+          "size": 30823548,
+          "sha256": "sha256:44f20fd0e119187f2dd4e6d5bf7db69fb345c0a24ec43f64a98bdb14fc5da5d7"
+        }
+      ]
+    }
+  ],
+  "latest_release_unchanged": "v1.3.8"
+}

@@ -2,7 +2,7 @@
 
 2026-10-18，北京时间。用户授权整体排查后发布，并明确选择无前导零的 **v1.3.8**。[正式发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.3.8) 已设为Latest。微信/Clawbot及旧撤回版本功能没有恢复。
 
-- 精确标签、源码ZIP和七份二进制提交：`3bcd92873048d70000f35970079caf461cbe0896`；最终四平台原生[构建批次39055548836](https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/39055548836)。
+- 原始源码ZIP、七份二进制及验收提交：`3bcd92873048d70000f35970079caf461cbe0896`；2026-10-19授权纠正历史署名后，正式标签对应`b75caf88f1219aa0dfbc9448d7060681bfb5e741`，两者文件树完全一致。产物未重新构建，原提交编号通过[署名迁移对照](author-identity-migration.json)追溯；最终四平台原生[构建批次39055548836](https://github.com/nixianren666/AUTO-BUAATOOLS/actions/runs/39055548836)。
 - Windows Setup/portable、Mac ARM与Intel各DMG/ZIP、Linux x86_64 tar.gz、精确源码ZIP、四平台清单、验收JSON、公开自测向量核实和SHA256SUMS，共15份附件；GitHub上传摘要全部匹配。实际PE/Mach-O/ELF架构及Mac版本已独立核对。
 - 四平台分别191项源码，零失败/错误/跳过；Windows46项、Mac ARM/Intel及Linux各41项成品验收。Windows安装后成品再跑46项，新装/重装/升级/卸载和配置保留通过。四平台实际用户自启动服务/命令启动、状态查询和移除通过；Mac DMG原生挂载与已测应用逐文件匹配。
 - 本地162项界面专项、9项跨天更新周期检查通过。最终Windows成品通过12项computer-use观察：启动、最新版本提示、课中常规打卡、课池筛选隔离、博雅签到/签退及不虚构考核通过、账号中心/切换、1%透光度和浮层互斥，并实际查看最终截图。使用隐藏侧边浏览器控制真实EXE的隔离WebUI，未激活游戏桌面，不能称本地原生窗口人工点击验收；原生窗口/托盘操作由本轮CI独立验收。

@@ -4,7 +4,7 @@
 #define MyAppName "BUAA 课程独立签到助手"
 #define MyAppEnglishName "BUAA-Signin"
 #define MyAppVersion "1.3.8"
-#define MyAppPublisher "BUAA Open Source Community"
+#define MyAppPublisher "nixianren666"
 #define MyAppURL "https://github.com/nixianren666/AUTO-BUAATOOLS"
 #define MyAppExeName "BUAA-Signin.exe"
 
