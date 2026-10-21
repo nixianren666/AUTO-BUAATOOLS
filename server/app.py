@@ -99,6 +99,11 @@ def load_config() -> Dict[str, Any]:
                             "_protected_password": data.get("password", ""),
                         })
                     data = {
+                        # A valid confirmation belongs to the installation, not
+                        # to the presence of a student account. Preserve only
+                        # recognized non-secret metadata during legacy migration.
+                        **{k:data[k] for k in ('disclaimer_accepted','disclaimer_commitment_version',
+                                              'disclaimer_accepted_at','autostart') if k in data},
                         "active_username": data.get("username", ""),
                         "accounts": accounts_list,
                         "global_auto_checkin": data.get("auto_checkin", False),

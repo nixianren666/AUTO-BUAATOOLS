@@ -54,7 +54,7 @@ from core.td_license import container_installation_id
 from server.app import COMMITMENT_VERSION
 p=Path('/data');assert len(container_installation_id())==64
 (p/'synthetic-vault-check').write_text(encrypt('synthetic-volume-secret'))
-(p/'config.json').write_text(json.dumps({'disclaimer_accepted':True,'disclaimer_commitment_version':COMMITMENT_VERSION}))
+(p/'config.json').write_text(json.dumps({'accounts':[],'disclaimer_accepted':True,'disclaimer_commitment_version':COMMITMENT_VERSION}))
 (p/'config.json.td-private').mkdir(exist_ok=True)
 (p/'config.json.td-private/synthetic-budget').write_text('no-real-account')
 """

@@ -1,4 +1,4 @@
-import os,unittest
+import os,unittest,json
 import tempfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -52,3 +52,12 @@ class DeploymentPresentation(unittest.TestCase):
     def test_missing_container_identity_setting_fails_closed(self):
         with patch.dict(os.environ,{'BUAA_TD_DEVICE_FILE':''}):
             with self.assertRaises(OSError):container_installation_id()
+
+    def test_legacy_empty_profile_keeps_confirmation_metadata_without_credentials(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'config.json';p.write_text(json.dumps({'disclaimer_accepted':True,
+                'disclaimer_commitment_version':backend.COMMITMENT_VERSION,
+                'disclaimer_accepted_at':'synthetic-time','autostart':True,'password':'synthetic-obsolete-secret'}))
+            with patch.object(backend,'CONFIG_FILE',p):data=backend.load_config()
+            self.assertTrue(data['disclaimer_accepted']);self.assertEqual(data['disclaimer_commitment_version'],backend.COMMITMENT_VERSION)
+            self.assertEqual(data['accounts'],[]);self.assertTrue(data['autostart']);self.assertNotIn('password',data)
