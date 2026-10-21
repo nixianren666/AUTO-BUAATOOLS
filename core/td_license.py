@@ -94,6 +94,9 @@ def machine_anchor():
         path=next((p for p in (Path('/etc/machine-id'),Path('/var/lib/dbus/machine-id')) if p.is_file()),None)
         if path is not None:
             value=path.read_text().strip()
+            # Some minimal images ship an empty placeholder machine-id.
+            if len(value)<8 and os.environ.get('BUAA_TD_DEVICE_FILE'):
+                value=container_installation_id()
         else:
             value=container_installation_id()
     if not isinstance(value,str) or len(value)<8:raise OSError('本机标识无效')

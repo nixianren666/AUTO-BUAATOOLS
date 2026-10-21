@@ -50,9 +50,10 @@ sys.addaudithook(guard)
         script="""from pathlib import Path
 import json
 from core.vault import encrypt
-from core.td_license import container_installation_id
+from core.td_license import container_installation_id,machine_anchor
 from server.app import COMMITMENT_VERSION
 p=Path('/data');assert len(container_installation_id())==64
+(p/'synthetic-anchor-check').write_text(machine_anchor())
 (p/'synthetic-vault-check').write_text(encrypt('synthetic-volume-secret'))
 (p/'config.json').write_text(json.dumps({'accounts':[],'disclaimer_accepted':True,'disclaimer_commitment_version':COMMITMENT_VERSION}))
 (p/'config.json.td-private').mkdir(exist_ok=True)
@@ -63,8 +64,9 @@ p=Path('/data');assert len(container_installation_id())==64
         start(False)
         script="""from pathlib import Path
 from core.vault import decrypt
-from core.td_license import container_installation_id
+from core.td_license import container_installation_id,machine_anchor
 p=Path('/data');assert len(container_installation_id())==64
+assert (p/'synthetic-anchor-check').read_text()==machine_anchor()
 assert decrypt((p/'synthetic-vault-check').read_text())=='synthetic-volume-secret'
 assert (p/'config.json.td-private/synthetic-budget').read_text()=='no-real-account'
 assert (p/'.td-device-id').stat().st_mode&0o777==0o600

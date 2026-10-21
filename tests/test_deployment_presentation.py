@@ -1,4 +1,4 @@
-import os,unittest,json
+import os,unittest,json,hashlib
 import tempfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -6,7 +6,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from server import app as backend
 from server.presentation import StartupPresentation,capabilities
-from core.td_license import container_installation_id
+from core.td_license import container_installation_id,machine_anchor
 
 
 class DeploymentPresentation(unittest.TestCase):
@@ -52,6 +52,12 @@ class DeploymentPresentation(unittest.TestCase):
     def test_missing_container_identity_setting_fails_closed(self):
         with patch.dict(os.environ,{'BUAA_TD_DEVICE_FILE':''}):
             with self.assertRaises(OSError):container_installation_id()
+
+    def test_container_empty_system_machine_id_uses_real_license_anchor(self):
+        with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'BUAA_TD_DEVICE_FILE':str(Path(d)/'.td-device-id')}):
+            identity=container_installation_id()
+            with patch('core.td_license.sys.platform','linux'),patch.object(Path,'is_file',return_value=True),patch.object(Path,'read_text',return_value=''):
+                self.assertEqual(machine_anchor(),hashlib.sha256(('linux:'+identity).encode()).hexdigest())
 
     def test_legacy_empty_profile_keeps_confirmation_metadata_without_credentials(self):
         with tempfile.TemporaryDirectory() as d:
