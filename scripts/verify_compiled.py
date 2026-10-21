@@ -28,10 +28,14 @@ def main():
     output.mkdir(parents=True,exist_ok=True)
     port=free_port(); base=f"http://127.0.0.1:{port}"
     env=dict(os.environ)
+    # Acceptance owns disposable secrets, never the runner's login keychain.
+    # A non-OS backend selects the existing encrypted 0600 file vault.
+    env['PYTHON_KEYRING_BACKEND']='keyring.backends.fail.Keyring'
     for key in ("BUAA_ADMIN_PASSWORD","BUAA_ALLOWED_HOSTS","BUAA_CONFIG_FILE","BUAA_SMOKE_PROFILE"):
         env.pop(key,None)
     checks=[]
     with tempfile.TemporaryDirectory(prefix="buaa-compiled-acceptance-") as directory:
+        env['BUAA_VAULT_DIR']=str(Path(directory)/'vault')
         with open(Path(directory)/"process-output.txt","w",encoding="utf-8") as log:
             proc=subprocess.Popen([str(exe),"--headless","--smoke-profile","--port",str(port)],cwd=directory,env=env,stdout=log,stderr=log)
             with httpx.Client(base_url=base,trust_env=False,timeout=5) as client:
@@ -64,7 +68,7 @@ def main():
                     browser_env=dict(env)
                     if os.environ.get("BUAA_NODE_MODULES"):
                         browser_env["NODE_PATH"]=os.environ["BUAA_NODE_MODULES"]
-                    result=subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),base+"/",browser,str(output/"compiled-browser.json")],env=browser_env,capture_output=True,text=True,timeout=240)
+                    result=subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),base+"/",browser,str(output/"compiled-browser.json")],env=browser_env,capture_output=True,text=True,timeout=600)
                     assert result.returncode==0,result.stderr[-2000:]
                     browser_result=json.loads((output/"compiled-browser.json").read_text(encoding="utf-8"))
                     assert browser_result["passed"]

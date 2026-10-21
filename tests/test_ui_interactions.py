@@ -53,9 +53,10 @@ class TestUIInteractions(unittest.TestCase):
                 env = dict(os.environ)
                 env["NODE_PATH"] = modules
                 try:
-                    # Includes twelve fresh first-use contexts; Intel runners can
-                    # exceed the former whole-process budget even without failures.
-                    result = subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),f"http://127.0.0.1:{port}/",browser,str(report)],env=env,capture_output=True,text=True,timeout=240)
+                    # Ninety contracts include fresh first-use contexts and frame
+                    # stepping. Keep per-action deadlines, but allow slow Intel
+                    # runners to complete the whole suite rather than killing it.
+                    result = subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),f"http://127.0.0.1:{port}/",browser,str(report)],env=env,capture_output=True,text=True,timeout=600)
                 except subprocess.TimeoutExpired:
                     output_dir = os.environ.get("BUAA_TEST_REPORT_DIR")
                     if output_dir and report.exists():

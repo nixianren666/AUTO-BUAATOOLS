@@ -1,6 +1,7 @@
 /* UI-only synthetic authorization; real signature/storage tests run separately. */
 const assert = require('node:assert/strict');
 exports.verifyTDGate = async (page, check) => {
+  await page.bringToFront();
   const user = await page.evaluate(() => appState.activeUsername);
   const active = {active:true,expires_epoch:4102444799,expires_at:'2099-12-31T23:59:59+08:00',reason:''};
   let allowed=false, unavailable=false, writes=0;
@@ -45,8 +46,8 @@ exports.verifyTDGate = async (page, check) => {
     await page.locator('#tdLicenseActivateBtn').click();
     try { await page.waitForFunction(()=>appState.currentMainView==='td'&&!document.getElementById('tdSettingsBtn').disabled); }
     catch(error) {
-      const state=await page.evaluate(()=>({view:appState.currentMainView,user:appState.activeUsername,codeLength:document.getElementById('tdLicenseCode').value.length,valid:document.getElementById('tdLicenseForm').checkValidity(),disabled:document.getElementById('tdLicenseActivateBtn').disabled,error:document.getElementById('tdLicenseError').textContent}));
-      throw new Error(error.message+'; synthetic activation state '+JSON.stringify({...state,writes}));
+      const state=await page.evaluate(()=>({view:appState.currentMainView,user:appState.activeUsername,hidden:document.hidden,renderVisible:window.BUAARenderLifecycle?.visible,settingsDisabled:document.getElementById('tdSettingsBtn').disabled,task:document.getElementById('tdTaskText').textContent,codeLength:document.getElementById('tdLicenseCode').value.length,valid:document.getElementById('tdLicenseForm').checkValidity(),disabled:document.getElementById('tdLicenseActivateBtn').disabled,error:document.getElementById('tdLicenseError').textContent}));
+      throw new Error(error.message+'; synthetic activation state '+JSON.stringify({...state,writes,events}));
     }
     await page.locator('#tdLicenseModal').waitFor({state:'hidden'});
     assert.equal(await page.locator('#tdLicenseModal').isVisible(),false);assert.equal(writes,2);

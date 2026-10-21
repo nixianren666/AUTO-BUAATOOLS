@@ -28,7 +28,7 @@ def main():
                     shutil.copy2(file, source/file.name)
         config = source/"config.json"
         config.write_text("{}", encoding="utf-8")
-        os.environ.update({"TESTING": "1", "BUAA_CONFIG_FILE": str(config), "BUAA_VAULT_DIR": str(source/"private-vault"), "NO_PROXY": "*"})
+        os.environ.update({"TESTING": "1", "BUAA_CONFIG_FILE": str(config), "BUAA_VAULT_DIR": str(source/"private-vault"), "NO_PROXY": "*", "PYTHON_KEYRING_BACKEND": "keyring.backends.fail.Keyring"})
         os.environ.pop("BUAA_ADMIN_PASSWORD", None)
         os.environ.pop("BUAA_SMOKE_PROFILE", None)
         for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):

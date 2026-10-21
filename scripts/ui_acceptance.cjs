@@ -12,6 +12,18 @@ const fs = require('node:fs');
     return ['127.0.0.1', 'localhost'].includes(host) ? route.continue() : route.abort();
   });
   const page = await context.newPage();
+  // These contracts deliberately replace the displayed enrollment and clock.
+  // Exercise the real 25s view refresh once, then suspend only that browser
+  // fixture's interval so an unrelated timer cannot overwrite a boundary case.
+  // Production timers, backend schedulers and fresh onboarding contexts are unchanged.
+  await page.addInitScript(() => {
+    const original=window.setInterval;
+    window.setInterval=function(callback,delay,...args){
+      const id=original.call(this,callback,delay,...args);
+      if(delay===25000)window.__acceptanceViewPoll={id,callback};
+      return id;
+    };
+  });
   const errors = [];
   const checks = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -24,6 +36,9 @@ const fs = require('node:fs');
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => typeof appState === 'object' && appState.accounts.length === 2);
     await check('initialization-and-paused-health', async () => {
+      const refresh=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/classes');
+      await page.evaluate(()=>{if(!window.__acceptanceViewPoll)throw new Error('Missing normal active-view refresh');clearInterval(__acceptanceViewPoll.id);__acceptanceViewPoll.callback();});
+      await refresh;await page.waitForLoadState('networkidle');
       assert.match(await page.locator('#regularDaemonStatus').textContent(), /暂停/);
       assert.equal(await page.evaluate(() => document.body.scrollWidth <= innerWidth + 2), true);
       await page.setViewportSize({width:960,height:620});
