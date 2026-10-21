@@ -371,3 +371,9 @@
 @media (prefers-reduced-transparency: reduce) {
   .ui-select-menu { background-color: rgba(20,25,42,.97); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
+/* Management authentication is independent of account and first-use dialogs. */
+#managementLoginModal { z-index: 2147481000; }
+#managementLoginModal .origin-modal-dialog { max-height: calc(100dvh - 40px); }
+#managementLoginModal .modal-body { overflow-y: auto; }
+#managementPassword { width: 100%; }
+#managementLoginStatus { min-height: 1.5em; color: #ff8585; overflow-wrap: anywhere; }

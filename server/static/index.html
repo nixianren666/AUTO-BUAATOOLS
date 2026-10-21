@@ -1,27 +1,29 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-startup-enabled="pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- First-frame startup guard. It cannot alter account state or school requests. -->
   <style id="startupCritical">#startupStage{display:none}.startup-running body{background:#000}.startup-running #startupStage{display:block;position:fixed;inset:0;z-index:2147480000;background:#000}</style>
   <script>
-  (()=>{const root=document.documentElement;root.classList.add('startup-running');
-    const boot={done:false,onRelease:null,release(reason){if(this.done)return;this.done=true;clearTimeout(this.timer);root.classList.remove('startup-running');root.dataset.startupResult=reason;try{this.onRelease?.(reason);}finally{document.getElementById('startupStage')?.remove();delete window.BUAAStartupBoot;}}};
+  (()=>{const root=document.documentElement;
+    if(root.dataset.startupEnabled==='false'){root.dataset.startupResult='already-shown';return;}
+    root.classList.add('startup-running');
+    const boot={done:false,onRelease:null,release(reason){if(this.done)return;this.done=true;clearTimeout(this.timer);root.classList.remove('startup-running');root.dataset.startupResult=reason;try{this.onRelease?.(reason);}finally{document.getElementById('startupStage')?.remove();delete window.BUAAStartupBoot;document.dispatchEvent(new Event('buaa:startupfinished'));}}};
     window.BUAAStartupBoot=boot;boot.timer=setTimeout(()=>boot.release('boot-watchdog'),16000);
   })();
   </script>
 
-  <title>BUAA 课程签到 Pro - Origin v1.4.10</title>
+  <title>BUAA 课程签到 Pro - Origin v1.4.11</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.10">
-  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.10">
-  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.10">
-  <link rel="stylesheet" href="/static/css/td.css?v=1.4.10">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.11">
+  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.11">
+  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.11">
+  <link rel="stylesheet" href="/static/css/td.css?v=1.4.11">
 </head>
 <body class="origin-theme">
   <div id="startupStage" aria-label="正在启动 AUTO-BUAA" role="status" aria-live="polite">
@@ -147,6 +149,20 @@
   <!-- 中层：整层全屏毛玻璃与质感噪点滤镜 -->
   <div id="glassVeil" class="origin-glass-veil"></div>
 
+  <section class="origin-modal-backdrop hidden" id="managementLoginModal" role="dialog" aria-modal="true" aria-labelledby="managementLoginTitle">
+    <form class="origin-modal-dialog" id="managementLoginForm">
+      <div class="modal-header"><h3 id="managementLoginTitle" class="modal-title">登录应用管理</h3></div>
+      <div class="modal-body">
+        <p class="modal-desc">请输入部署者设置的应用管理密码，与学校账号密码无关。登录后再阅读首次声明。</p>
+        <label class="disclaimer-input-label" for="managementPassword">应用管理密码</label>
+        <input class="origin-input" id="managementPassword" type="password" autocomplete="current-password" maxlength="1024" required>
+        <p id="managementLoginStatus" class="modal-desc" role="status" aria-live="polite"></p>
+        <p class="modal-desc">关闭此网页不会停止服务器后台任务。</p>
+      </div>
+      <div class="modal-footer"><button class="origin-btn origin-btn-primary" id="managementLoginSubmit" type="submit">登录管理</button></div>
+    </form>
+  </section>
+
   <div class="origin-app-layout">
 
     <!-- ==================== LEFT NAVIGATION RAIL ==================== -->
@@ -159,7 +175,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.4.10</span>
+            <span class="origin-tag">v1.4.11</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -770,7 +786,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.4.10</span>
+          <span class="origin-version">v1.4.11</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
@@ -828,15 +844,15 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/render-lifecycle.js?v=1.4.10"></script>
-  <script src="/static/js/startup.js?v=1.4.10" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
-  <script src="/static/js/stitch-ambient.js?v=1.4.10"></script>
-  <script src="/static/js/ui-surfaces.js?v=1.4.10"></script>
-  <script src="/static/js/ui-controls.js?v=1.4.10"></script>
-  <script src="/static/js/ui-motion.js?v=1.4.10"></script>
-  <script src="/static/js/app.js?v=1.4.10"></script>
-  <script src="/static/js/updates.js?v=1.4.10"></script>
-  <script src="/static/js/td.js?v=1.4.10"></script>
-  <script src="/static/js/td-calendar.js?v=1.4.10"></script>
+  <script src="/static/js/render-lifecycle.js?v=1.4.11"></script>
+  <script src="/static/js/startup.js?v=1.4.11" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
+  <script src="/static/js/stitch-ambient.js?v=1.4.11"></script>
+  <script src="/static/js/ui-surfaces.js?v=1.4.11"></script>
+  <script src="/static/js/ui-controls.js?v=1.4.11"></script>
+  <script src="/static/js/ui-motion.js?v=1.4.11"></script>
+  <script src="/static/js/app.js?v=1.4.11"></script>
+  <script src="/static/js/updates.js?v=1.4.11"></script>
+  <script src="/static/js/td.js?v=1.4.11"></script>
+  <script src="/static/js/td-calendar.js?v=1.4.11"></script>
 </body>
 </html>

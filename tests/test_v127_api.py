@@ -53,7 +53,7 @@ class APIContracts(unittest.TestCase):
 
     def test_public_health_contains_no_account_identity(self):
         response = self.client.get("/api/health").json()
-        self.assertEqual(response["version"], "1.4.10")
+        self.assertEqual(response["version"], "1.4.11")
         self.assertNotIn("active_username", response)
         self.assertNotIn(self.account.username, str(response))
 
@@ -100,7 +100,7 @@ class APIContracts(unittest.TestCase):
             self.assertEqual(self.client.post("/api/auto_checkin",json={"enabled":True,"interval":value}).status_code,422)
 
     def test_autostart_system_failure_cannot_report_requested_state_as_success(self):
-        with patch("core.autostart.set_autostart",return_value=False),patch("core.autostart.get_autostart_status",return_value=False):
+        with patch.dict(os.environ,{"BUAA_RUNTIME_MODE":"desktop"}),patch("core.autostart.set_autostart",return_value=False),patch("core.autostart.get_autostart_status",return_value=False):
             data=self.client.post("/api/system/autostart",json={"enabled":True}).json()
         self.assertEqual(data["status"],"error")
         self.assertFalse(data["enabled"])

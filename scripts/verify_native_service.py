@@ -11,6 +11,7 @@ from unittest.mock import patch
 import httpx
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 from core import autostart
+from core.version import VERSION
 
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true" or sys.platform not in ("linux","darwin","win32"):
@@ -39,7 +40,7 @@ def main():
                     while time.monotonic()<deadline:
                         try:
                             data=client.get("/api/health").json()
-                            if data.get("version")=="1.4.10":break
+                            if data.get("version")==VERSION:break
                         except (httpx.HTTPError,ValueError):pass
                         time.sleep(0.2)
                     else:raise RuntimeError("Native service did not start its compiled executable")

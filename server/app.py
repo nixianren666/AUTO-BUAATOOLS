@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("buaa_signin_server")
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +26,7 @@ from core import operations
 from core.domain import now as china_now, course_id, course_times, sign_config, autonomous, attendance_allowed, drop_allowed, within_semester, semester_bounds, REQUIREMENTS
 from core.boya_actions import perform_boya_action, merge_selected, account_lock
 from server.management import install as install_management
+from server.presentation import StartupPresentation, capabilities
 from server.update_routes import install as install_updates
 
 from core.iclass import IclassClient
@@ -1440,15 +1441,21 @@ class AutostartRequest(BaseModel):
 
 @app.get("/api/system/autostart")
 async def get_autostart():
+    runtime = capabilities()
+    if not runtime['autostart_supported']:
+        return {'status': 'ok', 'enabled': False, 'supported': False, 'runtime': runtime}
     from core.autostart import get_autostart_status
     return {
         "status": "ok",
         "enabled": get_autostart_status(),
+        "supported": True, "runtime": runtime,
     }
 
 
 @app.post("/api/system/autostart")
 async def update_autostart(req: AutostartRequest):
+    if not capabilities()['autostart_supported']:
+        raise HTTPException(status_code=409, detail="后台服务自启动由部署工具管理，网页不能修改宿主机自启动")
     from core.autostart import set_autostart, get_autostart_status
     success = await asyncio.to_thread(set_autostart, req.enabled)
     cur_status = await asyncio.to_thread(get_autostart_status)
@@ -1595,12 +1602,19 @@ async def boya_strategy_alias(req: BoyaToggleAutoRequest):
 async def get_boya_logs(username: Optional[str] = Query(None)):
     return await get_logs(username=username, category="boya")
 
+startup_presentation = StartupPresentation()
+
+
 @app.get("/")
-async def serve_index():
+async def serve_index(request: Request):
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(
-            index_file,
+        from fastapi.responses import HTMLResponse
+        prefetch = 'prefetch' in (request.headers.get('sec-purpose', '') + request.headers.get('purpose', ''))
+        play = startup_presentation.claim(prefetch=prefetch)
+        return HTMLResponse(
+            index_file.read_text(encoding='utf-8').replace('data-startup-enabled="pending"',
+                                                        'data-startup-enabled="' + ('true' if play else 'false') + '"'),
             headers={
                 "Cache-Control": "no-cache, no-store, must-revalidate",
                 "Pragma": "no-cache",

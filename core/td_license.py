@@ -92,10 +92,40 @@ def machine_anchor():
         value=match.group(1)
     else:
         path=next((p for p in (Path('/etc/machine-id'),Path('/var/lib/dbus/machine-id')) if p.is_file()),None)
-        if path is None:raise OSError('本机标识暂不可读')
-        value=path.read_text().strip()
+        if path is not None:
+            value=path.read_text().strip()
+        else:
+            value=container_installation_id()
     if not isinstance(value,str) or len(value)<8:raise OSError('本机标识无效')
     return hashlib.sha256((sys.platform+':'+value).encode()).hexdigest()
+
+
+def container_installation_id():
+    """Explicit persistent-container fallback, never a shared image/device ID.
+
+    Existing native machine anchors remain unchanged. The configured file must
+    stay with the private volume; moving/copying a whole volume is not protected
+    like hardware attestation, which offline licensing does not promise.
+    """
+    configured=os.environ.get('BUAA_TD_DEVICE_FILE')
+    if not configured:raise OSError('本机标识暂不可读；容器须配置持久化安装标识')
+    path=Path(configured)
+    if not path.is_absolute():raise OSError('容器安装标识必须使用绝对私有路径')
+    path.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
+    try:fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    except FileExistsError:pass
+    else:
+        with os.fdopen(fd,'w',encoding='ascii') as f:
+            f.write(secrets.token_hex(32));f.flush();os.fsync(f.fileno())
+    fd=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
+    with os.fdopen(fd,'r',encoding='ascii') as f:
+        import stat
+        info=os.fstat(f.fileno())
+        if not stat.S_ISREG(info.st_mode) or path.is_symlink():raise OSError('容器安装标识必须为普通私有文件')
+        if os.name!='nt' and (info.st_mode&0o077 or info.st_uid!=os.getuid()):raise OSError('容器安装标识权限必须为当前用户0600')
+        value=f.read(65)
+    if not re.fullmatch('[0-9a-f]{64}',value):raise OSError('容器安装标识无效，不会自动替换已有标识')
+    return value
 
 
 class TDLicense:

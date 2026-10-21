@@ -38,19 +38,93 @@ let appState = {
 // Every management request is authenticated and bound to the captured account.
 const nativeFetch = window.fetch.bind(window);
 let managementSession = null;
+let runtimeCapabilities = { mode: 'headless', autostart_supported: false, exit_behavior: 'management-session' };
 let viewGeneration = 0;
 // The first login waits for both independent startup responses. Never queue a
 // second prompt after the user has deliberately closed the initial login card.
 const firstLoginState = { disclaimerAccepted: false, accountsReady: false, prompted: false, accepting: false, commitmentText: '', commitmentVersion: '', noticeLoading: false, composing: false };
-async function establishManagementSession() {
-  let response = await nativeFetch("/api/session", { credentials: "same-origin" });
-  if (response.status === 401) {
-    const password = window.prompt("请输入应用管理密码（不是学校账号密码）");
-    if (!password) throw new Error("管理登录未完成");
-    response = await nativeFetch("/api/session", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+async function managementRequest(options = {}) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 12000);
+  try { return await nativeFetch('/api/session', { ...options, credentials: 'same-origin', signal: controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+function useManagementSession(data) {
+  if (typeof data.csrf !== 'string' || !data.csrf) throw new Error('管理会话响应无效');
+  if (data.runtime) runtimeCapabilities = data.runtime;
+  updateRuntimeControls();
+  return data.csrf;
+}
+async function managementLogin(message, configured = true, reconnect = false) {
+  // Do not steal the startup timeline's keyboard focus or trap its key guard.
+  if (document.documentElement.classList.contains('startup-running')) {
+    await new Promise(resolve => document.addEventListener('buaa:startupfinished', resolve, { once: true }));
   }
-  if (!response.ok) throw new Error("无法建立应用管理会话");
-  return (await response.json()).csrf;
+  const modal = document.getElementById('managementLoginModal'), form = document.getElementById('managementLoginForm');
+  const input = document.getElementById('managementPassword'), submit = document.getElementById('managementLoginSubmit');
+  const status = document.getElementById('managementLoginStatus'), workspace = document.querySelector('.origin-app-layout');
+  if (!modal || !form) throw new Error('管理登录界面未加载，请刷新网页');
+  const previousInert = workspace?.inert;
+  if (workspace) workspace.inert = true;
+  modal.classList.remove('hidden'); status.textContent = message;
+  input.hidden = reconnect; input.required = !reconnect;
+  submit.textContent = reconnect ? '重新连接' : '登录管理';
+  input.disabled = !configured; submit.disabled = !configured;
+  if (configured) input.focus();
+  return new Promise(resolve => {
+    let busy = false, retryAt = 0;
+    form.onsubmit = async event => {
+      event.preventDefault();
+      if (!configured || busy || (!reconnect && !input.value)) return;
+      if (Date.now() < retryAt) { status.textContent = '登录尝试较多，请稍后再试。'; return; }
+      busy = true; submit.disabled = true; input.disabled = true; status.textContent = '正在验证管理密码…';
+      let password = input.value; input.value = '';
+      try {
+        const response = await managementRequest(reconnect ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+        password = '';
+        if (reconnect && response.status === 401) {
+          const data = await response.json(); configured = data.configured !== false; reconnect = false;
+          input.hidden = false; input.required = true; submit.textContent = '登录管理';
+          if (!configured) throw new Error('服务尚未设置远程管理密码，请联系部署者配置并刷新网页。');
+          throw new Error('此页面需要应用管理密码，请输入后登录。');
+        }
+        if (response.status === 429) {
+          retryAt = Date.now() + Math.min(60, Math.max(1, Number(response.headers.get('Retry-After')) || 60)) * 1000;
+          throw new Error('登录尝试较多，请等待一分钟再试。');
+        }
+        if (!response.ok) throw new Error(response.status === 401 ? '管理密码不正确，请重新输入。' : '管理登录暂时不可用，请稍后重试。');
+        const csrf = useManagementSession(await response.json());
+        modal.classList.add('hidden'); form.onsubmit = null; status.textContent = '';
+        if (workspace) workspace.inert = previousInert;
+        resolve(csrf);
+      } catch (error) { status.textContent = error.name === 'AbortError' ? '连接超时，请检查网络后重试。' : error.message; }
+      finally { password = ''; busy = false; submit.disabled = !configured; input.disabled = !configured; if (!modal.classList.contains('hidden')) (reconnect ? submit : input).focus(); }
+    };
+  });
+}
+async function establishManagementSession() {
+  let response;
+  try { response = await managementRequest(); }
+  catch { return managementLogin('无法连接管理服务，请检查网络后重新连接。', true, true); }
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    return managementLogin(data.configured === false ? '服务尚未设置远程管理密码，请由部署者配置后刷新；不能用学校密码替代。' : '此页面需要应用管理密码。', data.configured !== false);
+  }
+  if (!response.ok) throw new Error('无法建立管理会话（' + response.status + '），请核对部署地址与访问权限');
+  return useManagementSession(await response.json());
+}
+function ensureManagementSession() {
+  if (!managementSession) managementSession = establishManagementSession().catch(error => { managementSession = null; throw error; });
+  return managementSession;
+}
+function updateRuntimeControls() {
+  const desktop = runtimeCapabilities.exit_behavior === 'application';
+  const autostart = document.getElementById('autostartWidget');
+  if (autostart) { autostart.hidden = !runtimeCapabilities.autostart_supported; autostart.classList.toggle('hidden', !runtimeCapabilities.autostart_supported); autostart.title = '本机开机自启；后台服务请使用部署工具管理'; }
+  for (const button of document.querySelectorAll('[onclick="requestAppExit()"], [onclick="handleDisclaimerDecline()"]')) {
+    button.title = desktop ? '退出应用并停止本机后台任务' : '仅退出本浏览器的管理会话，服务器任务继续运行';
+    button.setAttribute('aria-label', desktop ? '退出应用' : '退出管理');
+    if (button.matches('[onclick="handleDisclaimerDecline()"]')) button.textContent = desktop ? '退出软件' : '退出管理';
+  }
 }
 async function apiFetch(input, options = {}) {
   const username = appState.activeUsername;
@@ -66,10 +140,20 @@ async function apiFetch(input, options = {}) {
       opts.body = JSON.stringify(body);
     }
   }
-  if (!managementSession) managementSession = establishManagementSession().catch(error => { managementSession = null; throw error; });
-  const csrf = await managementSession;
+  const session = ensureManagementSession();
+  const csrf = await session;
   if (opts.method && !["GET", "HEAD"].includes(opts.method.toUpperCase())) opts.headers["X-BUAA-CSRF"] = csrf;
-  const response = await nativeFetch(url.pathname + url.search, opts);
+  let response = await nativeFetch(url.pathname + url.search, opts);
+  if (response.status === 401) {
+    if (managementSession === session) managementSession = null;
+    if (!['GET', 'HEAD'].includes((opts.method || 'GET').toUpperCase())) {
+      // A failed write may have reached the backend: never replay it after login.
+      void ensureManagementSession().catch(() => {});
+      throw new Error('管理会话已过期，请重新登录后核对结果，再手动操作；没有自动重复提交。');
+    }
+    await ensureManagementSession();
+    response = await nativeFetch(url.pathname + url.search, opts);
+  }
   if (!response.ok) {
     if (response.status === 401) managementSession = null;
     if (url.pathname.startsWith('/api/td/')) {
@@ -107,6 +191,19 @@ document.addEventListener("DOMContentLoaded", () => {
   startLogsPolling();
   startActiveViewAutoRefresh();
 });
+
+document.addEventListener('keydown', event => {
+  const modal = document.getElementById('managementLoginModal');
+  if (!modal || modal.classList.contains('hidden')) return;
+  if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); }
+  if (event.key === 'Tab') {
+    const controls = [...modal.querySelectorAll('input,button')].filter(el => !el.disabled && !el.hidden && el.getClientRects().length);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (first && (!modal.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last))) {
+      event.preventDefault(); event.stopImmediatePropagation(); (event.shiftKey ? last : first).focus();
+    }
+  }
+}, true);
 
 // 模态弹窗蒙层点击与 ESC 快捷关闭
 function setUISurface(id, visible) {
@@ -1555,6 +1652,15 @@ async function toggleAutostart(enabled) {
 
 // 安全退出软件
 async function requestAppExit() {
+  if (runtimeCapabilities.exit_behavior !== 'application') {
+    if (!confirm('仅退出当前浏览器管理会话？\n服务器后台任务继续运行。')) return;
+    try {
+      await apiFetch('/api/session', { method: 'DELETE' });
+      // Clear displayed account data as well as the HttpOnly management cookie.
+      window.location.reload();
+    } catch { showToast('退出管理未完成，请检查连接后重试', 'error'); }
+    return;
+  }
   if (!confirm("确定彻底退出 BUAA 课程独立签到助手吗？\n退出后后台所有学生的自动签到及博雅守护将停止。")) {
     return;
   }

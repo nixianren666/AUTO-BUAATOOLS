@@ -66,6 +66,11 @@ jobs:
           }
       - name: Source contracts and browser tests
         run: python scripts/test_isolated.py
+      - name: Password-protected headless browser contracts
+        run: python scripts/verify_remote.py --report-dir acceptance/remote-source
+      - name: Actual isolated Docker deployment and persistent volume
+        if: runner.os == 'Linux'
+        run: python scripts/verify_container.py --report-dir acceptance/container
       - name: Windows and macOS build and compiled acceptance
         if: runner.os != 'Linux'
         run: python scripts/build_release.py

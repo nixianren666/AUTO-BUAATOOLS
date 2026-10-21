@@ -49,5 +49,46 @@ class ManagementContracts(unittest.TestCase):
             self.assertEqual(good.status_code, 200)
             self.assertTrue(good.json()["csrf"])
 
+    def test_password_cookie_survives_reload_and_logout_requires_csrf(self):
+        with patch.dict(os.environ, {"BUAA_ADMIN_PASSWORD": "synthetic-admin-secret"}):
+            app = FastAPI(); install(app)
+        with TestClient(app) as client:
+            csrf = client.post('/api/session',json={'password':'synthetic-admin-secret'}).json()['csrf']
+            self.assertEqual(client.get('/api/session').json()['csrf'],csrf)
+            self.assertEqual(client.delete('/api/session').status_code,403)
+            self.assertEqual(client.get('/api/session').status_code,200)
+            self.assertEqual(client.delete('/api/session',headers={'X-BUAA-CSRF':csrf}).status_code,200)
+            self.assertNotIn('buaa_session',client.cookies)
+            self.assertEqual(client.get('/api/session').status_code,401)
+
+    def test_password_unicode_malformed_and_rate_limit(self):
+        with patch.dict(os.environ, {"BUAA_ADMIN_PASSWORD": "演示管理密码"}):
+            app=FastAPI();install(app)
+        with TestClient(app) as client:
+            self.assertEqual(client.post('/api/session',json={'password':123}).status_code,422)
+            self.assertEqual(client.post('/api/session',json={'password':'x'*1025}).status_code,422)
+            self.assertEqual(client.post('/api/session',json={'password':'演示管理密码'}).status_code,200)
+            for i in range(4):self.assertEqual(client.post('/api/session',json={'password':'错误'}).status_code,401)
+            rate=client.post('/api/session',json={'password':'演示管理密码'})
+            self.assertEqual(rate.status_code,429);self.assertGreater(int(rate.headers['Retry-After']),0)
+
+    def test_expired_cookie_never_grants_access(self):
+        with patch.dict(os.environ, {"BUAA_ADMIN_PASSWORD": "synthetic-admin-secret"}):
+            app=FastAPI();install(app)
+        with TestClient(app) as client,patch('server.management.time.monotonic',return_value=10):
+            client.post('/api/session',json={'password':'synthetic-admin-secret'})
+            with patch('server.management.time.monotonic',return_value=86411):
+                self.assertEqual(client.get('/api/session').status_code,401)
+
+    def test_loopback_no_password_reuses_cookie_remote_without_password_denied(self):
+        first=self.client.get('/api/session')
+        self.assertEqual(self.client.get('/api/session').json()['csrf'],first.json()['csrf'])
+        self.client.cookies.clear()
+        # The boundary reads actual peers, not untrusted forwarding headers.
+        self.assertEqual(self.client.get('/api/session',headers={'X-Forwarded-For':'203.0.113.2'}).status_code,200)
+        with TestClient(self.client.app,client=('203.0.113.2',1234)) as remote:
+            self.assertEqual(remote.get('/api/session').status_code,401)
+            self.assertFalse(remote.get('/api/session').json()['configured'])
+
 if __name__ == "__main__":
     unittest.main()

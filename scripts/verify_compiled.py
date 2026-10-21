@@ -11,6 +11,8 @@ import tempfile
 import time
 
 import httpx
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
+from core.version import VERSION
 
 def free_port():
     with socket.socket() as probe:
@@ -45,7 +47,7 @@ def main():
                         if proc.poll() is not None: raise RuntimeError("Built process exited before readiness")
                         try:
                             health=client.get("/api/health").json()
-                            if health.get("version")=="1.4.10":break
+                            if health.get("version")==VERSION:break
                         except (httpx.HTTPError,ValueError):pass
                         time.sleep(0.2)
                     else: raise RuntimeError("Built process readiness timeout")
@@ -98,7 +100,7 @@ def main():
         assert set(state.get("checks",[]))==expected_native,"Native engine must exercise all required interactions"
         checks.extend(state["checks"])
         checks.append("compiled-native-desktop-window")
-    summary={"passed":True,"version":"1.4.10","platform":sys.platform,"checks":checks,"real_school_writes":0}
+    summary={"passed":True,"version":VERSION,"platform":sys.platform,"checks":checks,"real_school_writes":0}
     (output/"compiled-summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps(summary,ensure_ascii=False))
 

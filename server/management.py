@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pydantic import Field
+from server.presentation import capabilities
 
 def install(app):
     sessions = {}
@@ -34,7 +36,7 @@ def install(app):
             return JSONResponse({"detail": "管理会话数量已达上限"}, status_code=429)
         sid, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
         sessions[sid] = (csrf, stamp)
-        result = JSONResponse({"csrf": csrf})
+        result = JSONResponse({"csrf": csrf, "runtime": capabilities()})
         result.set_cookie("buaa_session", sid, httponly=True, samesite="strict", secure=request.url.scheme == "https", max_age=86400)
         result.headers["Cache-Control"] = "no-store"
         return result
@@ -53,7 +55,8 @@ def install(app):
         origin = request.headers.get("origin")
         if origin and origin.rstrip("/") != f"{request.url.scheme}://{host}":
             return JSONResponse({"detail": "拒绝跨站管理请求"}, status_code=403)
-        public = request.url.path in ("/api/session", "/api/health")
+        public = (request.url.path == "/api/health" or
+                  request.url.path == "/api/session" and request.method in ("GET", "POST"))
         if request.url.path.startswith("/api/") and not public:
             session = sessions.get(request.cookies.get("buaa_session"))
             if not session or time.monotonic() - session[1] > 86400:
@@ -70,29 +73,48 @@ def install(app):
 
     @app.get("/api/session")
     async def bootstrap(request: Request):
-        if password or not local(request):
-            return JSONResponse({"detail": "需要管理密码", "password_required": True}, status_code=401)
+        # A password protects creation, not reuse of an already authenticated
+        # HttpOnly cookie. Reloading a remote browser must not discard it.
         existing = sessions.get(request.cookies.get("buaa_session"))
         if existing and time.monotonic()-existing[1] <= 86400:
-            return {"csrf": existing[0]}
+            return {"csrf": existing[0], "runtime": capabilities()}
+        if password or not local(request):
+            return JSONResponse({"detail": "需要管理密码", "password_required": True,
+                                 "configured": bool(password)}, status_code=401)
         return response_session(request)
 
     class ManagementLogin(BaseModel):
-        password: str
+        password: str = Field(strict=True, max_length=1024)
 
     @app.post("/api/session")
     async def authenticate(body: ManagementLogin, request: Request):
         key = request.client.host
         stamp = time.monotonic()
+        # Bound per-peer buckets as well as session count on exposed servers.
+        if len(attempts) >= 1024:
+            for old_key, values in list(attempts.items()):
+                if not values or stamp-values[-1] > 60:attempts.pop(old_key, None)
+            if key not in attempts and len(attempts) >= 1024:
+                return JSONResponse({"detail":"管理登录繁忙，请稍后重试"},status_code=429,headers={"Retry-After":"60"})
         history = attempts[key]
         while history and stamp-history[0] > 60:
             history.popleft()
         if len(history) >= 5:
-            return JSONResponse({"detail": "请稍后重试管理登录"}, status_code=429)
+            return JSONResponse({"detail": "请稍后重试管理登录"}, status_code=429,
+                                headers={"Retry-After": str(max(1, int(61-(stamp-history[0]))))})
         history.append(stamp)
-        if not password or not secrets.compare_digest(body.password, password):
+        if not password or not secrets.compare_digest(body.password.encode('utf-8'), password.encode('utf-8')):
             return JSONResponse({"detail": "管理密码错误"}, status_code=401)
         return response_session(request)
+
+    @app.delete("/api/session")
+    async def logout(request: Request):
+        # The normal cookie/CSRF middleware applies; this never stops tasks.
+        sessions.pop(request.cookies.get("buaa_session"), None)
+        response = JSONResponse({"status": "ok"})
+        response.delete_cookie("buaa_session", httponly=True, samesite="strict",
+                               secure=request.url.scheme == "https")
+        return response
 
     @app.get("/api/health")
     async def health():

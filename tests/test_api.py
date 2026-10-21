@@ -3,6 +3,8 @@
 """
 
 import unittest
+import os
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from server.app import app
 
@@ -70,14 +72,15 @@ class TestApiServer(unittest.TestCase):
     def test_health_current_version(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.4.10")
+        self.assertEqual(resp.json()["version"], "1.4.11")
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("enabled", resp.json())
 
-        resp = self.client.post("/api/system/autostart", json={"enabled": False})
+        with patch.dict(os.environ, {"BUAA_RUNTIME_MODE":"desktop"}):
+            resp = self.client.post("/api/system/autostart", json={"enabled": False})
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.json()["enabled"])
 

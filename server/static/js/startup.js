@@ -4,6 +4,7 @@
   const renderHidden = () => document.hidden || window.BUAARenderLifecycle?.visible === false;
   const boot = window.BUAAStartupBoot;
   const stage = document.getElementById('startupStage');
+  if (!boot && document.documentElement.dataset.startupEnabled === 'false') { stage?.remove(); return; }
   if (!boot || !stage || !document.documentElement.classList.contains('startup-running')) return;
   if(typeof requestAnimationFrame!=='function'||typeof cancelAnimationFrame!=='function'){boot.release('unsupported-animation');return;}
   const emblem = document.getElementById('startupEmblemFlight');

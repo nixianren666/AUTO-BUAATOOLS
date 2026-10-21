@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 WORKDIR /app
-ENV TZ=Asia/Shanghai PYTHONUNBUFFERED=1 HEADLESS=1 BUAA_CONFIG_FILE=/data/config.json BUAA_VAULT_DIR=/data
+ENV TZ=Asia/Shanghai PYTHONUNBUFFERED=1 HEADLESS=1 BUAA_CONFIG_FILE=/data/config.json BUAA_VAULT_DIR=/data BUAA_TD_DEVICE_FILE=/data/.td-device-id
 RUN useradd --create-home --uid 10001 buaa
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

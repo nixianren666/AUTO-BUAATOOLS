@@ -410,6 +410,8 @@ def main():
     env_headless = os.environ.get("HEADLESS", "").lower() in ("1", "true", "yes")
 
     is_headless = args.headless or env_headless or is_docker or (is_linux and not has_display)
+    # Set before importing the API; a browser cannot turn a server into a GUI.
+    os.environ['BUAA_RUNTIME_MODE'] = 'headless' if is_headless else 'desktop'
     port = args.port
 
     # 1. 核心单实例互斥检查（提升至所有服务与窗口启动前执行，确保全平台与无头服务器/Docker 防多开）

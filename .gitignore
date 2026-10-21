@@ -29,3 +29,4 @@ issued.sqlite
 tools/td_issuer.py
 tools/td_issuer.spec
 tests/test_td_issuer.py
+.td-device-id

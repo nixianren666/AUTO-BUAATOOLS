@@ -17,7 +17,7 @@ PATTERNS={
 
 def forbidden_distribution_path(name):
     leaf=Path(name).name.lower()
-    return leaf in {"td_issuer.py", "td_issuer.spec", "test_td_issuer.py", "td-license-generator.exe", "signing-key.dpapi", "issued.sqlite"} or leaf.startswith("td_issuer.")
+    return leaf in {"td_issuer.py", "td_issuer.spec", "test_td_issuer.py", "td-license-generator.exe", "signing-key.dpapi", "issued.sqlite", ".td-device-id"} or leaf.startswith("td_issuer.")
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--repo",required=True);parser.add_argument("--report",required=True);parser.add_argument("--git",default="git");parser.add_argument("--secrets-stdin",action="store_true")

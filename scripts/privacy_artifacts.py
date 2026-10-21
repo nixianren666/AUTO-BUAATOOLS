@@ -35,7 +35,7 @@ def main():
         name=Path(label.rsplit('!',1)[-1]).name
         if name.lower() in {'td_issuer.py','td_issuer.spec','test_td_issuer.py','td-license-generator.exe','signing-key.dpapi','issued.sqlite'} or name.lower().startswith('td_issuer.'):
             findings.append({'member':label,'kinds':['maintainer_only_distribution_file']})
-        if name in ('config.json','.vault-key','operations.sqlite') or name.endswith(('.log','.sqlite')):
+        if name in ('config.json','.vault-key','operations.sqlite','.td-device-id') or name.endswith(('.log','.sqlite')):
             findings.append({"member":label,"kinds":["private_runtime_file"]})
         if depth>5:raise RuntimeError("Archive nesting limit exceeded")
         if data.startswith(b'PK\x03\x04'):
