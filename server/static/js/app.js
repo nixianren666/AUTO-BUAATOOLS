@@ -1656,8 +1656,10 @@ async function requestAppExit() {
     if (!confirm('仅退出当前浏览器管理会话？\n服务器后台任务继续运行。')) return;
     try {
       await apiFetch('/api/session', { method: 'DELETE' });
-      // Clear displayed account data as well as the HttpOnly management cookie.
-      window.location.reload();
+      // A reload would immediately create a new loopback session when the
+      // local headless service has no password. Clear the entire document and
+      // its polling instead, without terminating the shared application.
+      window.location.replace('about:blank');
     } catch { showToast('退出管理未完成，请检查连接后重试', 'error'); }
     return;
   }

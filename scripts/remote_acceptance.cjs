@@ -73,7 +73,7 @@ const {chromium}=require('playwright');
   });
   await check('server-exit-logs-out-browser-without-stopping-background',async()=>{
    p.removeAllListeners('dialog');p.on('dialog',d=>d.accept());
-   await p.locator('[onclick="requestAppExit()"]').click();await p.locator('#managementLoginModal').waitFor({state:'visible'});
+   await p.locator('[onclick="requestAppExit()"]').click();await p.waitForURL('about:blank');
    assert.equal((await context.request.get(new URL('/api/health',url).href)).status(),200);
    assert.equal((await context.request.get(new URL('/api/accounts',url).href)).status(),401);
   });

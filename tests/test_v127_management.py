@@ -80,6 +80,14 @@ class ManagementContracts(unittest.TestCase):
             with patch('server.management.time.monotonic',return_value=86411):
                 self.assertEqual(client.get('/api/session').status_code,401)
 
+    def test_public_login_body_limit_applies_before_json_and_to_chunked_bodies(self):
+        with patch.dict(os.environ, {"BUAA_ADMIN_PASSWORD":"synthetic-admin-secret"}):
+            app=FastAPI();install(app)
+        with TestClient(app) as client:
+            self.assertEqual(client.post('/api/session',content=b' '*16385).status_code,413)
+            self.assertEqual(client.post('/api/session',content=iter([b' '*8192,b' '*8193])).status_code,413)
+            self.assertEqual(client.post('/api/session',json={'password':'synthetic-admin-secret'}).status_code,200)
+
     def test_loopback_no_password_reuses_cookie_remote_without_password_denied(self):
         first=self.client.get('/api/session')
         self.assertEqual(self.client.get('/api/session').json()['csrf'],first.json()['csrf'])

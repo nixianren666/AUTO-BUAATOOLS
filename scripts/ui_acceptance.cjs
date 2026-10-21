@@ -169,6 +169,12 @@ const fs = require('node:fs');
     await require('./onboarding_acceptance.cjs').verifyOnboarding(browser, url, check);
     await require('./notice_acceptance.cjs').verifyNotice(browser, url, check);
     await require('./sso_acceptance.cjs').verifySso(browser, url, check);
+    await check('headless-loopback-exit-clears-page-without-reauth-or-service-stop',async()=>{
+      page.removeAllListeners('dialog');page.on('dialog',dialog=>dialog.accept());
+      await page.evaluate(()=>{void requestAppExit();});await page.waitForURL('about:blank');
+      assert.equal((await context.request.get(new URL('/api/health',url).href)).status(),200);
+      assert.equal((await context.request.get(new URL('/api/accounts',url).href)).status(),401);
+    });
     assert.deepEqual(errors, []);
     fs.writeFileSync(reportPath, JSON.stringify({ passed: true, checks, script_errors: errors }, null, 2));
   } catch (error) {

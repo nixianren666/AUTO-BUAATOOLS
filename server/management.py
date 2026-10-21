@@ -1,5 +1,7 @@
 """Same-origin management sessions for desktop and explicit remote deployments."""
 import ipaddress
+import asyncio
+import json
 import os
 import secrets
 import time
@@ -87,7 +89,21 @@ def install(app):
         password: str = Field(strict=True, max_length=1024)
 
     @app.post("/api/session")
-    async def authenticate(body: ManagementLogin, request: Request):
+    async def authenticate(request: Request):
+        # This is the only anonymous JSON write. Bound it before JSON/model
+        # parsing (including chunked bodies), rather than after allocation.
+        data = bytearray()
+        try:
+            async with asyncio.timeout(12):
+                async for chunk in request.stream():
+                    if len(data)+len(chunk)>16384:
+                        return JSONResponse({"detail":"管理登录请求过大"},status_code=413)
+                    data.extend(chunk)
+            body=ManagementLogin.model_validate(json.loads(data))
+        except TimeoutError:
+            return JSONResponse({"detail":"管理登录请求超时"},status_code=408)
+        except (ValueError,TypeError):
+            return JSONResponse({"detail":"管理密码格式无效"},status_code=422)
         key = request.client.host
         stamp = time.monotonic()
         # Bound per-peer buckets as well as session count on exposed servers.
