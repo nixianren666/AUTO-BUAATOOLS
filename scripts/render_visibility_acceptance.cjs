@@ -64,7 +64,8 @@ async function verifyRenderVisibility(page, check) {
     await check('restore-resumes-original-renderer-and-glass', async () => {
       await page.evaluate(() => BUAARenderLifecycle.setNativeVisible(true, 'visible'));
       await page.waitForTimeout(100);
-      const count=await page.evaluate(() => __hiddenPaints);await page.waitForTimeout(450);
+      const count=await page.evaluate(() => __hiddenPaints);
+      await page.waitForFunction(count => __hiddenPaints > count, count, {timeout:10000});
       assert.ok(await page.evaluate(() => __hiddenPaints)>count);
       assert.equal(await page.evaluate(() => document.documentElement.classList.contains('buaa-render-paused')),false);
       // Chromium platforms need not compute backdrop filters for display:none.

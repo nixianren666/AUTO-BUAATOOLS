@@ -19,10 +19,15 @@ async function verifyBoyaFilters(page, check) {
   const pool = [course(99001, '德育', false, false), course(99002, '美育', false, true), course(99003, '劳育', true, false), course(99004, '美育', true, true)];
   const selected = [pool[0], { ...course(99005, '安全健康', false, false), capacity_current: null, capacity_maximum: null }, course(99006, '美育', false, true, true)];
   const poolRoute = r => r.fulfill({ json: { courses: pool, stale: false } });
-  const selectedRoute = r => r.fulfill({ json: { selected, stale: false } });
+  let selectedResponse = selected;
+  const selectedRoute = r => r.fulfill({ json: { selected: selectedResponse, stale: false } });
   const mutations = [];
   const onRequest = r => { if (!['GET', 'HEAD'].includes(r.method())) mutations.push(new URL(r.url()).pathname); };
-  const names = async expected => assert.deepEqual(await page.locator('#boyaCoursesFeed .feed-title').allTextContents(), expected.map(id => `filter-fixture-${id}`));
+  const names = async expected => {
+    const titles = expected.map(id => `filter-fixture-${id}`);
+    await page.waitForFunction(titles => JSON.stringify([...document.querySelectorAll('#boyaCoursesFeed .feed-title')].map(e=>e.textContent))===JSON.stringify(titles), titles);
+    assert.deepEqual(await page.locator('#boyaCoursesFeed .feed-title').allTextContents(), titles);
+  };
   const setPoolFilters = async (auto, available, category = '全部') => {
     await page.locator('#tabBoyaAll').click();
     const state = await page.evaluate(() => ({ auto: appState.boyaAutoSignOnly, available: appState.boyaAvailableOnly }));
@@ -79,6 +84,8 @@ async function verifyBoyaFilters(page, check) {
       await page.locator('#boyaSearchInput').fill(''); await names([99001,99005,99006]);
     });
     await check('empty-time-subset-is-not-an-empty-enrollment', async () => {
+      // Keep the mocked server consistent when the normal refresh runs in CI.
+      selectedResponse = selected.filter(c => c.id !== 99006);
       await page.evaluate(() => { appState.boyaSelected = appState.boyaSelected.filter(c => c.id !== 99006); });
       await page.locator('#btnFilterPast').click(); await names([]);
       assert.match(await page.locator('#boyaCoursesFeed').textContent(), /当前条件下暂无匹配/);
@@ -92,6 +99,7 @@ async function verifyBoyaFilters(page, check) {
       await page.locator('#boyaSearchInput').fill(''); await names([99001,99005]);
     });
     await check('genuinely-empty-and-unsynced-enrollment-have-distinct-copy', async () => {
+      selectedResponse = [];
       await page.evaluate(() => { appState.boyaSelected = []; appState.boyaDataStale = false; renderBoyaFeed(); });
       assert.match(await page.locator('#boyaCoursesFeed .empty-title').textContent(), /^暂无已选修课程$/);
       await page.evaluate(() => { appState.boyaDataStale = true; renderBoyaFeed(); });
@@ -105,6 +113,7 @@ async function verifyBoyaFilters(page, check) {
       assert.deepEqual(facts, [false,false,true,true,true,false,false]);
     });
     await check('refresh-keeps-view-local-filter-rules-and-raw-data', async () => {
+      selectedResponse = selected;
       await page.locator('#boyaSearchInput').fill('');
       await setPoolFilters(true,true,'美育');
       await page.locator('#tabBoyaSelected').click(); await page.locator('#btnFilterAllSelected').click();
