@@ -148,7 +148,7 @@
   }
   window.BUAAUiControls = { syncSelect, closeSelect: close };
   document.addEventListener('DOMContentLoaded', () => {
-    for (const [id, caption] of [['loginModeSelect', '登录网络通道'], ['boyaCampusSelect', '生源校区']]) {
+    for (const [id, caption] of [['loginModeSelect', '登录网络通道'], ['boyaCampusSelect', '生源校区'], ['tdCampusSelect', 'TD锻炼校区'], ['tdQuickCampusSelect', 'TD锻炼校区'], ['tdEntryExisting','已有入口照'], ['tdExitExisting','已有出口照']]) {
       const select = document.getElementById(id);
       if (!select) continue;
       try { enhance(select, caption); } catch {

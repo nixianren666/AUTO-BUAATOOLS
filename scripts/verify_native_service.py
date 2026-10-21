@@ -39,7 +39,7 @@ def main():
                     while time.monotonic()<deadline:
                         try:
                             data=client.get("/api/health").json()
-                            if data.get("version")=="1.3.9":break
+                            if data.get("version")=="1.4.10":break
                         except (httpx.HTTPError,ValueError):pass
                         time.sleep(0.2)
                     else:raise RuntimeError("Native service did not start its compiled executable")

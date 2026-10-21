@@ -1,0 +1,321 @@
+{
+  "version": "1.4.9",
+  "status": "local-delivery-complete",
+  "upstream_head": "155e8b56ae76348e67c70414e3a9ab7fa54f2dda",
+  "upstream_auth_fix": "65000130309a4a819675d7774b33bdeb7f4d2cc7",
+  "source": {
+    "tests": 334,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 76.09,
+    "blocked_non_loopback_attempts": 0,
+    "failure_names": [],
+    "error_names": []
+  },
+  "source_browser_checks": 88,
+  "compiled_checks": 100,
+  "compiled_native_automatic": {
+    "version": "1.4.9",
+    "native_gui": true,
+    "passed": true,
+    "tray_available": true,
+    "state": {
+      "ready": true,
+      "title": "BUAA 璇剧▼绛惧埌 Pro - Origin v1.4.9",
+      "bodyWidth": 1266,
+      "viewport": 1266
+    },
+    "checks": [
+      "native-boya-sign",
+      "native-boya-signout-without-invented-assessment",
+      "native-account-switch",
+      "native-regular-sign",
+      "native-render-visible",
+      "native-minimized-no-render",
+      "native-minimized-resume",
+      "native-tray-no-render",
+      "native-tray-resume"
+    ],
+    "render_environment": {
+      "reducedMotion": false,
+      "reducedTransparency": false,
+      "motionDisabled": false,
+      "initialFrames": 366
+    }
+  },
+  "compiled_auth_core": {
+    "passed": true,
+    "tests": 166,
+    "failures": 0,
+    "errors": 0,
+    "blocked_non_loopback_attempts": 0,
+    "loaded_compiled_modules": [
+      "core",
+      "core.autostart",
+      "core.boya_actions",
+      "core.boya_client",
+      "core.boya_crypto",
+      "core.boya_scheduler",
+      "core.cas",
+      "core.cas_transport",
+      "core.domain",
+      "core.iclass",
+      "core.operations",
+      "core.profile",
+      "core.regular_policy",
+      "core.render_lifecycle",
+      "core.scheduler",
+      "core.smoke",
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "core.updates",
+      "core.vault",
+      "core.version",
+      "core.webvpn",
+      "server",
+      "server.app",
+      "server.management",
+      "server.td_routes",
+      "server.update_routes"
+    ],
+    "real_school_requests": 0
+  },
+  "compiled_source_match": {
+    "passed": true,
+    "modules": [
+      "core.autostart",
+      "core.boya_actions",
+      "core.boya_client",
+      "core.boya_crypto",
+      "core.boya_scheduler",
+      "core.cas",
+      "core.cas_transport",
+      "core.domain",
+      "core.iclass",
+      "core.operations",
+      "core.profile",
+      "core.regular_policy",
+      "core.render_lifecycle",
+      "core.scheduler",
+      "core.smoke",
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "core.updates",
+      "core.vault",
+      "core.version",
+      "core.webvpn",
+      "core",
+      "server.app",
+      "server.management",
+      "server.td_routes",
+      "server.update_routes",
+      "server"
+    ],
+    "assets": [
+      "server/static/favicon.ico",
+      "server/static/index.html",
+      "server/static/css/startup.css",
+      "server/static/css/stitch-glass.css",
+      "server/static/css/style.css",
+      "server/static/css/td.css",
+      "server/static/images/app_logo.png",
+      "server/static/images/buaa-emblem.svg",
+      "server/static/images/buaa-wordmark.svg",
+      "server/static/images/buaa_logo.svg",
+      "server/static/images/BUAA_LOGO_SOURCE.json",
+      "server/static/js/app.js",
+      "server/static/js/render-lifecycle.js",
+      "server/static/js/startup.js",
+      "server/static/js/stitch-ambient.js",
+      "server/static/js/td-calendar.js",
+      "server/static/js/td.js",
+      "server/static/js/ui-controls.js",
+      "server/static/js/ui-motion.js",
+      "server/static/js/ui-surfaces.js",
+      "server/static/js/updates.js"
+    ],
+    "entry": "run",
+    "exe_sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133"
+  },
+  "source_diff": {
+    "passed": true,
+    "changed": [
+      "BUAA-Signin-mac.spec",
+      "README.md",
+      "core/boya_client.py",
+      "core/boya_scheduler.py",
+      "core/iclass.py",
+      "core/version.py",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "scripts/test_isolated.py",
+      "scripts/ui_acceptance.cjs",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "server/app.py",
+      "server/static/css/stitch-glass.css",
+      "server/static/index.html",
+      "server/static/js/app.js",
+      "tests/test_api.py",
+      "tests/test_boya_api.py",
+      "tests/test_v127_api.py",
+      "run.py"
+    ],
+    "new": [
+      "core/cas_transport.py",
+      "scripts/sso_acceptance.cjs",
+      "tests/test_sso_end_to_end.py",
+      "tests/test_sso_transport_upgrade.py"
+    ],
+    "default_modified": false,
+    "rendering_and_td_unchanged": true,
+    "run_change": "Native self-test uses VERSION instead of hardcoded old title; production render unchanged"
+  },
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 2,
+      "archive_members": 320,
+      "carchive_members": 1921,
+      "pyz_members": 1727,
+      "bytes": 205144855
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33827272,
+        "sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133"
+      },
+      {
+        "name": "TD-License-Generator.exe",
+        "size": 21184019,
+        "sha256": "31c9d3ad01bdc282b14d3c6821fe7cf5022492815b5b4aa92aad9a54c88aa040"
+      }
+    ],
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "actual_computer_use": {
+    "passed": true,
+    "status": "complete",
+    "platform": "Windows",
+    "actual_computer_use": true,
+    "checks": [
+      "Final1.4.9 native window and synthetic regular timetable visible",
+      "Actual Boya navigation displays synthetic pool and semester panel",
+      "Actual return to regular page preserves synthetic account",
+      "Actual account-center click opens glass account card",
+      "Actual add-account click opens login form and closes account card",
+      "Actual synthetic-value input and submit displays native busy disabled button",
+      "Synthetic challenge response displays nested glass CAPTCHA region, local placeholder image and input",
+      "Response changes displayed network channel to WebVPN and releases submit button",
+      "Actual change-image click issues second local request and changes synthetic challenge identifier",
+      "Actual account edit clears old challenge and hides CAPTCHA region",
+      "Actual submit with injected network failure leaves login card open, clears busy and reenables button",
+      "Actual cancel click closes login card and returns to regular page"
+    ],
+    "checks_passed": 12,
+    "actual_click_actions": 8,
+    "actual_edit_actions": 3,
+    "local_intercepted_login_requests": 3,
+    "synthetic_challenge_responses": 2,
+    "non_loopback_browser_attempts": 0,
+    "real_school_requests": 0,
+    "school_credentials_used": false,
+    "captcha_solved": false,
+    "input_method": "computer-use sky click/set_value only",
+    "instrumentation": "Playwright CDP used only for local route stubs and readonly state assertions; backend smoke profile denies nonloopback sockets",
+    "screenshots": "Inspected tool-returned screenshots; none copied into project or Git",
+    "own_fixture_exited": true,
+    "production_exe_unchanged_during_probe": true,
+    "locked_attempt_retained": true
+  },
+  "git_privacy": {
+    "passed": true,
+    "head_commit": "a1e3b45be5941f5bdde3d156399d9d9d51d4c735",
+    "findings": [],
+    "forbidden_public_files": [],
+    "counts": {
+      "git_objects": 933,
+      "working_files": 282,
+      "embedded_members": 0,
+      "bytes": 603017793
+    },
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  },
+  "source_synced_locally": true,
+  "pushed": false,
+  "published": false,
+  "real_school_credentials_used": false,
+  "real_school_business_writes": 0,
+  "real_account_read_only_acceptance": false,
+  "new_setup": false,
+  "mac_linux_native": false,
+  "delivery": {
+    "version": "1.4.9",
+    "all_targets_updated": true,
+    "exe_sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133",
+    "private_unchanged_during_copy": true,
+    "private_file_count": 5,
+    "configuration_overwritten": false,
+    "user_process_terminated": false,
+    "issuer_unchanged": true,
+    "pushed": false,
+    "published": false,
+    "actual_computer_use": "passed-12-native-observations",
+    "new_setup": false,
+    "mac_linux_native": false,
+    "targets": [
+      {
+        "name": "BUAA-Signin-v1.4.9-portable.exe",
+        "updated": true,
+        "sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133"
+      },
+      {
+        "name": "BUAA-Signin.exe",
+        "updated": true,
+        "sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133"
+      },
+      {
+        "name": "BUAA-Signin.exe",
+        "updated": true,
+        "sha256": "f52b2f1c30f93862db124ee910b6b044aad2e7b2a225246116991f865c0b2133"
+      }
+    ]
+  },
+  "failures_retained": [
+    "Original six synthetic HTTP SSO chains failed; fixed transport first, then strengthened full ticket/Cookie/business mocks",
+    "Initial new HTTP mock exposed duplicate case-insensitive Authtoken headers; fixed and rerun",
+    "First full source run retained one blocked scheduler network attempt; old API fixture now prevents background worker startup and closes clients; final334 has zero attempts",
+    "First compiled native self-test had hardcoded1.4.8 title; use shared VERSION and recompile, final100 passed",
+    "Actual Computer Use activate_window timed out; refreshed capture showed Windows lock screen; stopped input and exited own fixture",
+    "Last GitHub HEAD refresh attempt was connection-reset; fixed audited source commit is authoritative for this candidate"
+  ],
+  "user_mac_trace_reference": {
+    "sanitized": true,
+    "raw_trace_saved": false,
+    "path": "IclassClient.login_sso -> _finish_sso_login -> resolve_redirect_url -> trusted_url",
+    "error": "ValueError: 拒绝非可信学校认证跳转",
+    "interpretation": "Consistent rejection point with fixed HTTP SSO handling; exact URL/version absent, so same root cause and Mac recovery remain unconfirmed"
+  }
+}

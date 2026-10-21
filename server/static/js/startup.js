@@ -8,6 +8,7 @@
   if(typeof requestAnimationFrame!=='function'||typeof cancelAnimationFrame!=='function'){boot.release('unsupported-animation');return;}
   const emblem = document.getElementById('startupEmblemFlight');
   const name = document.getElementById('startupSchoolName');
+  const notice = document.getElementById('startupStudyNotice');
   const veil = document.getElementById('startupBlackout');
   const canvas = document.getElementById('startupScatter');
   const workspace = document.querySelector('.origin-app-layout');
@@ -35,7 +36,7 @@
   function cleanup(reason) {
     if (closed) return;
     closed = true; cancelAnimationFrame(frame); cancelAnimationFrame(readyFrame); clearTimeout(timer);
-    removeEventListener('resize', resize); removeEventListener('load', afterPaint);
+    removeEventListener('resize', resize); document.removeEventListener('DOMContentLoaded', afterPaint);
     document.removeEventListener('visibilitychange', visibility);removeEventListener('buaa:renderstate',visibility);
     document.removeEventListener('keydown', guardKeys, true);
     if(reduced.removeEventListener)reduced.removeEventListener('change',preferenceChanged);
@@ -123,6 +124,7 @@
     phase='burst';flightStart=now;stage.dataset.phase=phase;
     particles=pixels.map((q,i)=>{const a=Math.atan2(q.y,q.x);return {x:t.x+q.x*t.size,y:t.y+q.y*t.size,vx:Math.cos(a)*(13+i%7*4),vy:Math.sin(a)*(13+i%5*5),r:.65+i%3*.3};});
     emblem.style.opacity='0';name.style.opacity='0';veil.style.opacity='0';
+    if(notice)notice.style.opacity='0';
     layers.forEach((el,i)=>{el.style.filter=previousFilters[i];});
     if(icon)icon.style.visibility=previousVisibility;
   }
@@ -149,6 +151,7 @@
         const scale=1+(t.size/base-1)*p;
         emblem.style.transform=`translate3d(${(t.x-ox)*p}px,${(t.y-oy)*p}px,0) scale(${scale})`;
         name.style.filter=`blur(${p*20}px)`;name.style.opacity=String(1-Math.pow(p,.8));
+        if(notice){notice.style.filter=name.style.filter;notice.style.opacity=name.style.opacity;}
         veil.style.opacity=String(1-p);layers.forEach(el=>{el.style.filter=`blur(${18*(1-p)}px)`;});
         if(raw>=1)burst(now);
       }
@@ -175,9 +178,10 @@
     if(reduced.addEventListener)reduced.addEventListener('change',preferenceChanged);
     else reduced.addListener?.(preferenceChanged);
     boot.onRelease=cleanup;
-    // Readiness concerns the rendered interface, never the success of school requests.
+    // Local DOM and two paint frames define UI readiness. Optional fonts/images
+    // must not postpone flight until the whole-document load watchdog removes it.
     afterPaint=()=>{readyFrame=requestAnimationFrame(()=>{readyFrame=requestAnimationFrame(onReady);});};
-    if(document.readyState==='complete')afterPaint();else addEventListener('load',afterPaint,{once:true});
+    if(document.readyState!=='loading')afterPaint();else document.addEventListener('DOMContentLoaded',afterPaint,{once:true});
     timer=setTimeout(()=>cleanup('watchdog'),16000);
     resize();preparePixels();frame=requestAnimationFrame(tick);
   } catch {cleanup('initialization-fallback');}

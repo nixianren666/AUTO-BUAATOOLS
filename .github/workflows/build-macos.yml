@@ -1,10 +1,10 @@
-name: Native v1.3.9 verification and builds
+name: Native client verification and builds
 on:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: native-v127-${{ github.ref }}
+  group: native-release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   native:

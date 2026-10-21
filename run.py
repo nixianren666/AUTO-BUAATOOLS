@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-BUAA 课程独立签到助手 v1.3.9 - 原生独立应用入口
+BUAA 课程独立签到助手 v1.4.8 - 原生独立应用入口
 - 原生独立桌面窗口 (pywebview / Edge Chromium WebView2)
 - Windows 任务栏系统托盘常驻 (pystray)
 - 窗口右上角关闭拦截并最小化至托盘
@@ -327,7 +327,7 @@ def setup_tray(run_now: bool = True) -> Optional[Any]:
         icon = CustomTrayIcon(
             name="BUAA-Signin",
             icon=tray_img,
-            title=f"AUTO-BUAA v{VERSION}" if sys.platform.startswith("linux") else "BUAA 课程独立签到助手 v1.3.9 (后台运行中)",
+            title=f"AUTO-BUAA v{VERSION}" if sys.platform.startswith("linux") else "BUAA 课程独立签到助手 v1.4.8 (后台运行中)",
             menu=tray_menu,
         )
         if run_now:
@@ -372,7 +372,7 @@ def run_server(port: int):
 
 def parse_arguments():
     import argparse
-    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.3.9")
+    parser = argparse.ArgumentParser(description="AUTO-BUAA 课程独立签到助手 Pro v1.4.8")
     parser.add_argument("--headless", action="store_true", help="无头模式：纯 Web 服务运行（适合 Linux 服务器、Docker 容器与后台驻留）")
     parser.add_argument("--host", type=str, default=None, help="监听主机地址（桌面模式默认 127.0.0.1，无头模式默认 127.0.0.1）")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"监听端口号（默认 {DEFAULT_PORT}）")
@@ -428,7 +428,7 @@ def main():
         print("=" * 66)
         print("  [*] AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
         print("=" * 66)
-        print(f"  版本:     v1.3.9")
+        print(f"  版本:     v1.4.8")
         print(f"  监听地址: http://{host}:{port}")
         print(f"  本地访问: http://127.0.0.1:{port}")
         print(f"  网络访问: http://<你的服务器IP>:{port}")
@@ -493,7 +493,7 @@ def main():
                         try:
                             state = window.evaluate_js("({ready:typeof appState==='object' && appState.accounts.length===2, title:document.title, bodyWidth:document.body.scrollWidth, viewport:window.innerWidth})")
                             if state and state.get("ready"):
-                                report.update({"passed": "1.3.9" in state.get("title", "") and state["bodyWidth"] <= state["viewport"]+2, "state": state})
+                                report.update({"passed": VERSION in state.get("title", "") and state["bodyWidth"] <= state["viewport"]+2, "state": state})
                                 break
                         except Exception:
                             pass

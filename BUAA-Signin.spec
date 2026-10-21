@@ -5,7 +5,7 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.ico', '.')] + collect_data_files('tzdata'),
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.ico', '.'), ('THIRD_PARTY_NOTICES.md', '.')] + collect_data_files('tzdata'),
     hiddenimports=[
         'cryptography',
         'cryptography.hazmat.primitives.ciphers',

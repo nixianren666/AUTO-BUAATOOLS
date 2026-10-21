@@ -12,19 +12,25 @@
   })();
   </script>
 
-  <title>BUAA 课程签到 Pro - Origin v1.3.9</title>
+  <title>BUAA 课程签到 Pro - Origin v1.4.10</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.3.9">
-  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.3.9">
-  <link rel="stylesheet" href="/static/css/startup.css?v=1.3.9">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.10">
+  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.10">
+  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.10">
+  <link rel="stylesheet" href="/static/css/td.css?v=1.4.10">
 </head>
 <body class="origin-theme">
   <div id="startupStage" aria-label="正在启动 AUTO-BUAA" role="status" aria-live="polite">
     <div id="startupBlackout"></div>
+    <div id="startupStudyNotice">
+      <strong>此软件只供学习相关网络知识及机制，请在24小时内删除。</strong>
+      <p>不得用于真实打卡或其他滥用；请遵守法律法规及校纪校规。</p>
+      <p>学号及操作记录可能被留存，滥用记录可能用于调查处理；相应后果依法自行承担。</p>
+    </div>
     <div id="startupEmblemFlight" aria-hidden="true"><svg version="1.0" viewBox="0 0 558.000000 558.000000" preserveAspectRatio="xMidYMid meet" id="startupEmblem" aria-hidden="true">
 
 <g transform="translate(0.000000,558.000000) scale(0.100000,-0.100000)">
@@ -153,7 +159,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.3.9</span>
+            <span class="origin-tag">v1.4.10</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -176,9 +182,14 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           </span>
           <span class="nav-item-title">自动博雅套件</span>
-          <span class="nav-badge highlight" id="navBadgeBoya">NEW</span>
+          <span class="nav-badge" id="navBadgeBoya" title="本学期达标进度待同步">—/6</span>
         </button>
 
+        <button class="origin-nav-item" id="navBtnTD" onclick="switchMainView('td')">
+          <span class="nav-item-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="15" cy="4" r="2"/><path d="m12 8-4 4 4 3-4 6m4-13 4 5 4 1M4 11l4-1m4 5 5 1 3 5"/></svg></span>
+          <span class="nav-item-title">自动 TD 守护</span>
+          <span class="nav-badge highlight">Beta</span>
+        </button>
         <div class="origin-nav-label" style="margin-top: 16px;">MANAGEMENT</div>
 
         <button class="origin-nav-item" id="navBtnAccounts" onclick="openAccountCardsModal()">
@@ -511,6 +522,62 @@
         </section>
 
 
+        <section class="origin-view-section hidden" id="viewTD" aria-labelledby="tdTitle">
+          <div class="origin-card boya-hero-card td-hero">
+            <div class="boya-hero-top">
+              <div class="boya-hero-info">
+                <div class="hero-status-pill"><span class="origin-status-dot" id="tdDaemonDot"></span><span id="tdDaemonStatus">TD 守护未开启</span></div>
+                <h2 class="hero-headline" id="tdTitle">自动 TD 守护</h2>
+                <p class="hero-subtitle" id="tdIdentity">沿用学生账号中心，无需再次输入密码</p>
+                <p class="hero-subtitle" id="tdActivity">先核对本学期活动日期，再开启守护</p>
+              </div>
+              <div class="boya-controls-group td-controls">
+                <div class="boya-ctrl-item"><label class="ctrl-caption" for="tdQuickCampusSelect">锻炼校区</label><select id="tdQuickCampusSelect" class="origin-select"><option value="学院路">学院路校区</option><option value="沙河">沙河校区</option></select></div>
+                <div class="boya-ctrl-item"><span class="ctrl-caption">活动规则</span><button class="origin-btn origin-btn-ghost" id="tdSettingsBtn" type="button">规则与设置</button></div>
+                <div class="boya-ctrl-item"><span class="ctrl-caption">自动守护</span><label class="origin-toggle" title="在活动日期和允许时段内自动执行；请确保本人参与"><input type="checkbox" id="tdAutoToggle" aria-label="自动 TD 守护"><span class="origin-slider"></span></label></div>
+              </div>
+            </div>
+            <div class="td-progress-grid">
+              <div class="td-progress-block boya-progress-wrapper">
+                <div class="td-progress-heading"><span><strong id="tdTermCount">—</strong><span id="tdTermTarget"> / 32 次</span></span><span>本学期进度</span></div>
+                <div class="origin-progress-bar" id="tdTermBar" role="progressbar" aria-label="本学期 TD 进度"><div class="origin-progress-fill" id="tdTermFill"></div></div>
+                <p class="td-caption" id="tdCountSource">待核对 · 未读取到次数不等于零</p>
+              </div>
+              <div class="td-progress-block boya-progress-wrapper">
+                <div class="td-progress-heading"><span><strong id="tdTodayCount">0</strong><span id="tdTodayTarget"> / 3 轮</span></span><span>今日请求流程</span></div>
+                <div class="origin-progress-bar" id="tdTodayBar" role="progressbar" aria-label="今日本地 TD 流程进度"><div class="origin-progress-fill" id="tdTodayFill"></div></div>
+                <p class="td-caption" id="tdBudget">本地已完成配对流程；学校最终认定另计</p>
+              </div>
+            </div>
+            <div class="td-task-strip" role="status" aria-live="polite"><span class="origin-status-dot" id="tdTaskDot"></span><span id="tdTaskText">尚未开始</span></div>
+          </div>
+          <div class="td-toolbar">
+            <span class="td-caption" id="tdLicenseState" role="status">TD 离线授权 · 待读取</span>
+            <button class="origin-btn origin-btn-ghost" id="tdLicenseBtn" type="button">激活 / 续期</button>
+            <button class="origin-btn origin-btn-ghost" id="tdRefreshBtn" type="button">↻ 刷新本地状态</button>
+            <button class="origin-btn origin-btn-ghost" id="tdCountBtn" type="button">核对学期次数</button>
+            <button class="origin-btn origin-btn-ghost" id="tdManualBtn" type="button" disabled>手动入口</button>
+            <button class="origin-btn origin-btn-ghost hidden" id="tdResolveBtn" type="button">处理待核验记录</button>
+            <span class="td-caption">参考时段（需核对本学期通知）· 07:30–10:00 / 11:30–14:00 / 15:30–20:00</span>
+          </div>
+          <div class="td-dropzone origin-card" id="tdDropzone" role="button" tabindex="0" aria-label="为当前学生添加 TD 照片，也可拖入多张图片">
+            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="6"/><circle cx="11" cy="11" r="2"/><path d="m5 24 8-8 6 5 4-4 5 6M23 2v8m-4-4h8"/></svg>
+            <strong>按组添加本人的入口 / 出口照片</strong>
+            <span>每次添加一组两张照片 · 点击添加或拖入两张 · 每张最多 8 MB</span>
+            <small>整轮随机选一组，入口与出口不跨组；请确认同穿搭、同妆容。换图不能代替本人锻炼或保证免识别。</small>
+          </div>
+          <input id="tdFileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <p class="td-caption" id="tdUploadStatus" role="status" aria-live="polite"></p>
+          <details class="td-library origin-card" id="tdLibrary" open>
+            <summary><span>个人照片组</span><span class="td-caption" id="tdImageCount">0 组 · 按学生账号隔离</span></summary>
+            <div class="td-library-body" id="tdLibraryBody">
+              <div class="td-toolbar"><label class="origin-checkbox-label"><input type="checkbox" id="tdSelectAll"> 全选可删除照片组</label><span class="td-caption" id="tdSelectionCount">未选择</span><button class="origin-btn origin-btn-danger-ghost" id="tdDeleteBtn" type="button" disabled>删除所选</button></div>
+              <p class="td-caption" id="tdLegacyHint"></p><button class="origin-btn origin-btn-ghost hidden" id="tdLegacyGroupBtn" type="button">将已有照片配成组</button><div class="td-gallery" id="tdGallery"><p class="td-caption">还没有照片组，添加后会在这里显示</p></div>
+            </div>
+          </details>
+          <p class="td-caption td-footnote">TD 使用校园网专用 TCP 通道，不跟随课堂的 WebVPN 设置，不发送统一认证密码，无第三方遥测。学校通道本身没有 TLS；照片最终审核、有效次数及本学期规则以学校为准。移除账号只停止守护，本机图库仍保留；如需清理，请先在此删除照片。</p>
+        </section>
+
         <!-- ==================== VIEW 3: 运行终端日志 ==================== -->
         <section class="origin-view-section hidden" id="viewLogs">
           <div class="origin-card terminal-card">
@@ -524,6 +591,7 @@
                   <button class="segmented-btn active" id="logCatAll" onclick="setLogCategory('all')">总日志</button>
                   <button class="segmented-btn" id="logCatRegular" onclick="setLogCategory('regular')">常规课程</button>
                   <button class="segmented-btn" id="logCatBoya" onclick="setLogCategory('boya')">自动博雅</button>
+                  <button class="segmented-btn" id="logCatTD" onclick="setLogCategory('td')">自动 TD</button>
                 </div>
                 <button class="origin-btn origin-btn-danger-ghost" onclick="clearLogs()">清空日志</button>
               </div>
@@ -575,6 +643,15 @@
               <label>统一认证密码</label>
               <input type="password" id="loginPassword" required placeholder="统一身份认证密码" class="origin-input">
             </div>
+            <div class="form-group hidden feed-card-body login-captcha" id="loginCaptchaGroup">
+              <label for="loginCaptchaInput">学校图形验证码</label>
+              <div class="login-captcha-row">
+                <img id="loginCaptchaImage" alt="学校返回的图形验证码">
+                <button type="button" class="origin-btn origin-btn-ghost" onclick="refreshLoginCaptcha()">换一张</button>
+              </div>
+              <input type="text" id="loginCaptchaInput" class="origin-input" autocomplete="off" maxlength="64" placeholder="请输入图中内容">
+              <span id="loginCaptchaHint" role="status" aria-live="polite" class="field-hint"></span>
+            </div>
             <div class="form-group">
               <label>登录网络通道</label>
               <select id="loginModeSelect" class="origin-select">
@@ -620,6 +697,71 @@
       </div>
     </div>
 
+    <div class="origin-modal-backdrop hidden" id="tdSettingsModal" role="dialog" aria-modal="true" aria-labelledby="tdSettingsTitle">
+      <div class="origin-modal-dialog">
+        <div class="modal-header"><h3 class="modal-title" id="tdSettingsTitle">TD · 本学期规则与校区</h3><button type="button" class="origin-icon-btn" data-td-close="tdSettingsModal" aria-label="关闭">✕</button></div>
+        <form id="tdSettingsForm">
+          <div class="modal-body">
+            <p class="modal-desc">日期请按本学期体育部通知填写。保存会暂停守护，核对后再开启；不会影响常规课堂或博雅设置。</p>
+            <div class="form-group"><label for="tdCampusSelect">锻炼校区</label><select class="origin-select" id="tdCampusSelect"><option value="学院路">学院路校区</option><option value="沙河">沙河校区</option></select></div>
+            <p class="td-caption" id="tdCalendarSource">学期边界优先使用已同步官方校历，否则需要手动核对，不代表学校已认证活动日期。</p><div class="td-form-grid"><div class="form-group"><label for="tdSemesterStart">学期开始日期</label><input class="origin-input" id="tdSemesterStart" type="date" required></div><div class="form-group"><label for="tdSemesterEnd">学期结束日期</label><input class="origin-input" id="tdSemesterEnd" type="date" required></div></div><div class="td-form-grid"><div class="form-group"><label for="tdStart">活动开始日期</label><input class="origin-input" id="tdStart" type="date" required></div><div class="form-group"><label for="tdEnd">活动结束日期</label><input class="origin-input" id="tdEnd" type="date" required></div></div>
+            <div class="td-form-grid"><div class="form-group"><label for="tdTarget">本学期 TD 目标</label><input class="origin-input" id="tdTarget" type="number" min="1" max="99" value="32" required></div><div class="form-group"><label for="tdDailyLimit">每日最多轮数</label><input class="origin-input" id="tdDailyLimit" type="number" min="1" max="3" value="3" required></div></div>
+            <fieldset class="td-open-days"><legend>按本学期通知确认开放星期</legend><div id="tdWeekdays"></div></fieldset>
+            <div class="form-group"><label for="tdClosedDates">停开日期（可选）</label><textarea class="origin-input" id="tdClosedDates" rows="2" placeholder="YYYY-MM-DD，多天用逗号或换行分隔"></textarea><p class="td-caption">参考每日时段为07:30–10:00、11:30–14:00、15:30–20:00。未取得本学期自动校验源；周末是否开放、天气及临时停开请按官方通知核对，必要时暂停。</p></div>
+            <p class="td-caption">每轮入口至出口少于 7 分钟，通常间隔 3–4 分钟；失败及不确定请求也占用本地当日预算，不盲目补发。TD 目标不代表体育全部考核要求。</p>
+            <label class="origin-checkbox-label td-consent"><input id="tdConfirmed" type="checkbox" required><span>我已按本学期通知核对活动日期、上述每日时段、开放星期和停开安排；使用本人账号及照片并实际参与锻炼，了解照片复用与通道未加密风险。</span></label>
+            <p class="td-inline-error" id="tdSettingsError" role="alert"></p>
+          </div>
+          <div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdSettingsModal">取消</button><button class="origin-btn origin-btn-primary" id="tdSettingsSave" type="submit">保存并保持暂停</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="origin-modal-backdrop hidden" id="tdGroupModal" role="dialog" aria-modal="true" aria-labelledby="tdGroupTitle">
+      <div class="origin-modal-dialog">
+        <div class="modal-header"><h3 class="modal-title" id="tdGroupTitle">添加一组入口 / 出口照片</h3><button type="button" class="origin-icon-btn" data-td-close="tdGroupModal" aria-label="关闭">✕</button></div>
+        <form id="tdGroupForm"><div class="modal-body">
+          <p class="modal-desc">每次保存一组。两张均须为本人、同穿搭及同妆容，可以有不同动作；也可以在两个位置选择同一张照片。程序不自动识别服装或保证审核通过。</p>
+          <div class="form-group"><label for="tdGroupName">组名称（可选，最多40字）</label><input class="origin-input" id="tdGroupName" maxlength="40" placeholder="例如：蓝色外套"></div>
+          <label class="origin-checkbox-label"><input type="checkbox" id="tdGroupUseLibrary"> 使用已有本地照片配组</label>
+          <div class="td-group-editor">
+            <div class="td-group-slot"><strong>入口照片</strong><img id="tdEntryPreview" class="hidden" alt="待保存的入口照预览"><input type="file" id="tdEntryFile" accept="image/jpeg,image/png,image/webp" hidden><label class="td-file-picker" id="tdEntryPicker" for="tdEntryFile" role="button" tabindex="0"><span aria-hidden="true">＋</span><strong>选择入口照片</strong><small id="tdEntryFilename">JPEG / PNG / WebP · 最大8MB</small></label><select class="origin-select hidden" id="tdEntryExisting" aria-label="选择已有入口照片"></select></div>
+            <div class="td-group-slot"><strong>出口照片</strong><img id="tdExitPreview" class="hidden" alt="待保存的出口照预览"><input type="file" id="tdExitFile" accept="image/jpeg,image/png,image/webp" hidden><label class="td-file-picker" id="tdExitPicker" for="tdExitFile" role="button" tabindex="0"><span aria-hidden="true">＋</span><strong>选择出口照片</strong><small id="tdExitFilename">JPEG / PNG / WebP · 最大8MB</small></label><select class="origin-select hidden" id="tdExitExisting" aria-label="选择已有出口照片"></select></div>
+          </div>
+          <label class="origin-checkbox-label td-consent"><input id="tdGroupConfirmed" type="checkbox" required><span>我确认本组入口与出口照片均为本人、同穿搭及同妆容；了解轮换照片不保证免识别，仍需本人参与锻炼。</span></label>
+          <p class="td-inline-error" id="tdGroupError" role="alert"></p>
+        </div><div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdGroupModal">取消</button><button type="submit" class="origin-btn origin-btn-primary" id="tdGroupSave">保存这一组</button></div></form>
+      </div>
+    </div>
+    <div class="origin-modal-backdrop hidden" id="tdCountModal" role="dialog" aria-modal="true" aria-labelledby="tdCountTitle">
+      <div class="origin-modal-dialog">
+        <div class="modal-header"><h3 class="modal-title" id="tdCountTitle">核对本学期 TD 次数</h3><button type="button" class="origin-icon-btn" data-td-close="tdCountModal" aria-label="关闭">✕</button></div>
+        <form id="tdCountForm"><div class="modal-body">
+          <p class="modal-desc">尚未核实可用的独立只读查询接口，不能用打卡来“刷新次数”。请先在学校健康云核对，再录入；这里只更新本地展示，标为“手动核对”，不修改学校记录。</p><p class="td-caption">体育部通知说明TD次数约每24小时更新，不等于实时计数。</p><p class="td-official-links"><a href="http://10.212.28.38/index.php" target="_blank" rel="noopener noreferrer">打开官方健康云（校园网） ↗</a><a href="https://tyb.buaa.edu.cn/info/1035/4279.htm" target="_blank" rel="noopener noreferrer">查看官方查询说明 ↗</a></p>
+          <div class="form-group"><label for="tdVerifiedCount">本学期有效次数</label><input class="origin-input" id="tdVerifiedCount" type="number" min="0" max="999" required></div><p class="td-inline-error" id="tdCountError" role="alert"></p>
+        </div><div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdCountModal">取消</button><button type="submit" class="origin-btn origin-btn-primary" id="tdCountSave">保存核对次数</button></div></form>
+      </div>
+    </div>
+
+    <div class="origin-modal-backdrop hidden" id="tdManualModal" role="dialog" aria-modal="true" aria-labelledby="tdManualTitle">
+      <div class="origin-modal-dialog"><div class="modal-header"><h3 class="modal-title" id="tdManualTitle">手动 TD 入口</h3><button type="button" class="origin-icon-btn" data-td-close="tdManualModal" aria-label="关闭">✕</button></div>
+        <form id="tdManualForm"><div class="modal-body"><p class="modal-desc" id="tdManualDesc"></p><p class="td-caption">与自动共用今日最多3轮预算；失败和不确定也占用预算。入口/出口固定同一照片组，出口需等待3–4分钟并在入口7分钟内完成。手动不会开启自动守护。</p><label class="origin-checkbox-label td-consent"><input id="tdManualConfirmed" type="checkbox" required><span>本人已到对应入口/出口并实际参与锻炼，确认只提交当前这一步；了解请求不保证最终认定。</span></label><p class="td-inline-error" id="tdManualError" role="alert"></p></div><div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdManualModal">取消</button><button type="submit" class="origin-btn origin-btn-primary" id="tdManualSave">确认提交</button></div></form>
+      </div>
+    </div>
+    <div class="origin-modal-backdrop hidden" id="tdLicenseModal" role="dialog" aria-modal="true" aria-labelledby="tdLicenseTitle">
+      <div class="origin-modal-dialog">
+        <div class="modal-header"><h3 class="modal-title" id="tdLicenseTitle">TD · 离线激活与续期</h3><button type="button" class="origin-icon-btn" data-td-close="tdLicenseModal" aria-label="关闭">✕</button></div>
+        <form id="tdLicenseForm"><div class="modal-body">
+          <div class="boya-progress-wrapper td-license-notice"><strong>此激活码系统仅为防止滥用所设。</strong><p>本软件一切功能开源免费、非营利，不收取软件或激活码费用。</p><p>仅供学习相关网络知识及机制，请在24小时内删除。</p></div>
+          <p class="modal-desc">仅激活当前学生的 TD，不影响常规课程与博雅，也不会激活其他学生。激活码绑定当前学号与本机申请码，成功使用一次即永久核销；该学生的激活状态持续一个自然月。</p>
+          <p class="td-caption" id="tdLicenseAccessState" role="status"></p>
+          <div class="boya-progress-wrapper td-license-step"><label for="tdLicenseRequest">① 生成本机申请码，交给维护者签发</label><textarea class="origin-input" id="tdLicenseRequest" readonly rows="3" aria-label="本机TD申请码"></textarea><div class="td-toolbar"><button class="origin-btn origin-btn-ghost" id="tdLicenseRequestBtn" type="button">生成申请码</button><button class="origin-btn origin-btn-ghost" id="tdLicenseCopyBtn" type="button">复制申请码</button></div><p class="td-caption">申请码只含不可逆绑定摘要和随机挑战，不含密码或照片；程序不会自动发送。</p></div>
+          <div class="boya-progress-wrapper td-license-step"><label for="tdLicenseCode">② 粘贴离线激活码（TDL1…）</label><textarea class="origin-input" id="tdLicenseCode" rows="4" maxlength="4096" autocomplete="off" spellcheck="false" required></textarea></div>
+          <p class="td-caption">仅在到期前24小时或到期后可申请并使用新码续期，旧码永不恢复使用。提前续期从原到期时间顺延一个自然月。请保持正确的系统时间并保留本机授权数据；更换电脑或系统后需重新申请。授权期限不改变仅供学习及24小时内删除的使用提示。</p>
+          <p class="td-inline-error" id="tdLicenseError" role="alert"></p>
+        </div><div class="modal-footer"><button class="origin-btn origin-btn-ghost hidden" type="button" id="tdLicenseBack" hidden>返回常规课堂</button><button class="origin-btn origin-btn-ghost" type="button" data-td-close="tdLicenseModal">关闭</button><button class="origin-btn origin-btn-primary" id="tdLicenseActivateBtn" type="submit">激活当前学生的TD</button></div></form>
+      </div>
+    </div>
+
     <!-- 模态框：首次启动法律免责声明弹窗 (Origin 规范) -->
     <div class="origin-modal-backdrop hidden" id="disclaimerModal" style="z-index: 999999;">
       <div class="origin-modal-dialog disclaimer-dialog">
@@ -628,16 +770,20 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.3.9</span>
+          <span class="origin-version">v1.4.10</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
-            <strong>使用前必读：</strong>感谢您使用 BUAA 课程独立签到助手。在进入系统前，请您认真、完整阅读以下免责声明与风险告知条款。
+            <strong>仅供学习研究，请在获取后24小时内删除：</strong>不得用于真实打卡、代签、伪造出勤或其他滥用。技术上具备提交能力，不代表允许向真实平台提交。
           </div>
 
+          <h4 class="disclaimer-section-title">条例一 · 免责声明与使用条款</h4>
           <div class="origin-disclaimer-text">
             <p><strong>1. 非官方工具与合规使用</strong><br>
-            本软件不是北航官方产品，未获得学校认可或授权背书。请仅使用本人或已明确授权的账号，遵守适用法律法规、校纪校规、课程要求与平台规则；不得盗用账号、冒用身份、伪造考勤或干扰服务。规则不允许或授权不明确时，请停止对应自动化操作。</p>
+            本软件仅供协议、代码与界面等技术学习研究，请在获取后24小时内删除本软件及其副本，不得用于真实打卡、代签、伪造考勤或其他滥用。本软件不是北航官方产品，未获得学校认可或授权背书；请遵守适用法律法规、校纪校规、课程要求与平台规则，不得盗用账号、冒用身份或干扰服务。</p>
+
+            <p><strong>使用记录与风险提示</strong><br>
+            学号及操作记录可能被本机配置、日志或相关系统留存，滥用记录可能用于调查处理；相应后果由责任主体依法承担。本程序没有超过24小时自动上传、公开学号或自动举报的机制。是否构成违规及记录的证据效力，应依据事实和适用规则依法认定；删除软件不代表相关记录必然消失。</p>
 
             <p><strong>2. 自动化网络请求与不可抗力风险</strong><br>
             网络波动、设备休眠、认证失效、程序缺陷及官方接口或规则变化，均可能导致遗漏、失败或错误。软件按现状提供，不保证抢课成功、签到有效、考核达标或账号不受限制；随机化与位置微扰不代表免风控或免处分。担保和损失责任限制以 MIT 许可及适用法律为准。</p>
@@ -655,14 +801,25 @@
           <div class="origin-agree-card">
             <label class="origin-checkbox-label">
               <input type="checkbox" id="disclaimerCheck" onchange="handleDisclaimerCheckChange(this)">
-              <span class="agree-text">我已阅读并知晓上述风险，承诺仅使用合法授权的账号、遵守法律及校规课程要求，并承担依法应由本人承担的责任。</span>
+              <span class="agree-text">我已阅读并知晓上述风险，承诺仅用于学习研究、在获取后24小时内删除，不用于真实打卡或其他滥用，遵守法律及校规，并承担依法应由本人承担的责任。</span>
             </label>
           </div>
+          <section class="origin-agree-card disclaimer-commitment-card" aria-labelledby="disclaimerCommitmentTitle">
+            <h4 class="disclaimer-section-title" id="disclaimerCommitmentTitle">条例二 · 本人承诺</h4>
+            <p class="disclaimer-commitment-text" id="disclaimerCommitmentText">正在加载承诺内容…</p>
+            <label class="disclaimer-input-label" for="disclaimerCommitmentInput">请完整输入上方承诺内容</label>
+            <textarea class="origin-input" id="disclaimerCommitmentInput" rows="4" maxlength="1024" disabled
+              placeholder="请完整输入承诺内容，不是只填写“本人承诺”四字"
+              aria-describedby="disclaimerCommitmentHint" autocomplete="off" spellcheck="false"
+              oninput="handleDisclaimerCheckChange()"></textarea>
+            <p class="disclaimer-commitment-hint" id="disclaimerCommitmentHint" role="status" aria-live="polite">条款加载中…</p>
+            <button type="button" class="origin-btn origin-btn-ghost hidden" id="disclaimerRetryBtn" onclick="checkDisclaimerStatus()">重新加载条款</button>
+          </section>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="origin-btn origin-btn-ghost" onclick="handleDisclaimerDecline()">退出软件</button>
-          <button type="button" class="origin-btn origin-btn-primary" id="disclaimerAgreeBtn" disabled onclick="handleDisclaimerAccept()">同意并进入系统</button>
+          <button type="button" class="origin-btn origin-btn-primary" id="disclaimerAgreeBtn" disabled onclick="handleDisclaimerAccept()">同意并确认承诺</button>
         </div>
       </div>
     </div>
@@ -671,13 +828,15 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/render-lifecycle.js?v=1.3.9"></script>
-  <script src="/static/js/startup.js?v=1.3.9" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
-  <script src="/static/js/stitch-ambient.js?v=1.3.9"></script>
-  <script src="/static/js/ui-surfaces.js?v=1.3.9"></script>
-  <script src="/static/js/ui-controls.js?v=1.3.9"></script>
-  <script src="/static/js/ui-motion.js?v=1.3.9"></script>
-  <script src="/static/js/app.js?v=1.3.9"></script>
-  <script src="/static/js/updates.js?v=1.3.9"></script>
+  <script src="/static/js/render-lifecycle.js?v=1.4.10"></script>
+  <script src="/static/js/startup.js?v=1.4.10" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
+  <script src="/static/js/stitch-ambient.js?v=1.4.10"></script>
+  <script src="/static/js/ui-surfaces.js?v=1.4.10"></script>
+  <script src="/static/js/ui-controls.js?v=1.4.10"></script>
+  <script src="/static/js/ui-motion.js?v=1.4.10"></script>
+  <script src="/static/js/app.js?v=1.4.10"></script>
+  <script src="/static/js/updates.js?v=1.4.10"></script>
+  <script src="/static/js/td.js?v=1.4.10"></script>
+  <script src="/static/js/td-calendar.js?v=1.4.10"></script>
 </body>
 </html>

@@ -1,0 +1,192 @@
+{
+  "version": "1.4.3",
+  "baseline": "local 1.4.2; latest UI followup directly compared with previous 1.4.3 candidate",
+  "published": false,
+  "source": {
+    "tests": 289,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 68.05,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "browser_checks": 67,
+  "compiled_checks": 79,
+  "compiled_td": {
+    "passed": true,
+    "tests": 95,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "compiled_modules": [
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "server.td_routes"
+    ],
+    "blocked_external": 0,
+    "elapsed_seconds": 4.44
+  },
+  "issuer_self_test_from_initial_unchanged_issuer": {
+    "passed": true,
+    "checks": [
+      "same-request-one-code",
+      "compiled-ed25519-signature",
+      "compiled-client-first-activation",
+      "consumed-code-no-renewal",
+      "account-isolation-and-fixed-expiry",
+      "encrypted-backup-roundtrip"
+    ],
+    "synthetic_keys_only": true,
+    "production_key_accessed": false
+  },
+  "production_key_pair_from_initial_unchanged_modules": {
+    "passed": true,
+    "checks": [
+      "actual-issuer-key-matches-shipped-public-key",
+      "compiled-issuer-to-compiled-client-activation",
+      "actual-code-consumed-once",
+      "actual-other-account-denied"
+    ],
+    "synthetic_identity_only": true,
+    "real_school_requests": 0,
+    "issuer_entry_matches_source": true,
+    "issuer_modules_match_source": [
+      "core.td_license",
+      "core.td_license_public",
+      "core.vault"
+    ],
+    "issuer_exe_sha256": "cd951c52112de3d72fc7b26cf76e74e893fb9b6689c36c32a72e4f117c124ab4"
+  },
+  "modules_match": 30,
+  "assets_match": 21,
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 2,
+      "archive_members": 320,
+      "carchive_members": 1921,
+      "pyz_members": 1726,
+      "bytes": 205085887
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33815295,
+        "sha256": "ee7611859d906570f61819c58634f4afb1194ef81216d5eec2cbb1f665872719"
+      },
+      {
+        "name": "TD-License-Generator.exe",
+        "size": 21181947,
+        "sha256": "cd951c52112de3d72fc7b26cf76e74e893fb9b6689c36c32a72e4f117c124ab4"
+      }
+    ],
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.3",
+    "main_sha256": "ee7611859d906570f61819c58634f4afb1194ef81216d5eec2cbb1f665872719",
+    "issuer_sha256": "cd951c52112de3d72fc7b26cf76e74e893fb9b6689c36c32a72e4f117c124ab4",
+    "config_unchanged_during_copy": true,
+    "td_private_unchanged_during_copy": true,
+    "user_processes_terminated": false,
+    "targets": [
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin-v1.4.3-portable.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe"
+    ],
+    "deferred": [],
+    "default_exe_updated": true,
+    "published": false
+  },
+  "ui_followup_changes": {
+    "passed": true,
+    "version": "1.4.3",
+    "direct_baseline": "previous local 1.4.3 candidate before UI followup",
+    "changed": [
+      "README.md",
+      "scripts/notice_acceptance.cjs",
+      "scripts/privacy_artifacts.py",
+      "scripts/privacy_scan.py",
+      "scripts/td_acceptance.cjs",
+      "server/static/css/startup.css",
+      "server/static/css/td.css",
+      "server/static/index.html",
+      "server/static/js/startup.js"
+    ],
+    "prior_audit_only_updates": [
+      "scripts/privacy_artifacts.py",
+      "scripts/privacy_scan.py"
+    ],
+    "startup_existing_timeline_byte_identical_after_removing_notice_only_lines": true,
+    "all_python_business_and_licensing_modules_unchanged": true,
+    "issuer_unchanged": true,
+    "hashes": {
+      "server/static/index.html": "92b4e3f69692453531b0461648392a86cdf2e042c99af12121e41463154cbb72",
+      "server/static/css/startup.css": "6296774fdcd05adfba96927a7dcaacce6fc0728f37f59b222a4193d447e0802d",
+      "server/static/css/td.css": "61a490a46e13e150b37d4c2bd1e41cb175b777f1588baf418e3de24f15dee812",
+      "server/static/js/startup.js": "8d5da7753be974e0fd339e0f7431770846e212d607e7aff32ca742bfb6c3af28",
+      "scripts/notice_acceptance.cjs": "14d9b6cf7f58d5565275aabb916978b246581fa4d254f4cbcf003fea179b971e",
+      "scripts/privacy_artifacts.py": "ce4eafc141dbf9c7007a6785ed4cfc4fc84c41a19b4659987bec66e47fc0257e",
+      "scripts/privacy_scan.py": "1c90baa19ea873dab7e93825cffb83a341bf5c86d55aa2ec1a42d77c8c0a012a",
+      "scripts/td_acceptance.cjs": "0a3ece8fa27f0b3101ddbb8f31e13a4e7372b99b9ef2d91cf99f093ce2e26984",
+      "README.md": "84bf160cf80e9d103465f51375051248e827c4bc32d8e87cde43da4a294af3f4"
+    }
+  },
+  "native_visual": {
+    "passed": true,
+    "executable": "candidate/dist/BUAA-Signin.exe",
+    "profile": "private synthetic smoke profile",
+    "observations": [
+      "Actual cold-process splash: red notice above drawn crest and wordmark; shortened retention wording visible",
+      "Splash layer later removed, main interface usable",
+      "TD inactive state: automatic and manual request controls remain disabled",
+      "TD activation opened through real Windows click",
+      "Glass notice: large red free/non-profit/learning/deletion text; no green left bar",
+      "Modal scroll exposes both request and activation inputs and fixed footer",
+      "Escape initiates modal exit transition without submitting a TD request; full modal cleanup also covered by compiled browser acceptance"
+    ],
+    "limitations": [
+      "Continuous blur/fade interpolation verified by compiled-browser frame samples, not by native video",
+      "No real school write",
+      "No personal photo/account configuration used"
+    ],
+    "tool": "computer-use @oai/sky"
+  },
+  "limitations": [
+    "No real school TD writes",
+    "No new Setup or macOS/Linux native verification",
+    "Offline licensing cannot guarantee global one-time use, trusted time or resistance to privileged modification/backup rollback",
+    "No false automatic student-ID upload or guaranteed legal evidence claim"
+  ],
+  "audit_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v143-notice-20261020",
+  "latest_followup_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v143-notice-20261020\\ui-followup",
+  "git_privacy": {
+    "passed": true,
+    "counts": {
+      "git_objects": 933,
+      "working_files": 253,
+      "embedded_members": 0,
+      "bytes": 602044595
+    },
+    "findings": 0,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  }
+}

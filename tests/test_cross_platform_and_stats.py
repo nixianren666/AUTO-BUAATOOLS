@@ -12,6 +12,7 @@ import unittest
 import os
 import sys
 import datetime
+import socket
 from typing import Dict, Any, List
 
 # 将项目根目录加入 sys.path
@@ -162,13 +163,16 @@ class TestCrossPlatformAndSemesterStats(unittest.TestCase):
 
     def test_windows_single_instance_lock(self):
         """测试单实例互斥锁能够正常获取与安全释放"""
-        lock = acquire_single_instance("BUAA_Signin_Test_Mutex")
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1',0)); port=listener.getsockname()[1]
+        lock = acquire_single_instance(port)
         self.assertIsNotNone(lock, "首次获取单实例锁必须成功")
         release_single_instance(lock)
 
     def test_single_instance_mutual_exclusion(self):
         """测试单实例互斥机制：重复获取被拦截并能安全释放重用"""
-        tag = "BUAA_Signin_Mutual_Exclusion_Test"
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1',0)); tag=listener.getsockname()[1]
         first = acquire_single_instance(tag)
         self.assertTrue(first, "首次获取锁必须成功")
         second = acquire_single_instance(tag)

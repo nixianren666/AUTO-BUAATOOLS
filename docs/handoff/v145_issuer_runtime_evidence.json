@@ -1,0 +1,58 @@
+{
+  "version": "1.4.5",
+  "production_code_changed": false,
+  "production_binary_changed": false,
+  "runtime_storage_repair": {
+    "passed": true,
+    "new_key_generated": false,
+    "private_key_plaintext_written": false,
+    "encrypted_key_placed": true,
+    "encrypted_bytes_preserved": true,
+    "original_file_retained": true,
+    "ordinary_user_can_decrypt_and_match_public_key": true,
+    "directory_acl_current_user_system_admin_only": true
+  },
+  "ledger_preservation": {
+    "passed": true,
+    "private_values_logged": false,
+    "original_signing_records_merged": 3,
+    "same_original_encrypted_key": true,
+    "original_key_and_ledger_retained": true
+  },
+  "before_real_explorer": {
+    "key_present": false,
+    "key_usable": false,
+    "reason": "未找到签发私钥：请在原签发电脑运行，或导入维护者的加密备份。复制生成器本身不能生成有效授权。"
+  },
+  "after_actual_shipped_exe": {
+    "key_present": true,
+    "key_usable": true,
+    "reason": "维护者签发密钥已就绪"
+  },
+  "ordinary_user_hidden_gui_checks": {
+    "passed": true,
+    "real_school_requests": 0,
+    "synthetic_identity_only": true,
+    "desktop_input_used": false,
+    "window_shown": false,
+    "compiled_issuer_entry_exercised": true,
+    "compiled_client_license_exercised": true,
+    "checks": [
+      "real-user-gui-constructor-finds-original-key",
+      "actual-generate-button-produces-signed-code",
+      "actual-compiled-client-first-activation",
+      "same-code-reuse-denied",
+      "other-account-denied-expiry-not-reset",
+      "gui-repeat-generation-returns-original-code"
+    ],
+    "gui_errors": []
+  },
+  "published": false,
+  "audit_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v146-issuer-20261021",
+  "privacy_boundaries": [
+    "Only existing DPAPI encrypted key placed into actual owner-only OS data folder",
+    "No raw key/request/code in public report",
+    "No real school network writes",
+    "No desktop input in final acceptance"
+  ]
+}

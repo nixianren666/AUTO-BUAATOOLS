@@ -1,0 +1,179 @@
+{
+  "version": "1.4.2",
+  "state": "local-delivered",
+  "baseline": "local 1.4.1 exact pre-change snapshot",
+  "public_release_unchanged": "1.3.9",
+  "published": false,
+  "exe_sha256": "0e1181c1831ca88094fbdd4fba814c5c1d36b45581edc2f92693454c3f2f4256",
+  "source_tests": {
+    "tests": 265,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 49.97,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "browser_checks": 61,
+  "compiled_checks": 73,
+  "compiled_td_tests": {
+    "passed": true,
+    "tests": 71,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "compiled_modules": [
+      "core.td_client",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "server.td_routes"
+    ],
+    "blocked_external": 0,
+    "elapsed_seconds": 3.3
+  },
+  "compiled_module_match": 28,
+  "compiled_static_assets_match": 21,
+  "native_computer_use": {
+    "passed": true,
+    "version": "1.4.2",
+    "type": "actual Windows EXE operated with computer-use sky",
+    "port": 18629,
+    "synthetic_only": true,
+    "real_school_writes": 0,
+    "observations": [
+      "version in native title and page",
+      "TD navigation and account identity",
+      "nested glass progress cards and aligned controls",
+      "rules dialog opens in shared glass material",
+      "glass calendar opens and remains visible after transition",
+      "Escape closes calendar while preserving settings",
+      "second Escape closes settings",
+      "paired inner glass file pickers replace grey native buttons",
+      "existing library mode shows both synthetic previews",
+      "existing selectors fit within card padding",
+      "existing-photo glass listbox opens within viewport",
+      "close returns to the TD view",
+      "scroll reveals paired synthetic gallery",
+      "gallery collapse transition and closed state",
+      "gallery reopen transition and content restored"
+    ],
+    "limitations": [
+      "No actual TD punch or official count authentication",
+      "Only Windows native inspection; no macOS/Linux native verification",
+      "Sampled screenshots and interactions do not prove every GPU or animation frame"
+    ]
+  },
+  "visual_dynamic_checks": {
+    "passed": true,
+    "synthetic_only": true,
+    "compiled_ui": true,
+    "calendar_fast_open_rounds": 12,
+    "fold_reversals": 6,
+    "existing_picker": [
+      {
+        "shell_height": 40,
+        "contained": true
+      },
+      {
+        "shell_height": 40,
+        "contained": true
+      }
+    ],
+    "screenshots": [
+      "v142-td-calendar.png",
+      "v142-td-dashboard.png",
+      "v142-td-existing-pair.png",
+      "v142-td-pair-picker.png"
+    ]
+  },
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 1,
+      "archive_members": 165,
+      "carchive_members": 878,
+      "pyz_members": 1163,
+      "bytes": 124417982
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33800797,
+        "sha256": "0e1181c1831ca88094fbdd4fba814c5c1d36b45581edc2f92693454c3f2f4256"
+      }
+    ],
+    "known_values_supplied": 5,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "unchanged_protected_files": [
+    "core/autostart.py",
+    "core/boya_actions.py",
+    "core/boya_client.py",
+    "core/boya_crypto.py",
+    "core/boya_scheduler.py",
+    "core/cas.py",
+    "core/domain.py",
+    "core/iclass.py",
+    "core/operations.py",
+    "core/profile.py",
+    "core/regular_policy.py",
+    "core/render_lifecycle.py",
+    "core/scheduler.py",
+    "core/service_cli.py",
+    "core/smoke.py",
+    "core/updates.py",
+    "core/vault.py",
+    "core/webvpn.py",
+    "core/__init__.py",
+    "server/app.py",
+    "server/static/js/stitch-ambient.js",
+    "server/static/js/render-lifecycle.js",
+    "server/static/js/startup.js",
+    "server/static/css/stitch-glass.css",
+    "server/static/css/style.css",
+    "core/td_client.py"
+  ],
+  "original_business_js": "app.js/ui-surfaces.js only adds TD manual modal ID",
+  "auto_count_readonly_query": "No verified readonly TD endpoint in pinned buaa-api; official platform link and manually confirmed count retained",
+  "real_school_writes": 0,
+  "platform_limits": [
+    "Windows native only",
+    "No new Setup",
+    "No macOS/Linux native verification"
+  ],
+  "audit_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v142-20261019",
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.2",
+    "exe_sha256": "0e1181c1831ca88094fbdd4fba814c5c1d36b45581edc2f92693454c3f2f4256",
+    "all_targets_match": true,
+    "config_unchanged_during_delivery": true,
+    "td_private_unchanged_during_delivery": true,
+    "source_files_synced": 115,
+    "sibling_local_only": true,
+    "git_commit_push_release": false,
+    "user_processes_terminated": false,
+    "excluded_historical_local_debug_spec": "test_pack_webview.spec"
+  },
+  "git_privacy": {
+    "passed": true,
+    "head_commit": "a1e3b45be5941f5bdde3d156399d9d9d51d4c735",
+    "findings": [],
+    "forbidden_public_files": [],
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ],
+    "git_objects": 933,
+    "working_files": 242
+  }
+}

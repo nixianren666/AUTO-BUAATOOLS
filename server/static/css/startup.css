@@ -2,6 +2,8 @@
 #startupStage{--startup-style-ready:1;position:fixed;inset:0;z-index:2147480000;display:none;isolation:isolate;overflow:hidden;outline:0}
 .startup-running #startupStage{display:block;background:transparent}
 #startupBlackout{position:absolute;inset:0;background:#000;pointer-events:auto}
+#startupStudyNotice{position:absolute;z-index:2;left:50%;bottom:calc(50% + 143px);transform:translateX(-50%);width:min(1060px,92vw);color:#ff3939;text-align:center;font-size:clamp(15px,1.8vw,24px);font-weight:650;line-height:1.45;pointer-events:none}
+#startupStudyNotice strong{display:block;font-size:inherit;font-weight:800}#startupStudyNotice p{margin:.32em 0 0}
 #startupEmblemFlight{position:absolute;width:220px;height:220px;left:50%;top:50%;margin:-110px 0 0 -110px;will-change:transform;color:#f0f4fa;pointer-events:none}
 #startupEmblemFlight svg{width:100%;height:100%;overflow:visible}
 #startupSchoolName{position:absolute;left:50%;top:calc(50% + 145px);width:min(430px,76vw);transform:translateX(-50%);color:#f0f4fa;pointer-events:none;will-change:filter,opacity}
@@ -10,4 +12,5 @@
 #startupScatter{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #startupStage .startup-sr-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-height:550px){#startupEmblemFlight{width:160px;height:160px;margin:-80px 0 0 -80px}#startupSchoolName{top:calc(50% + 102px);width:min(320px,76vw)}}
+@media(max-height:550px){#startupStudyNotice{bottom:calc(50% + 98px);font-size:clamp(12px,2.7vh,16px);line-height:1.35;width:min(1060px,94vw)}}
 @media(prefers-reduced-motion:reduce){#startupStage path{fill-opacity:1;stroke-dashoffset:0}}

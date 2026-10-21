@@ -39,6 +39,10 @@
 .stitch-dot-plane { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 .update-control { position: relative; }
+.login-captcha { padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
+.login-captcha-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 10px 0; }
+.login-captcha-row img { width: 150px; max-width: 100%; height: 52px; object-fit: contain; border-radius: 7px; }
+.login-captcha .field-hint { display: block; font-size: 12px; line-height: 1.7; color: var(--text-secondary); margin-top: 8px; }
 .update-panel { position: absolute; right: 0; top: calc(100% + 12px); width: min(320px, calc(100vw - 24px)); padding: 18px; z-index: 1000; border: 1px solid rgba(225,232,255,.23); border-radius: 16px; background: linear-gradient(135deg, rgba(237,245,255,.08), transparent 55%), rgba(17,21,35,.94); box-shadow: 0 18px 42px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.13); }
 .update-panel-heading, .update-panel-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .update-panel-heading strong { font-size: 14px; font-weight: 600; }

@@ -1,0 +1,230 @@
+{
+  "version": "1.4.5",
+  "baseline": "local1.4.4",
+  "source": {
+    "tests": 292,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 84.34,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "browser_checks": 77,
+  "compiled_checks": 89,
+  "compiled_td": {
+    "passed": true,
+    "tests": 98,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "compiled_modules": [
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "server.td_routes"
+    ],
+    "blocked_external": 0,
+    "elapsed_seconds": 5.66
+  },
+  "issuer_self_test": {
+    "passed": true,
+    "checks": [
+      "same-request-one-code",
+      "compiled-ed25519-signature",
+      "compiled-client-first-activation",
+      "consumed-code-no-renewal",
+      "account-isolation-and-fixed-expiry",
+      "encrypted-backup-roundtrip"
+    ],
+    "synthetic_keys_only": true,
+    "production_key_accessed": false
+  },
+  "production_pair": {
+    "passed": true,
+    "checks": [
+      "actual-issuer-key-matches-shipped-public-key",
+      "compiled-issuer-to-compiled-client-activation",
+      "actual-code-consumed-once",
+      "actual-other-account-denied"
+    ],
+    "synthetic_identity_only": true,
+    "real_school_requests": 0,
+    "issuer_entry_matches_source": true,
+    "issuer_modules_match_source": [
+      "core.td_license",
+      "core.td_license_public",
+      "core.vault"
+    ],
+    "issuer_exe_sha256": "b554d0c5753c205fd528d4e66f98a51061b7250b13734cef3a082120088c8fc5"
+  },
+  "issuer_diagnostics": {
+    "normal": {
+      "key_present": true,
+      "key_usable": true,
+      "reason": "维护者签发密钥已就绪"
+    },
+    "redirected-env": {
+      "key_present": true,
+      "key_usable": true,
+      "reason": "维护者签发密钥已就绪"
+    }
+  },
+  "modules_match": 30,
+  "assets_match": 21,
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 2,
+      "archive_members": 320,
+      "carchive_members": 1921,
+      "pyz_members": 1726,
+      "bytes": 205097433
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33816521,
+        "sha256": "33a1e6291a247e5760dced2ef27d4fa09e9a2855ba38473285c60f50dd664dfa"
+      },
+      {
+        "name": "TD-License-Generator.exe",
+        "size": 21183248,
+        "sha256": "b554d0c5753c205fd528d4e66f98a51061b7250b13734cef3a082120088c8fc5"
+      }
+    ],
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "native_visual": {
+    "completed": false,
+    "observations": [
+      "Actual Windows v1.4.5 entrance modal visible over regular workspace, no TD workspace exposed",
+      "Close controls absent, Return to regular classroom visible"
+    ],
+    "limitations": [
+      "Initial activation reported failed; fresh target capture succeeded",
+      "Computer Use stopped by physical Escape; no further desktop input issued",
+      "Native Escape action not counted as passed; browser Escape/backdrop tests and compiled native automated checks passed"
+    ],
+    "own_fixture_closed_via_api": true,
+    "real_user_profile_used": false
+  },
+  "source_diff": {
+    "passed": true,
+    "baseline": "1.4.4",
+    "changed": [
+      "core/version.py",
+      "server/td_routes.py",
+      "server/static/index.html",
+      "server/static/js/app.js",
+      "server/static/js/td.js",
+      "server/static/js/ui-surfaces.js",
+      "scripts/td_acceptance.cjs",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_td.py",
+      "tests/test_td_issuer.py",
+      "tests/test_v127_api.py",
+      "tools/td_issuer.py",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "README.md",
+      "run.py",
+      "BUAA-Signin-mac.spec"
+    ],
+    "added": [
+      "scripts/td_gate_acceptance.cjs"
+    ],
+    "version_only": [
+      "core/version.py",
+      "run.py",
+      "BUAA-Signin-mac.spec",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_v127_api.py"
+    ],
+    "school_clients_schedulers_crypto_unchanged": true,
+    "signing_key_and_client_public_key_unchanged": true
+  },
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.5",
+    "targets": [
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin-v1.4.5-portable.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+      "C:\\Users\\cjt16\\Desktop\\TD激活码生成器\\TD-License-Generator.exe"
+    ],
+    "deferred": [],
+    "main_sha256": "33a1e6291a247e5760dced2ef27d4fa09e9a2855ba38473285c60f50dd664dfa",
+    "issuer_sha256": "b554d0c5753c205fd528d4e66f98a51061b7250b13734cef3a082120088c8fc5",
+    "config_unchanged_during_copy": true,
+    "td_private_unchanged_during_copy": true,
+    "signing_key_unchanged": true,
+    "sibling_source_synced": [
+      "core/version.py",
+      "server/td_routes.py",
+      "server/static/index.html",
+      "server/static/js/app.js",
+      "server/static/js/td.js",
+      "server/static/js/ui-surfaces.js",
+      "scripts/td_acceptance.cjs",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_td.py",
+      "tests/test_td_issuer.py",
+      "tests/test_v127_api.py",
+      "tools/td_issuer.py",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "README.md",
+      "run.py",
+      "BUAA-Signin-mac.spec",
+      "scripts/td_gate_acceptance.cjs"
+    ],
+    "published": false,
+    "user_processes_terminated": false
+  },
+  "audit_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v145-access-20261021",
+  "published": false,
+  "limitations": [
+    "No new Setup/macOS/Linux native acceptance",
+    "No real school TD submission",
+    "Actual Windows Computer Use was stopped before native Esc validation; browser and native automated tests are separate evidence",
+    "Original screenshot process environment unavailable; exact historical missing-key cause not proven"
+  ],
+  "git_privacy": {
+    "passed": true,
+    "head_commit": "a1e3b45be5941f5bdde3d156399d9d9d51d4c735",
+    "findings": [],
+    "forbidden_public_files": [],
+    "counts": {
+      "git_objects": 933,
+      "working_files": 260,
+      "embedded_members": 0,
+      "bytes": 602094664
+    },
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  }
+}

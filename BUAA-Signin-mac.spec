@@ -5,7 +5,7 @@ a = Analysis(
     ['run.py'],
     pathex=[],
     binaries=[],
-    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.icns', '.')] + collect_data_files('tzdata'),
+    datas=[('server/static', 'server/static'), ('tray_icon.png', '.'), ('app_icon.icns', '.'), ('THIRD_PARTY_NOTICES.md', '.')] + collect_data_files('tzdata'),
     hiddenimports=[
         'cryptography',
         'httpx',
@@ -97,8 +97,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleDisplayName': 'BUAA 课程独立签到助手',
         'CFBundleName': 'BUAA-Signin',
-        'CFBundleShortVersionString': '1.3.9',
-        'CFBundleVersion': '1.3.9',
+        'CFBundleShortVersionString': '1.4.10',
+        'CFBundleVersion': '1.4.10',
         'NSHighResolutionCapable': 'True',
         'LSUIElement': '0',
     },

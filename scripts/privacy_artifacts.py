@@ -11,7 +11,7 @@ import zipfile
 
 PATTERNS = {
     "github_token": rb'\b(?:gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{25,})\b',
-    "private_key_body": rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\r\n]+[A-Za-z0-9+/=\r\n]{64,}-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
+    "private_key_body": rb'-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----[\r\n]+[A-Za-z0-9+/=\r\n]{64,}-----END (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----',
     "jwt": rb'\beyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\b',
 }
 
@@ -33,6 +33,8 @@ def main():
     def inspect(data,label,depth=0):
         scan(data,label)
         name=Path(label.rsplit('!',1)[-1]).name
+        if name.lower() in {'td_issuer.py','td_issuer.spec','test_td_issuer.py','td-license-generator.exe','signing-key.dpapi','issued.sqlite'} or name.lower().startswith('td_issuer.'):
+            findings.append({'member':label,'kinds':['maintainer_only_distribution_file']})
         if name in ('config.json','.vault-key','operations.sqlite') or name.endswith(('.log','.sqlite')):
             findings.append({"member":label,"kinds":["private_runtime_file"]})
         if depth>5:raise RuntimeError("Archive nesting limit exceeded")
@@ -42,7 +44,7 @@ def main():
                     if entry.is_dir():continue
                     counts['archive_members']+=1
                     inspect(archive.read(entry),label+'!'+entry.filename,depth+1)
-        if name=='BUAA-Signin' or (name.endswith('.exe') and ('portable' in name or name=='BUAA-Signin.exe')):
+        if name=='BUAA-Signin' or (name.endswith('.exe') and ('portable' in name or name in ('BUAA-Signin.exe','TD-License-Generator.exe'))):
             from PyInstaller.archive.readers import CArchiveReader
             with tempfile.TemporaryDirectory(prefix='buaa-payload-scan-') as directory:
                 temporary=Path(directory)/'payload';temporary.write_bytes(data)
@@ -53,6 +55,8 @@ def main():
                     if entry[-1]=='z':
                         pyz=reader.open_embedded_archive(member)
                         for module in pyz.toc:
+                            if module=='tools.td_issuer' or module.endswith('.td_issuer'):
+                                findings.append({'member':label+'!'+module,'kinds':['maintainer_only_distribution_module']})
                             raw=pyz.extract(module,raw=True)
                             if raw is not None:
                                 counts['pyz_members']+=1;scan(raw,label+'!'+member+'!'+module)

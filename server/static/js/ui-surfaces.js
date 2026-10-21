@@ -3,7 +3,7 @@
 (() => {
   'use strict';
   const renderHidden = () => document.hidden || window.BUAARenderLifecycle?.visible === false;
-  const ids = ['glassPopover', 'updatePanel', 'accountCardsModal', 'loginModal', 'manualSignModal', 'disclaimerModal'];
+  const ids = ['glassPopover', 'updatePanel', 'accountCardsModal', 'loginModal', 'manualSignModal', 'tdSettingsModal', 'tdCountModal', 'tdGroupModal', 'tdManualModal', 'tdLicenseModal', 'disclaimerModal'];
   const triggers = { glassPopover: 'glassControlBtn', updatePanel: 'updateCheckBtn' };
   const running = new Map(), returnFocus = new Map();
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -91,6 +91,7 @@
   }
 
   function set(id, visible) {
+    if (window.BUAATDAccess?.blocksSurface(id, visible)) return false;
     const el = document.getElementById(id);
     if (!el || !ids.includes(id)) return false;
     if (!visible) { hide(el); return false; }

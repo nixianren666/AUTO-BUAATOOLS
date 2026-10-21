@@ -11,9 +11,13 @@ import sys
 
 PATTERNS={
  "github_token":rb'\b(?:gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{25,})\b',
- "private_key":rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
+ "private_key":rb'-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----',
  "jwt":rb'\beyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\b',
 }
+
+def forbidden_distribution_path(name):
+    leaf=Path(name).name.lower()
+    return leaf in {"td_issuer.py", "td_issuer.spec", "test_td_issuer.py", "td-license-generator.exe", "signing-key.dpapi", "issued.sqlite"} or leaf.startswith("td_issuer.")
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--repo",required=True);parser.add_argument("--report",required=True);parser.add_argument("--git",default="git");parser.add_argument("--secrets-stdin",action="store_true")
@@ -29,6 +33,7 @@ def main():
         if kinds:findings.append({"object":label,"kinds":kinds})
     def git(*argv):return subprocess.run([args.git,*argv],cwd=root,check=True,capture_output=True).stdout
     objects=git("rev-list","--objects","--all").decode().splitlines()
+    forbidden_objects=[line.split(' ',1)[1] for line in objects if ' ' in line and forbidden_distribution_path(line.split(' ',1)[1])]
     proc=subprocess.Popen([args.git,"cat-file","--batch"],cwd=root,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     try:
         for line in objects:
@@ -42,12 +47,12 @@ def main():
     finally:
         proc.stdin.close();proc.wait(timeout=10)
     files=git("ls-files","--cached","--others","--exclude-standard","-z").decode().split('\0')
-    forbidden=[]
+    forbidden=list(forbidden_objects)
     for name in sorted(set(files)):
         if not name:continue
         path=root/name
         if not path.is_file():continue
-        if name=="config.json" or name.endswith((".sqlite",".log")) or '.vault-key' in name or '__pycache__' in name:
+        if name=="config.json" or name.endswith((".sqlite",".log")) or '.vault-key' in name or '__pycache__' in name or forbidden_distribution_path(name):
             forbidden.append(name)
         counts["working_files"]+=1;scan(path.read_bytes(),"working:"+name)
     result={"passed":not findings and not forbidden,"head_commit":git("rev-parse","HEAD").decode().strip(),"findings":findings,"forbidden_public_files":forbidden,"counts":counts,"known_values_supplied":len(values),"limitations":["No OCR of historical images","Compiled/archive inspection is a separate gate","Only objects reachable from local Git refs; deleted/unreachable server objects excluded"]}

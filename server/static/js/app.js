@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.3.9 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.4.1 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -41,7 +41,7 @@ let managementSession = null;
 let viewGeneration = 0;
 // The first login waits for both independent startup responses. Never queue a
 // second prompt after the user has deliberately closed the initial login card.
-const firstLoginState = { disclaimerAccepted: false, accountsReady: false, prompted: false, accepting: false };
+const firstLoginState = { disclaimerAccepted: false, accountsReady: false, prompted: false, accepting: false, commitmentText: '', commitmentVersion: '', noticeLoading: false, composing: false };
 async function establishManagementSession() {
   let response = await nativeFetch("/api/session", { credentials: "same-origin" });
   if (response.status === 401) {
@@ -72,6 +72,10 @@ async function apiFetch(input, options = {}) {
   const response = await nativeFetch(url.pathname + url.search, opts);
   if (!response.ok) {
     if (response.status === 401) managementSession = null;
+    if (url.pathname.startsWith('/api/td/')) {
+      const failure = await response.json().catch(() => ({}));
+      throw new Error(typeof failure.detail === 'string' ? failure.detail : 'TD 参数或请求无效，请核对设置');
+    }
     throw new Error("应用请求未完成（" + response.status + "）");
   }
   return response;
@@ -106,9 +110,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 模态弹窗蒙层点击与 ESC 快捷关闭
 function setUISurface(id, visible) {
+  if (window.BUAATDAccess?.blocksSurface(id, visible)) return false;
   if (window.BUAAUiSurfaces) return window.BUAAUiSurfaces.set(id, visible);
   // If optional motion fails to load, preserve exclusive, immediate controls.
-  const ids = ["glassPopover", "updatePanel", "accountCardsModal", "loginModal", "manualSignModal", "disclaimerModal"];
+  const ids = ["glassPopover", "updatePanel", "accountCardsModal", "loginModal", "manualSignModal", "tdSettingsModal", "tdCountModal", "tdGroupModal", "tdManualModal", "tdLicenseModal", "disclaimerModal"];
   const modal = document.getElementById("disclaimerModal");
   if (visible && id !== "disclaimerModal" && modal && !modal.classList.contains("hidden")) return false;
   ids.forEach(otherId => {
@@ -184,6 +189,15 @@ function initClock() {
 
 // 主视图无缝切换 (Origin Left Rail)
 function switchMainView(viewName) {
+  if (viewName === 'td') {
+    window.BUAATDAccess?.enter();
+    return;
+  }
+  window.BUAATDAccess?.leave();
+  showMainView(viewName);
+}
+
+function showMainView(viewName) {
   appState.currentMainView = viewName;
 
   // 更新导航激活状态
@@ -191,6 +205,7 @@ function switchMainView(viewName) {
   const btnMap = {
     regular: "navBtnRegular",
     boya: "navBtnBoya",
+    td: "navBtnTD",
     logs: "navBtnLogs",
   };
   const activeBtn = document.getElementById(btnMap[viewName]);
@@ -202,6 +217,7 @@ function switchMainView(viewName) {
     if (viewName === "regular") breadcrumb.textContent = "常规课堂考勤";
     else if (viewName === "boya") breadcrumb.textContent = "自动博雅套件 / 学期博雅素养与选课";
     else if (viewName === "logs") breadcrumb.textContent = "实时终端监控 / 系统全局审计";
+    else if (viewName === "td") breadcrumb.textContent = "自动 TD 守护 / 本人锻炼与学期进度";
   }
 
   // 显隐内容板块
@@ -212,6 +228,8 @@ function switchMainView(viewName) {
   if (vRegular) vRegular.classList.toggle("hidden", viewName !== "regular");
   if (vBoya) vBoya.classList.toggle("hidden", viewName !== "boya");
   if (vLogs) vLogs.classList.toggle("hidden", viewName !== "logs");
+  document.getElementById('viewTD')?.classList.toggle('hidden', viewName !== 'td');
+  document.dispatchEvent(new CustomEvent('buaa:mainview', { detail: { view: viewName } }));
 
   if (viewName === "boya") {
     fetchBoyaData(false);
@@ -315,6 +333,7 @@ function updateUIElements() {
       if (input && document.activeElement !== input) input.value=targets[category];
     }
   }
+  document.dispatchEvent(new CustomEvent('buaa:accountview'));
 }
 
 // ==================== 1. 常规课堂考勤逻辑 ====================
@@ -587,6 +606,12 @@ function renderBoyaStatistics(stats) {
   const effArt = Math.min(art, reqArt);
   const effSec = Math.min(sec, reqSec);
   const totalPassed = effMoral + effLabor + effArt + effSec;
+
+  const navProgress = document.getElementById("navBadgeBoya");
+  if (navProgress) {
+    navProgress.textContent = known ? `${totalPassed}/${totalReq}` : `—/${totalReq}`;
+    navProgress.title = known ? `本学期达标 ${totalPassed}/${totalReq} 门（按类别上限计入）${appState.boyaDataStale ? "；上次核实数据" : ""}` : "官方校历或进度待同步";
+  }
 
   const rate = Math.min(100, Math.round((totalPassed / totalReq) * 100));
 
@@ -1038,6 +1063,7 @@ function setLogCategory(cat) {
   if (btnAll) btnAll.classList.toggle("active", cat === "all");
   if (btnReg) btnReg.classList.toggle("active", cat === "regular");
   if (btnBoya) btnBoya.classList.toggle("active", cat === "boya");
+  document.getElementById('logCatTD')?.classList.toggle('active', cat === 'td');
   fetchLogs();
 }
 
@@ -1057,7 +1083,7 @@ async function fetchLogs() {
   const titleEl = document.getElementById("logTerminalTitle");
   if (titleEl) {
     const studentName = appState.activeUser ? (appState.activeUser.name || appState.activeUser.username) : "系统全部";
-    const catLabel = appState.currentLogCategory === "boya" ? "自动博雅" : (appState.currentLogCategory === "regular" ? "常规课程" : "总日志");
+    const catLabel = appState.currentLogCategory === 'td' ? '自动 TD' : appState.currentLogCategory === "boya" ? "自动博雅" : (appState.currentLogCategory === "regular" ? "常规课程" : "总日志");
     titleEl.textContent = `运行审计日志 · 当前学生: ${studentName} [${catLabel}]`;
   }
 
@@ -1259,6 +1285,7 @@ async function deleteAccount(username) {
       appState.classes = []; appState.boyaCourses = []; appState.boyaSelected = []; appState.boyaStatistics = {};
       appState.activeUsername = data.active_username || (appState.accounts.length > 0 ? appState.accounts[0].username : "");
       appState.activeUser = appState.accounts.find(a => a.username === appState.activeUsername) || null;
+      renderBoyaStatistics({});
       fetchClasses();
       fetchBoyaData();
       fetchLogs();
@@ -1286,33 +1313,67 @@ function closeLoginModal() {
   if (m) setUISurface("loginModal", false);
 }
 
+let loginInFlight = false;
+let loginCaptchaContext = '';
+function resetLoginCaptcha() {
+  appState.currentCaptchaId = ''; loginCaptchaContext = '';
+  const group = document.getElementById('loginCaptchaGroup');
+  group?.classList.add('hidden');
+  const input = document.getElementById('loginCaptchaInput');
+  if (input) { input.value = ''; input.required = false; }
+  document.getElementById('loginCaptchaImage')?.removeAttribute('src');
+}
+function refreshLoginCaptcha() {
+  if (loginInFlight) return;
+  resetLoginCaptcha();
+  handleLogin({ preventDefault() {} });
+}
+for (const id of ['loginUsername','loginPassword','loginModeSelect']) {
+  document.getElementById(id)?.addEventListener(id === 'loginModeSelect' ? 'change' : 'input', resetLoginCaptcha);
+}
 async function handleLogin(e) {
   e.preventDefault();
-  const u = document.getElementById("loginUsername").value.trim();
-  const p = document.getElementById("loginPassword").value.trim();
-  const m = document.getElementById("loginModeSelect").value;
-  const rem = document.getElementById("rememberMe").checked;
-
+  if (loginInFlight) return;
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value;
+  const m = document.getElementById('loginModeSelect').value;
+  const rem = document.getElementById('rememberMe').checked;
   if (!u || !p) return;
-  showToast("正在连接北航统一身份认证...", "info");
-
+  const context = JSON.stringify([u,m]);
+  const captcha = loginCaptchaContext === context ? document.getElementById('loginCaptchaInput')?.value.trim() || '' : '';
+  loginInFlight = true;
+  const submit = document.getElementById('loginSubmitBtn');
+  if (submit) { submit.disabled = true; submit.textContent = '正在认证...'; }
   try {
-    const res = await apiFetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: u, password: p, mode: m, remember: rem }),
-    });
+    const res = await apiFetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ username:u,password:p,mode:m,remember:rem,captcha,captcha_id:captcha ? appState.currentCaptchaId : '' }) });
     const data = await res.json();
-    if (data.status === "success" || data.authenticated) {
-      showToast("身份认证成功，已接入后台考勤守护", "success");
-      closeLoginModal();
-      fetchInitialState();
+    // A challenge arriving after editing the identity must never bind to new fields.
+    if (document.getElementById('loginUsername').value.trim() !== u || document.getElementById('loginModeSelect').value !== m || document.getElementById('loginPassword').value !== p) return;
+    if (data.status === 'captcha_required') {
+      const challengeMode = ['direct','webvpn'].includes(data.mode) ? data.mode : m;
+      const modeSelect = document.getElementById('loginModeSelect');
+      modeSelect.value = challengeMode; window.BUAAUiControls?.syncSelect(modeSelect);
+      appState.currentCaptchaId = data.captcha_id || ''; loginCaptchaContext = JSON.stringify([u,challengeMode]);
+      document.getElementById('loginCaptchaGroup')?.classList.remove('hidden');
+      const image = document.getElementById('loginCaptchaImage');
+      const hasImage = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(data.captcha_image || '');
+      if (image) { image.hidden = !hasImage; if (hasImage) image.src = data.captcha_image; else image.removeAttribute('src'); }
+      const input = document.getElementById('loginCaptchaInput');
+      if (input) { input.value = ''; input.required = hasImage; if (hasImage) input.focus(); }
+      const hint = document.getElementById('loginCaptchaHint');
+      if (hint) hint.textContent = data.message || '请完成学校验证码后再次提交';
+      showToast(data.message || '请填写学校验证码', 'info');
+    } else if (data.status === 'success' && data.authenticated) {
+      resetLoginCaptcha();
+      showToast(data.iclass_ready && data.boya_ready ? '身份认证及课表、博雅连接已完成' : '身份已确认，部分业务尚未就绪，请查看同步状态', data.iclass_ready && data.boya_ready ? 'success' : 'info');
+      closeLoginModal(); fetchInitialState();
     } else {
-      showToast(`登录失败: ${data.message || "账号密码错误"}`, "error");
+      resetLoginCaptcha();
+      showToast(`登录失败: ${data.message || '认证未完成，请重试'}`, 'error');
     }
-  } catch (err) {
-    showToast("登录请求失败，请检查网络通道", "error");
-  }
+  } catch (err) { showToast('登录通信未完成，请检查网络通道后重试', 'error'); }
+  finally { loginInFlight = false; if (submit) { submit.disabled = false; submit.textContent = '确认登录并接入守护'; } }
 }
 
 // 手动排课 ID 签到模态框
@@ -1359,10 +1420,35 @@ async function toggleMode() {
 // ==================== 5. 免责声明与开机自启 ====================
 
 async function checkDisclaimerStatus() {
+  if (firstLoginState.noticeLoading || firstLoginState.accepting) return;
+  firstLoginState.noticeLoading = true;
+  const input = document.getElementById('disclaimerCommitmentInput');
+  if (input && !input.dataset.compositionBound) {
+    input.addEventListener('compositionstart', () => handleDisclaimerComposition(true));
+    input.addEventListener('compositionend', () => handleDisclaimerComposition(false));
+    input.dataset.compositionBound = 'true';
+  }
+  const retry = document.getElementById('disclaimerRetryBtn');
+  if (input) input.disabled = true;
+  if (retry) retry.disabled = true;
+  handleDisclaimerCheckChange();
   try {
     const res = await apiFetch("/api/system/disclaimer");
     const data = await res.json();
-    if (typeof data.accepted !== "boolean") throw new Error("免责声明状态未确认");
+    if (typeof data.accepted !== "boolean" || typeof data.commitment_text !== 'string' ||
+        !data.commitment_text || typeof data.commitment_version !== 'string' || !data.commitment_version) throw new Error("免责声明状态未确认");
+    if (firstLoginState.commitmentVersion !== data.commitment_version) {
+      firstLoginState.composing = false;
+      if (input) input.value = '';
+      const checkbox = document.getElementById('disclaimerCheck');
+      if (checkbox) checkbox.checked = false;
+    }
+    firstLoginState.commitmentText = data.commitment_text;
+    firstLoginState.commitmentVersion = data.commitment_version;
+    const reference = document.getElementById('disclaimerCommitmentText');
+    if (reference) reference.textContent = data.commitment_text;
+    retry?.classList.add('hidden');
+    if (input) input.disabled = false;
     firstLoginState.disclaimerAccepted = data.accepted;
     const modal = document.getElementById("disclaimerModal");
     if (modal) {
@@ -1374,27 +1460,57 @@ async function checkDisclaimerStatus() {
     }
     maybeOpenFirstLogin();
   } catch (e) {
+    firstLoginState.commitmentText = ''; firstLoginState.commitmentVersion = '';
+    firstLoginState.disclaimerAccepted = false;
+    retry?.classList.remove('hidden');
+    const reference = document.getElementById('disclaimerCommitmentText');
+    if (reference) reference.textContent = '承诺内容暂时无法加载，请重新加载后确认。';
     // An unavailable status must not silently bypass the first-use notice.
     setUISurface("disclaimerModal", true);
     showToast("免责声明状态暂未确认，请阅读后重试确认", "error");
+  } finally {
+    firstLoginState.noticeLoading = false;
+    if (retry) retry.disabled = false;
+    handleDisclaimerCheckChange();
   }
 }
 
-function handleDisclaimerCheckChange(checkbox) {
+function disclaimerCommitmentMatches() {
+  const input = document.getElementById('disclaimerCommitmentInput');
+  const normalize = value => value.replace(/[ \t\r\n\u3000]/g, '');
+  return !!firstLoginState.commitmentText && !!firstLoginState.commitmentVersion && !!input &&
+    !firstLoginState.composing && normalize(input.value) === normalize(firstLoginState.commitmentText);
+}
+
+function handleDisclaimerComposition(composing) {
+  firstLoginState.composing = composing;
+  handleDisclaimerCheckChange();
+}
+
+function handleDisclaimerCheckChange() {
+  const checkbox = document.getElementById('disclaimerCheck');
+  const matched = disclaimerCommitmentMatches();
   const btn = document.getElementById("disclaimerAgreeBtn");
-  if (btn) btn.disabled = !checkbox.checked || firstLoginState.accepting;
+  if (btn) btn.disabled = !checkbox?.checked || !matched || firstLoginState.accepting || firstLoginState.noticeLoading;
+  const hint = document.getElementById('disclaimerCommitmentHint');
+  if (hint) hint.textContent = !firstLoginState.commitmentText ? '条款尚未加载，请重新加载后确认。' :
+    matched ? '承诺内容已完整核对；勾选条例一后可确认。' : '请完整输入承诺，标点保持一致；空格与换行不影响核对。';
 }
 
 async function handleDisclaimerAccept() {
   const checkbox = document.getElementById("disclaimerCheck");
-  if (firstLoginState.accepting || !checkbox?.checked) return;
+  handleDisclaimerCheckChange();
+  if (firstLoginState.accepting || firstLoginState.noticeLoading || !checkbox?.checked || !disclaimerCommitmentMatches()) return;
   firstLoginState.accepting = true;
   handleDisclaimerCheckChange(checkbox);
   const modal = document.getElementById("disclaimerModal");
   try {
-    const res = await apiFetch("/api/system/disclaimer/accept", { method: "POST" });
+    const res = await apiFetch("/api/system/disclaimer/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      agreed: checkbox.checked, commitment: document.getElementById('disclaimerCommitmentInput').value,
+      commitment_version: firstLoginState.commitmentVersion
+    }) });
     const data = await res.json();
-    if (data.status !== "ok" || data.accepted !== true) throw new Error("免责声明未确认保存");
+    if (data.status !== "ok" || data.accepted !== true || data.commitment_version !== firstLoginState.commitmentVersion) throw new Error("免责声明未确认保存");
     firstLoginState.disclaimerAccepted = true;
     if (modal) setUISurface("disclaimerModal", false);
     maybeOpenFirstLogin();

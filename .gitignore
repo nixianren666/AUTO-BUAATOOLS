@@ -1,4 +1,5 @@
 config.json
+*.td-private/
 *.sqlite
 *.sqlite-*
 .vault-key-*
@@ -20,3 +21,11 @@ acceptance/
 *.log
 preview_liquid_ui.html
 Github库/
+# TD issuer secrets and encrypted private-key backups never belong in releases.
+signing-key.dpapi
+issued.sqlite
+*.pem
+# Maintainer-only signing utility: never commit or package for public distribution.
+tools/td_issuer.py
+tools/td_issuer.spec
+tests/test_td_issuer.py

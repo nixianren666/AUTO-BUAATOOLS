@@ -70,7 +70,7 @@ class TestApiServer(unittest.TestCase):
     def test_health_current_version(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.3.9")
+        self.assertEqual(resp.json()["version"], "1.4.10")
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")
@@ -86,7 +86,7 @@ class TestApiServer(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn("accepted", resp.json())
 
-        resp = self.client.post("/api/system/disclaimer/accept")
+        resp = self.client.post("/api/system/disclaimer/accept",json={"agreed":True,"commitment":resp.json()["commitment_text"],"commitment_version":resp.json()["commitment_version"]})
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["accepted"])
 

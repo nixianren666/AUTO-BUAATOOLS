@@ -4,6 +4,7 @@
 """
 
 import json
+import copy
 import logging
 import re
 import threading
@@ -15,6 +16,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 import httpx
 
 from core.cas import CasParser
+from core.cas_transport import resolve_auth_redirect, follow_auth_response_sync, CasFlowError, CasCaptchaRequired, REDIRECTS
 from core.webvpn import to_webvpn_url
 from core.boya_crypto import BykcCrypto
 from core.domain import trusted_url, semester, semester_bounds, course_id, now as china_now
@@ -68,82 +70,87 @@ class BoyaClient:
         return bool(self.token)
 
     def sync_cookies_from(self, cookies: httpx.Cookies) -> None:
-        """从已登录的 IclassClient 同步 SSO/WebVPN 会话 Cookies"""
-        for c in cookies.jar:
-            self.http_client.cookies.set(
-                c.name,
-                c.value,
-                domain=c.domain,
-                path=c.path,
-            )
+        """Keep secure/path/expiry flags when sharing this student's SSO jar."""
+        with self._request_lock:
+            for cookie in cookies.jar:
+                self.http_client.cookies.jar.set_cookie(copy.copy(cookie))
+
+    def _activate_uc(self):
+        response = self.http_client.get(self.upstream(UC_ACTIVATE), timeout=10)
+        return follow_auth_response_sync(response, self.http_client, self.mode)
+
+    def _verify_uc_identity(self, username):
+        status = self.http_client.get(self.upstream('https://uc.buaa.edu.cn/api/uc/status'))
+        status.raise_for_status()
+        payload = status.json()
+        identity = payload.get('data') if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or str(payload.get('code')) != '0' or not isinstance(identity, dict) or not (identity.get('schoolid') or identity.get('username')):
+            raise BoyaApiError('cas_error', '官方未确认登录身份')
+        if str(username).isascii() and str(username).isdigit() and str(identity.get('schoolid') or identity.get('username')) != str(username):
+            raise BoyaApiError('cas_error', '官方登录身份与请求账号不一致')
 
     def login_with_credentials(self, username: str, password: str, captcha: str = "") -> str:
-        """使用北航统一认证账号密码直接登录并换取博雅 Token"""
-        sso_url = self.upstream(SSO_LOGIN)
-        resp = self.http_client.get(sso_url)
-        resp.raise_for_status() if resp.status_code >= 400 else None
-
-        # 检查是否已有会话
-        if resp.status_code not in (301, 302, 303, 307):
-            html = resp.text
-            if CasParser.detect_captcha(html) and not captcha:
-                raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
-            err = CasParser.find_login_error(html)
-            if err:
-                raise BoyaApiError("cas_error", err)
-
-            params = CasParser.build_login_params(html, username, password, captcha=captcha)
-            post_resp = self.http_client.post(sso_url, data=params)
-            if post_resp.status_code >= 400:
-                raise BoyaApiError("auth_http", "统一认证请求失败")
-
-            # 跟随重定向
-            curr = post_resp
-            for _ in range(8):
-                if curr.status_code in (301, 302, 303, 307) and curr.headers.get("location"):
-                    target = trusted_url(urljoin(str(curr.url), curr.headers.get("location")))
-                    curr = self.http_client.get(target)
+        with self._request_lock:
+            self.token = None
+            try:
+                sso_url = self.upstream(SSO_LOGIN)
+                response = self.http_client.get(sso_url)
+                if response.status_code in REDIRECTS:
+                    follow_auth_response_sync(response, self.http_client, self.mode)
                 else:
-                    break
+                    if response.status_code != 200:
+                        raise BoyaApiError('auth_http', '统一认证登录页面暂不可用')
+                    html = response.text
+                    if CasParser.detect_captcha(html) and not captcha:
+                        raise BoyaApiError('captcha_required', '统一认证需要验证码，请在界面重新登录')
+                    if CasParser.is_ignorable_password_expiry(html):
+                        follow_auth_response_sync(response, self.http_client, self.mode)
+                    else:
+                        error = CasParser.find_login_error(html)
+                        if error:
+                            raise BoyaApiError('cas_error', error)
+                        if not CasParser.extract_execution(html):
+                            raise BoyaApiError('cas_error', '统一认证登录页面格式异常')
+                        params = CasParser.build_login_params(html, username, password, captcha=captcha)
+                        submitted = self.http_client.post(sso_url, data=params)
+                        follow_auth_response_sync(submitted, self.http_client, self.mode)
+                self._activate_uc()
+                self._verify_uc_identity(username)
+                return self._set_acquired_token()
+            except CasCaptchaRequired as error:
+                raise BoyaApiError('captcha_required', str(error)) from None
+            except CasFlowError as error:
+                raise BoyaApiError('cas_error', str(error)) from None
 
-            final_html = curr.text
-            if CasParser.detect_captcha(final_html):
-                raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
-            if CasParser.find_login_error(final_html):
-                raise BoyaApiError("cas_error", "统一认证未通过，请手动检查账号")
-            if CasParser.is_ignorable_password_expiry(final_html):
-                execution = CasParser.extract_execution(final_html)
-                if execution:
-                    action_url = str(curr.url).split("?")[0]
-                    self.http_client.post(
-                        action_url,
-                        data={"execution": execution, "_eventId": "ignoreAndContinue"},
-                    )
-
-        # 激活用户中心并换取 token
-        return self.acquire_token()
-
-    def acquire_token(self) -> str:
-        """在已具备 SSO/WebVPN 会话的基础上访问博雅系统 CAS 换取 token"""
-        # 激活用户中心
-        try:
-            self.http_client.get(self.upstream(UC_ACTIVATE), timeout=10)
-        except Exception:
-            pass
-
+    def _set_acquired_token(self):
         token = self._follow_for_token()
         if not token:
-            raise BoyaApiError("token_acquire_failed", "未能从博雅系统重定向中解析出 token")
-
+            raise BoyaApiError('token_acquire_failed', '未能从博雅系统认证跳转中取得授权，请重新登录')
         self.token = token
-        logger.info("博雅授权已建立")
+        logger.info('博雅授权已建立')
         return token
+
+    def acquire_token(self) -> str:
+        """Complete UC/CAS ticket exchange before acquiring this student's token."""
+        with self._request_lock:
+            self.token = None
+            try:
+                self._activate_uc()
+                if self.operation_user:
+                    self._verify_uc_identity(self.operation_user)
+                return self._set_acquired_token()
+            except CasCaptchaRequired as error:
+                raise BoyaApiError('captcha_required', str(error)) from None
+            except CasFlowError as error:
+                raise BoyaApiError('cas_error', str(error)) from None
 
     def _follow_for_token(self) -> Optional[str]:
         for entry in [self.upstream(BYKC_CAS), self.upstream(BYKC_CAS_EMPTY_TOKEN)]:
             curr_url = entry
             for _ in range(12):
                 resp = self.http_client.get(curr_url, follow_redirects=False, timeout=15)
+                if resp.status_code not in (*REDIRECTS, 200):
+                    break
                 # 1. 检查当前 URL 中的 token
                 t = self._extract_token(trusted_url(str(resp.url)))
                 if t:
@@ -151,7 +158,7 @@ class BoyaClient:
                 # 2. 检查 Location 头
                 loc = resp.headers.get("location")
                 if loc:
-                    target = trusted_url(urljoin(str(resp.url), loc))
+                    target = resolve_auth_redirect(str(resp.url), loc, self.mode)
                     t = self._extract_token(target)
                     if t:
                         return t
@@ -160,6 +167,15 @@ class BoyaClient:
                     break
                 else:
                     if resp.status_code == 200:
+                        if CasParser.detect_captcha(resp.text):
+                            raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
+                        if CasParser.is_ignorable_password_expiry(resp.text):
+                            final = follow_auth_response_sync(resp, self.http_client, self.mode)
+                            token = self._extract_token(str(final.url))
+                            if token:
+                                return token
+                        if CasParser.extract_execution(resp.text) or CasParser.find_login_error(resp.text):
+                            raise BoyaApiError("cas_error", "统一认证会话已失效，请在界面重新登录")
                         break
                     break
         return None
@@ -172,11 +188,11 @@ class BoyaClient:
         parsed = urlparse(url)
         if parsed.hostname != "bykc.buaa.edu.cn":
             return None
-        q = parse_qs(parsed.query).get("token")
-        if q and q[0]:
-            return q[0]
-        m = re.search(r"[?&]token=([^&#\s]+)", url)
-        return m.group(1) if m else None
+        values = parse_qs(parsed.query).get('token', [])
+        if '?' in parsed.fragment:
+            values += parse_qs(parsed.fragment.split('?',1)[1]).get('token', [])
+        values = list(set(values))
+        return values[0] if len(values) == 1 and values[0] and not any(c.isspace() for c in values[0]) else None
 
     def call(self, api_name: str, payload: Any = None) -> Dict[str, Any]:
         with self._request_lock:
@@ -200,7 +216,6 @@ class BoyaClient:
             "Origin": self.upstream(BYKC_ORIGIN),
             "Authtoken": self.token,
             "auth_token": self.token,
-            "authtoken": self.token,
             **req_enc.headers,
         }
 

@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from core.cas import CasParser
+from core.cas_transport import resolve_auth_redirect, follow_auth_response, CasFlowError, CasCaptchaRequired, REDIRECTS
 from core.domain import now as china_now, trusted_url, regular_allowed, regular_window, CHINA
 from core import operations
 from core.regular_policy import MAX_POSTS, minimum_retry_delay
@@ -42,16 +43,7 @@ def extract_login_name_from_url(url: str) -> Optional[str]:
 
 def resolve_redirect_url(current_url: str, location: str) -> str:
     """处理相对路径或绝对路径的重定向目标 URL"""
-    loc = location.strip()
-    if loc.startswith("http://") or loc.startswith("https://"):
-        return trusted_url(loc)
-    if loc.startswith("//"):
-        parsed = urllib.parse.urlsplit(current_url)
-        return trusted_url(f"{parsed.scheme}:{loc}")
-    # WebVPN 网关返回的相对路径（如 /https-8346/encryptedHost/path）
-    if any(loc.startswith(p) for p in ("/https-", "/http-", "/wss-", "/ws-")):
-        return trusted_url(f"https://d.buaa.edu.cn{loc}")
-    return trusted_url(urllib.parse.urljoin(current_url, loc))
+    return resolve_auth_redirect(current_url, location)
 
 
 def sanitize_signin_message(success: bool, raw_message: Optional[str]) -> str:
@@ -133,121 +125,78 @@ class IclassClient:
         self.session_id = None
         self.login_name = None
         self.user_info.clear()
+        self._captcha_form = None
 
     async def get_captcha_image(self, captcha_id: str) -> Optional[str]:
         """获取验证码并返回 Base64 编码的 data URL"""
         base_url = self.wrap_url("https://sso.buaa.edu.cn/captcha")
-        url = f"{base_url}?captchaId={captcha_id}"
-        resp = await self.client.get(url)
+        resp = await self.client.get(base_url, params={"captchaId":captcha_id})
         if resp.status_code == 200:
             b64 = base64.b64encode(resp.content).decode("utf-8")
             return f"data:image/jpeg;base64,{b64}"
         return None
 
-    async def login_sso(
-        self,
-        username: str,
-        password: str,
-        captcha: str = "",
-        captcha_id: str = "",
-    ) -> Dict[str, Any]:
-        """
-        执行北航统一认证 (SSO) 登录
-        返回格式:
-        - 成功: {"status": "success", "user": user_info}
-        - 需验证码: {"status": "captcha_required", "captcha_id": id, "captcha_image": data_url}
-        - 失败: {"status": "failed", "message": error_msg}
-        """
+    async def _captcha_result(self, username, response, info):
+        kind, captcha_id = info
+        self._captcha_form = (username, self.mode, captcha_id, response)
+        try:
+            image = await self.get_captcha_image(captcha_id)
+        except httpx.HTTPError:
+            image = None
+        return {"status":"captcha_required", "captcha_id":captcha_id,
+                "captcha_type":kind, "captcha_image":image, "mode":self.mode,
+                "message":"统一认证需要验证码，请输入图中内容后再提交" if image else "学校要求额外验证，验证码暂未加载，请重试或先在学校官方页面处理"}
+
+    async def login_sso(self, username: str, password: str, captcha: str = "", captcha_id: str = "") -> Dict[str, Any]:
+        # A failed new authentication cannot keep an old business identity live.
+        self.user_info = {}
+        self.user_id = self.session_id = self.login_name = None
         sso_url = self.wrap_url("https://sso.buaa.edu.cn/login")
-        resp = await self.client.get(sso_url)
-
-        # 若直接返回 30x，可能已有登录态
-        if resp.status_code in (301, 302, 303, 307):
+        pending = getattr(self, '_captcha_form', None)
+        self._captcha_form = None
+        retry_challenge = bool(captcha and pending and pending[:3] == (username, self.mode, captcha_id))
+        try:
+            if retry_challenge:
+                response = pending[3]
+            else:
+                response = await self.client.get(sso_url)
+                if response.status_code in REDIRECTS:
+                    await follow_auth_response(response, self.client, self.mode)
+                    return await self._finish_sso_login(username)
+                if response.status_code != 200:
+                    return {"status":"failed","message":"统一认证登录页面暂不可用，请稍后重试"}
+                info = CasParser.detect_captcha(response.text)
+                if info:
+                    return await self._captcha_result(username, response, info)
+            html = response.text
+            if CasParser.is_ignorable_password_expiry(html):
+                await follow_auth_response(response, self.client, self.mode)
+                return await self._finish_sso_login(username)
+            error = None if retry_challenge else CasParser.find_login_error(html)
+            if error:
+                return {"status":"failed","message":error}
+            if not CasParser.extract_execution(html):
+                return {"status":"failed","message":"统一认证登录页面格式异常，请稍后重试"}
+            params = CasParser.build_login_params(html, username, password, captcha=captcha)
+            submitted = await self.client.post(sso_url, data=params)
+            await follow_auth_response(submitted, self.client, self.mode)
             return await self._finish_sso_login(username)
-
-        html = resp.text
-        # 检查是否需要验证码
-        captcha_info = CasParser.detect_captcha(html)
-        if captcha_info and not captcha:
-            c_type, c_id = captcha_info
-            img = await self.get_captcha_image(c_id)
-            return {
-                "status": "captcha_required",
-                "captcha_id": c_id,
-                "captcha_image": img,
-                "message": "本次登录需要输入图形验证码",
-            }
-
-        # 检查页面错误提示
-        tip = CasParser.extract_tip_text(html)
-        if tip:
-            return {"status": "failed", "message": tip}
-
-        # 构造 POST 参数
-        params = CasParser.build_login_params(
-            html=html,
-            username=username,
-            password=password,
-            captcha=captcha,
-        )
-
-        post_resp = await self.client.post(sso_url, data=params)
-
-        # 检查是否要求跟随重定向
-        curr_resp = post_resp
-        max_hops = 8
-        while curr_resp.status_code in (301, 302, 303, 307) and max_hops > 0:
-            max_hops -= 1
-            loc = curr_resp.headers.get("Location")
-            if not loc:
-                break
-            redirect_target = resolve_redirect_url(str(curr_resp.url), loc)
-            if self.mode == "webvpn":
-                redirect_target = self.wrap_url(from_webvpn_url(redirect_target))
-            curr_resp = await self.client.get(trusted_url(redirect_target))
-
-        final_html = curr_resp.text
-        # 检查是否有跳过密码风险提示页面
-        if CasParser.is_ignorable_password_expiry(final_html):
-            execution = CasParser.extract_execution(final_html)
-            if execution:
-                curr_url = trusted_url(str(curr_resp.url).split("?")[0])
-                cont_resp = await self.client.post(
-                    curr_url,
-                    data={"execution": execution, "_eventId": "ignoreAndContinue"},
-                )
-                curr_resp = cont_resp
-
-        # 检查是否有登录错误信息
-        login_err = CasParser.find_login_error(curr_resp.text)
-        if login_err:
-            return {"status": "failed", "message": login_err}
-
-        if "input name=\"execution\"" in curr_resp.text and curr_resp.status_code == 200:
-            return {"status": "failed", "message": "账号或密码错误，请重新输入"}
-
-        return await self._finish_sso_login(username)
+        except CasCaptchaRequired as challenge:
+            return await self._captcha_result(username, challenge.response, challenge.captcha)
+        except CasFlowError as error:
+            return {"status":"failed","message":str(error)}
 
     async def _finish_sso_login(self, username):
         activation = await self.client.get(self.wrap_url("https://uc.buaa.edu.cn/api/login?target=https%3A%2F%2Fuc.buaa.edu.cn%2F%23%2Fuser%2Flogin"))
-        for _ in range(10):
-            if activation.status_code not in (301, 302, 303, 307, 308):
-                break
-            location = activation.headers.get("location")
-            if not location:
-                raise ValueError("用户中心认证跳转不完整")
-            target = resolve_redirect_url(str(activation.url), location)
-            activation = await self.client.get(target)
-        else:
-            raise ValueError("用户中心认证跳转过多")
+        await follow_auth_response(activation, self.client, self.mode)
         response = await self.client.get(self.wrap_url("https://uc.buaa.edu.cn/api/uc/status"))
         response.raise_for_status()
         payload = response.json()
-        data = payload.get("data")
-        if str(payload.get("code")) != "0" or not isinstance(data, dict) or not (data.get("schoolid") or data.get("username")):
+        data = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or str(payload.get("code")) != "0" or not isinstance(data, dict) or not (data.get("schoolid") or data.get("username")):
             self.user_info = {}
             return {"status": "failed", "message": "官方未确认登录身份"}
-        if len(str(username)) == 8 and str(username).isdigit() and str(data.get("schoolid") or data.get("username")) != str(username):
+        if str(username).isascii() and str(username).isdigit() and str(data.get("schoolid") or data.get("username")) != str(username):
             self.user_info = {}
             return {"status": "failed", "message": "官方登录身份与请求账号不一致"}
         self.user_info = {"name": data.get("name") or data.get("realName") or username, "schoolid": data.get("schoolid") or data["username"], "department": data.get("department") or ""}
@@ -283,7 +232,7 @@ class IclassClient:
                 location = resp.headers.get("Location")
                 if location:
                     loc_unwrapped = from_webvpn_url(location) if self.mode == "webvpn" else location
-                    loc_unwrapped = trusted_url(urllib.parse.urljoin(final_url, loc_unwrapped))
+                    loc_unwrapped = resolve_auth_redirect(final_url, loc_unwrapped, 'direct')
                     name = extract_login_name_from_url(loc_unwrapped)
                     if name:
                         self.login_name = name

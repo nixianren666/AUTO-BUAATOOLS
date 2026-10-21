@@ -231,24 +231,37 @@ class BoyaScheduler:
                 self._workers = None
 
     def _renew_session(self, acc):
+        from core.boya_actions import account_lock
+        # Page reads, manual actions and the worker share this same gate. Keep
+        # the check and renewal together so parallel refreshes reuse one token.
+        with account_lock(acc):
+            return self._renew_session_locked(acc)
+
+    def _renew_session_locked(self, acc):
         if getattr(acc, "removed", False) or getattr(acc, "maintenance", False) or getattr(acc, "auth_requires_input", False):
             return False
+        if acc.boya_client.is_authenticated():
+            return True
+        if time.monotonic() < max(getattr(acc, "boya_auth_retry_after", 0), getattr(acc, "auth_retry_after", 0)):
+            return False
+        acc.boya_auth_retry_after = time.monotonic() + 60
         try:
             acc.boya_client.sync_cookies_from(acc.client.client.cookies)
             token = acc.boya_client.acquire_token()
             if token:
                 return True
+        except BoyaApiError as exc:
+            if exc.code == "captcha_required":
+                acc.auth_requires_input = True
+                return False
         except Exception:
             pass
         if not getattr(acc, "password", None):
             return False
-        if time.monotonic() < getattr(acc, "boya_auth_retry_after", 0):
-            return False
-        acc.boya_auth_retry_after = time.monotonic() + 60
         try:
             return bool(acc.boya_client.login_with_credentials(acc.username, acc.password))
         except BoyaApiError as exc:
-            if exc.code == "captcha_required":
+            if exc.code == "captcha_required" or (exc.code == "cas_error" and any(word in exc.message for word in ("账号", "密码"))):
                 acc.auth_requires_input = True
             return False
         except Exception:

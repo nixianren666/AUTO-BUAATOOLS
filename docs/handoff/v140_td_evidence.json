@@ -1,0 +1,150 @@
+{
+  "passed": true,
+  "status": "local-candidate-delivered",
+  "version": "1.4.0",
+  "published": false,
+  "source_tests": {
+    "tests": 240,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 49.25,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "compiled_td_tests": {
+    "passed": true,
+    "tests": 46,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "compiled_modules": [
+      "core.td_client",
+      "core.td_scheduler",
+      "core.td_store",
+      "server.td_routes"
+    ],
+    "blocked_external": 0,
+    "elapsed_seconds": 2.1
+  },
+  "compiled_browser_checks": 57,
+  "native_automatic_checks": [
+    "native-boya-sign",
+    "native-boya-signout-without-invented-assessment",
+    "native-account-switch",
+    "native-regular-sign",
+    "native-render-visible",
+    "native-minimized-no-render",
+    "native-minimized-resume",
+    "native-tray-no-render",
+    "native-tray-resume"
+  ],
+  "td_browser_checks": [
+    "td-navigation-account-and-unknown-progress",
+    "td-settings-use-glass-controls-and-explicit-term",
+    "td-count-is-manual-and-no-network-write-on-refresh",
+    "td-multi-photo-import-deduplication-and-gallery",
+    "td-selection-and-keyboard-modal-exclusivity",
+    "td-toggle-captures-intent-and-restores-after-rejection",
+    "td-empty-and-full-size-responsive-no-overflow",
+    "td-cross-account-gallery-and-late-response-isolation",
+    "td-log-filter-and-account-scoped-requests"
+  ],
+  "scope": {
+    "old_core_byte_identical_except_version": true,
+    "server_definitions_changed": [
+      "dispose_account",
+      "clear_logs"
+    ],
+    "frontend_named_functions_compared": 76,
+    "frontend_modified": [
+      "apiFetch",
+      "setUISurface",
+      "switchMainView",
+      "updateUIElements",
+      "setLogCategory",
+      "fetchLogs"
+    ]
+  },
+  "artifact_integrity": {
+    "passed": true,
+    "static_files": 20,
+    "static_source_exact": true,
+    "third_party_notice_embedded": true,
+    "executable_sha256": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292"
+  },
+  "privacy": {
+    "git_objects": 933,
+    "working_files": 233,
+    "git_findings": 0,
+    "artifact_findings": 0,
+    "final_git_report_sha256": "37cca2104595c89bb03c05c63f39433ef4279054b291fee6432de5a9281b4ea0"
+  },
+  "real_school_writes": 0,
+  "personal_photos_used": false,
+  "local_sync_pending": false,
+  "limits": [
+    "Campus TD wire protocol/device/photograph final acceptance not live-tested",
+    "No current native macOS/Linux build",
+    "No new Setup: local Inno Setup absent",
+    "No OCR privacy guarantee; screenshots contain only controlled synthetic fixtures"
+  ],
+  "computer_use": {
+    "passed": true,
+    "platform": "Windows",
+    "version": "1.4.0",
+    "actual_native_executable": true,
+    "synthetic_profile": true,
+    "checks": [
+      "regular-layout-retained",
+      "td-navigation-actual-click",
+      "td-progress-unknown-distinguished-from-zero",
+      "td-rule-dialog-actual-click",
+      "td-campus-glass-dropdown-actual-click",
+      "td-dropdown-escape",
+      "initial-wrong-window-capture-rejected-and-not-saved",
+      "td-dialog-second-escape-closed",
+      "native-gallery-three-synthetic-images-visible"
+    ],
+    "limitations": [
+      "Not a real school attendance submission",
+      "No full file-dialog import/delete was exercised through native input; real local API import was exercised by compiled browser checks",
+      "Initial screenshot showed another application and was excluded; activated target was recaptured"
+    ],
+    "synthetic_fixture_closed_via_guarded_local_api": true,
+    "final_executable_sha256": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292",
+    "final_build_checks": [
+      "native-startup-visible",
+      "native-regular-layout-retained",
+      "native-TD-navigation-click",
+      "native-TD-settings-click",
+      "native-TD-campus-glass-dropdown-click"
+    ],
+    "pre_final_checks_described_separately": true
+  },
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.0",
+    "files": {
+      "BUAA-Signin.exe": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292",
+      "BUAA-Signin-v1.4.0-portable.exe": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292",
+      "dist\\BUAA-Signin.exe": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292"
+    },
+    "configuration_preserved_during_replacement": true,
+    "configuration_copied": false,
+    "user_processes_terminated": false,
+    "published": false,
+    "setup_updated": false
+  },
+  "visual_preview": {
+    "passed": true,
+    "synthetic_only": true,
+    "compiled_server": true,
+    "executable_sha256": "f376608fa4098fa327209ce16a3cc0a90e191cf38f462f73672fd4c68c631292",
+    "photos": 3,
+    "term_display": "12",
+    "overflow": false
+  }
+}

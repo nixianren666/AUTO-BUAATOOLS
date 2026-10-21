@@ -9,6 +9,7 @@ import logging
 import os
 import pathlib
 import sys
+import httpx
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("buaa_signin_server")
@@ -17,7 +18,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, StrictBool, Field, field_validator
 from typing import Literal, Annotated
 import tempfile
 from core.version import VERSION
@@ -280,6 +281,12 @@ def resolve_account(username=None):
 
 async def dispose_account(account):
     account.removed = True
+    try:
+        await remove_td_account(account.username)
+    except Exception:
+        # The removed identity already fails TD's preflight. Still dispose the
+        # original clients if TD storage itself has failed.
+        add_log('error', 'TD暂停设置无法保存；账号已移除且本进程不会再为其发包，请检查磁盘权限', username=account.username, category='td')
     account.auth_epoch += 1
     account.auto_checkin = account.boya_auto_select = account.boya_auto_sign = False
     scheduler.remove_account(account.username)
@@ -546,6 +553,8 @@ async def connect_single_account(acc: AccountState) -> bool:
         acc.maintenance = acc._is_connecting = True
         acc.auth_epoch += 1
         try:
+            with account_lock(acc):
+                acc.boya_client.token = None
             async with acc.client._signin_lock:
                 return await _connect_single_account(acc)
         finally:
@@ -559,6 +568,7 @@ async def _connect_single_account(acc: AccountState) -> bool:
     for attempt_mode in modes_to_try:
         acc.client.mode = attempt_mode
         try:
+            acc.regular_health["stale"] = acc.boya_health["stale"] = True
             res = await acc.client.login_sso(username=acc.username, password=acc.password)
             if res.get("status") == "success":
                 real_name = res.get("user", {}).get("name")
@@ -584,6 +594,7 @@ async def _connect_single_account(acc: AccountState) -> bool:
                         classes = await acc.client.get_today_classes()
                         acc.last_classes = classes
                         acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                        acc.regular_health = {"stale":False,"last_success":china_now().isoformat(timespec="seconds")}
                     except Exception:
                         pass
                 else:
@@ -768,6 +779,8 @@ async def login(req: LoginRequest):
         acc.auth_epoch += 1
         acc.auth_requires_input = False
         try:
+            with account_lock(acc):
+                acc.boya_client.token = None
             async with acc.client._signin_lock:
                 response = await _login_locked(req)
             if response.get("status") != "success":
@@ -805,12 +818,16 @@ async def _login_locked(req: LoginRequest):
         acc.client.mode = attempt_mode
         add_log("info", f"正在通过 [{ '校园网直连' if attempt_mode == 'direct' else 'WebVPN 外网接入' }] 连接北航统一身份认证...", username=acc.username, user_name=acc.name)
 
-        res = await acc.client.login_sso(
-            username=req.username,
-            password=req.password,
-            captcha=req.captcha or "",
-            captcha_id=req.captcha_id or "",
-        )
+        acc.regular_health["stale"] = acc.boya_health["stale"] = True
+        try:
+            res = await acc.client.login_sso(
+                username=req.username,
+                password=req.password,
+                captcha=req.captcha or "",
+                captcha_id=req.captcha_id or "",
+            )
+        except (httpx.HTTPError, ValueError):
+            res = {"status":"failed","message":"统一认证通信未完成，请检查网络通道后重试"}
 
         if res.get("status") == "captcha_required":
             add_log("warning", f"统一身份认证需要图形验证码", username=acc.username, user_name=acc.name)
@@ -830,6 +847,7 @@ async def _login_locked(req: LoginRequest):
         active_username = acc.username
 
         # 优先同步博雅系统授权与课程数据
+        ready = False
         try:
             ready = await asyncio.to_thread(sync_boya_login, acc, attempt_mode, acc.client.client.cookies)
             if ready:
@@ -850,7 +868,9 @@ async def _login_locked(req: LoginRequest):
                 classes = await acc.client.get_today_classes()
                 acc.last_classes = classes
                 acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                acc.regular_health = {"stale":False,"last_success":china_now().isoformat(timespec="seconds")}
             except Exception as ce:
+                iclass_ok = False
                 add_log("error", f"【{acc.name}】拉取今日课表失败: {type(ce).__name__}", username=acc.username, user_name=acc.name, category="regular")
         else:
             add_log("warning", "统一认证成功，常规考勤尚未就绪；博雅状态以授权指示为准。", username=acc.username, user_name=acc.name)
@@ -864,7 +884,7 @@ async def _login_locked(req: LoginRequest):
             "user": {"name": acc.name, "schoolid": acc.username},
             "mode": attempt_mode,
             "iclass_ready": iclass_ok,
-            "boya_ready": acc.boya_client.is_authenticated(),
+            "boya_ready": bool(ready),
         }
 
 
@@ -1093,6 +1113,18 @@ def compute_semester_statistics(selected_list, sso_stats=None):
     return result
 
 
+def ensure_boya_read_session(acc):
+    """Reading a page must respect the worker's captcha pause and auth backoff."""
+    with account_lock(acc):
+        if acc.removed or acc.maintenance:
+            return False
+        if acc.boya_client.is_authenticated():
+            return True
+        if not acc.client.is_authenticated():
+            return False
+        return boya_scheduler._renew_session(acc)
+
+
 @app.get("/api/boya/courses")
 async def get_boya_courses(force: bool = False, username: Optional[str] = None):
     stale = False
@@ -1100,15 +1132,7 @@ async def get_boya_courses(force: bool = False, username: Optional[str] = None):
     if not curr:
         return {"status": "unauthenticated", "stale":True, "courses":[], "is_demo":False}
 
-    if not curr.boya_client.is_authenticated() and curr.client.is_authenticated():
-        try:
-            await asyncio.to_thread(curr.boya_client.sync_cookies_from, curr.client.client.cookies)
-            await asyncio.to_thread(curr.boya_client.acquire_token)
-        except Exception as e:
-            stale = True
-            logger.debug(f"Boya token acquire failed: {type(e).__name__}")
-
-    if not curr.boya_client.is_authenticated():
+    if not await asyncio.to_thread(ensure_boya_read_session, curr):
         courses = curr.boya_all_courses or []
         return {
             "status": "stale", "stale": True,
@@ -1219,15 +1243,8 @@ async def refresh_boya_data(username: Optional[str] = None):
     if not curr:
         raise HTTPException(status_code=400, detail="无活跃账号")
 
-    if not curr.boya_client.is_authenticated() and curr.client.is_authenticated():
-        try:
-            await asyncio.to_thread(curr.boya_client.sync_cookies_from, curr.client.client.cookies)
-            await asyncio.to_thread(curr.boya_client.acquire_token)
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"博雅身份鉴权失败: {type(e).__name__}")
-
-    if not curr.boya_client.is_authenticated():
-        raise HTTPException(status_code=401, detail="博雅未登录鉴权")
+    if not await asyncio.to_thread(ensure_boya_read_session, curr):
+        raise HTTPException(status_code=401, detail="博雅认证未就绪；需要验证码时请重新登录，其余失败请等待退避后重试")
 
     try:
         curr.boya_all_courses = await asyncio.to_thread(curr.boya_client.query_courses)
@@ -1378,14 +1395,14 @@ async def clear_logs(username: Optional[str] = Query(None), category: Optional[s
             l for l in logs_list
             if not (l.get("username") == username and l.get("category", "regular") in cat_matches)
         ]
-        add_log("info", f"学生 [{username}] 的 {'自动博雅' if category == 'boya' else '常规课程'} 专属日志已清空。", category="system")
+        add_log("info", f"学生 [{username}] 的 { {'boya':'自动博雅','td':'自动TD'}.get(category,'常规课程')} 专属日志已清空。", category="system")
     elif username:
         logs_list = [l for l in logs_list if l.get("username") != username]
         add_log("info", f"学生账号 [{username}] 的全部日志已清空。", category="system")
     elif category and category != "all":
         cat_matches = ("regular", "iclass") if category == "regular" else (category,)
         logs_list = [l for l in logs_list if l.get("category", "regular") not in cat_matches]
-        add_log("info", f"全系统 {'自动博雅' if category == 'boya' else '常规课程'} 实时运行日志已清空。", category="system")
+        add_log("info", f"全系统 { {'boya':'自动博雅','td':'自动TD'}.get(category,'常规课程')} 实时运行日志已清空。", category="system")
     else:
         logs_list.clear()
         add_log("info", "全系统实时运行日志已清空。", category="system")
@@ -1450,27 +1467,58 @@ async def update_autostart(req: AutostartRequest):
     }
 
 
+COMMITMENT_VERSION = "2026-10-21-v1"
+COMMITMENT_TEXT = (
+    "本人承诺：仅将本软件用于学习相关网络知识及机制，在获取后24小时内删除；"
+    "不用于真实打卡或其他滥用，遵守法律法规及校纪校规；"
+    "知悉学号及操作记录可能被留存、滥用记录可能用于调查处理，并依法承担相应后果。"
+)
+
+
+def disclaimer_accepted():
+    return (config.get("disclaimer_accepted") is True and
+            config.get("disclaimer_commitment_version") == COMMITMENT_VERSION)
+
+
+class DisclaimerAcceptance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    agreed: StrictBool
+    commitment: Annotated[str, Field(strict=True, min_length=1, max_length=1024)]
+    commitment_version: Annotated[str, Field(strict=True, max_length=64)]
+
+
 @app.get("/api/system/disclaimer")
 async def get_disclaimer():
     return {
         "status": "ok",
-        "accepted": bool(config.get("disclaimer_accepted", False)),
+        "accepted": disclaimer_accepted(),
+        "commitment_text": COMMITMENT_TEXT,
+        "commitment_version": COMMITMENT_VERSION,
         "version": VERSION,
     }
 
 
 @app.post("/api/system/disclaimer/accept")
-async def accept_disclaimer():
-    previous = config.get("disclaimer_accepted", False)
-    config["disclaimer_accepted"] = True
+async def accept_disclaimer(body: DisclaimerAcceptance):
+    if body.commitment_version != COMMITMENT_VERSION:
+        raise HTTPException(status_code=409, detail="承诺条款已更新，请重新加载后确认")
+    # Ignore only explicit spacing/line breaks, consistently with the textarea.
+    spacing = str.maketrans('', '', ' \t\r\n\u3000')
+    if body.agreed is not True or body.commitment.translate(spacing) != COMMITMENT_TEXT.translate(spacing):
+        raise HTTPException(status_code=422, detail="请同意免责声明，并完整输入本人承诺内容")
+    if disclaimer_accepted():
+        return {"status": "ok", "accepted": True, "commitment_version": COMMITMENT_VERSION}
+    candidate = {**config, "disclaimer_accepted": True,
+                 "disclaimer_commitment_version": COMMITMENT_VERSION,
+                 "disclaimer_accepted_at": china_now().isoformat()}
     try:
-        save_config(config)
+        save_config(candidate)
     except Exception:
-        config["disclaimer_accepted"] = previous
         add_log("error", "免责声明确认保存失败，请重试。")
         raise HTTPException(status_code=500, detail="免责声明确认保存失败")
-    add_log("info", "用户已阅读并签署同意免责声明与使用条款。")
-    return {"status": "ok", "accepted": True}
+    config.update(candidate)
+    add_log("info", "用户已同意免责声明并完成本人承诺确认。")
+    return {"status": "ok", "accepted": True, "commitment_version": COMMITMENT_VERSION}
 
 
 @app.post("/api/window/show")
@@ -1568,3 +1616,8 @@ async def serve_favicon():
     if fav_file.exists():
         return FileResponse(fav_file)
     raise HTTPException(status_code=404, detail="Favicon not found")
+
+
+# Isolated TD routes use the same account identities and management boundary.
+from server.td_routes import install as install_td
+remove_td_account = install_td(app, CONFIG_FILE, resolve_account, accounts, add_log)

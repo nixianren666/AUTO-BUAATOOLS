@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+import traceback
 
 def main():
     project = Path(__file__).resolve().parent.parent
@@ -20,8 +21,8 @@ def main():
         source = Path(directory)
         for name in ("core", "server", "tests", "scripts", "installer", "systemd", ".github"):
             if (project/name).is_dir():
-                shutil.copytree(project/name, source/name, ignore=shutil.ignore_patterns("__pycache__"))
-        for pattern in ("*.spec", "app_icon.*", "tray_icon.png", "Dockerfile", "docker-compose.yml", "run.py", "requirements*.txt", "README.md"):
+                shutil.copytree(project/name, source/name, ignore=shutil.ignore_patterns("__pycache__", "test_td_issuer.py"))
+        for pattern in ("*.spec", "app_icon.*", "tray_icon.png", "Dockerfile", "docker-compose.yml", "run.py", "requirements*.txt", "README.md", "THIRD_PARTY_NOTICES.md"):
             for file in project.glob(pattern):
                 if file.is_file():
                     shutil.copy2(file, source/file.name)
@@ -37,7 +38,7 @@ def main():
             if event == "socket.connect":
                 address = args[1]
                 if isinstance(address, tuple) and str(address[0]) not in ("127.0.0.1", "localhost", "::1"):
-                    blocked.append(True)
+                    blocked.append([{"file":Path(frame.filename).name,"line":frame.lineno,"function":frame.name} for frame in traceback.extract_stack()[-45:]])
                     raise PermissionError("School/third-party traffic forbidden in isolated tests")
             if event in ("winreg.SetValue", "winreg.DeleteValue", "winreg.DeleteKey"):
                 raise PermissionError("Registry mutations forbidden in isolated tests")
@@ -53,6 +54,7 @@ def main():
         (report_dir/"test-output.txt").write_text(stream.getvalue(), encoding="utf-8")
         summary = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors), "skipped": len(result.skipped), "passed": result.wasSuccessful() and not result.skipped, "elapsed_seconds": round(time.monotonic()-started,2), "blocked_non_loopback_attempts": len(blocked), "failure_names": [str(t) for t,_ in result.failures], "error_names": [str(t) for t,_ in result.errors]}
         (report_dir/"test-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        (report_dir/"blocked-network-callers.json").write_text(json.dumps(blocked,indent=2),encoding="utf-8")
         print(json.dumps(summary, ensure_ascii=False))
         os.chdir(project)
         return 0 if summary["passed"] else 1

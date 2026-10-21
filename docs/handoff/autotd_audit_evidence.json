@@ -1,0 +1,1627 @@
+{
+  "repository_head": "a4c6e9b10867d970bf31d730b28673244e7cc433",
+  "historical_cloud_commit": "99fd3656d1386eee2ea0d3071b7e16bdd2e59fe6",
+  "distribution_version": "0.1.15",
+  "distribution_artifacts": [
+    {
+      "filename": "autotd_buaa-0.1.15-py3-none-any.whl",
+      "size": 40867,
+      "url": "https://files.pythonhosted.org/packages/1e/ae/e498b2c78a7fae1a717a5c447b1a2d870fe20247517ad6affa6293fbbd72/autotd_buaa-0.1.15-py3-none-any.whl",
+      "digests": {
+        "blake2b_256": "1eaee498b2c78a7fae1a717a5c447b1a2d870fe20247517ad6affa6293fbbd72",
+        "md5": "f7fb67501b33edd8a2a120c140a67c95",
+        "sha256": "7eb8471a732403754c578f11a339fbb46e3f674388040d2add25d4187fff08d4"
+      },
+      "upload_time_iso_8601": "2026-05-27T15:03:48.837171Z"
+    },
+    {
+      "filename": "autotd_buaa-0.1.15.tar.gz",
+      "size": 47076,
+      "url": "https://files.pythonhosted.org/packages/d8/39/e22c6552f6e14d737fe03b6c35ff1a8b4c0c85668caac8cf52eddd472b6f/autotd_buaa-0.1.15.tar.gz",
+      "digests": {
+        "blake2b_256": "d839e22c6552f6e14d737fe03b6c35ff1a8b4c0c85668caac8cf52eddd472b6f",
+        "md5": "41aab165a0c28674f8bf09b3454ff45b",
+        "sha256": "e0519f2863ab4ee83ce752f0c565c91d62d2d66fd16229e028c713f1037b33af"
+      },
+      "upload_time_iso_8601": "2026-05-27T15:03:50.340547Z"
+    }
+  ],
+  "wheel_sdist_identical_package_files": 20,
+  "wheel_record_verified_entries": 24,
+  "runtime_python_functions": 194,
+  "historical_package_byte_matches": [
+    "auto_td/background.py",
+    "auto_td/client.py",
+    "auto_td/constants.py",
+    "auto_td/limits.py",
+    "auto_td/logging_utils.py",
+    "auto_td/models.py",
+    "auto_td/paths.py",
+    "auto_td/quick.py",
+    "auto_td/runner.py",
+    "auto_td/scheduler.py",
+    "auto_td/telemetry.py",
+    "auto_td/templates/config.json",
+    "auto_td/templates/settings.json"
+  ],
+  "original_python_tests": 57,
+  "historical_node_tests": 11,
+  "backend_boundary_probes": 40,
+  "local_frontend_VM_probes": 7,
+  "historical_cloud_SQLite_probes": 14,
+  "real_school_requests": 0,
+  "third_party_telemetry_requests": 0,
+  "deployed_cloud_equivalence_verified": false,
+  "no_user_configuration_used": true,
+  "no_WSL": true,
+  "python_package_inventory": [
+    {
+      "path": "auto_td/__init__.py",
+      "sha256": "9669c6b244769e95b7c7ecc9986bb5571db455b9e593ceff5320b10e48f7b6a2",
+      "definitions": []
+    },
+    {
+      "path": "auto_td/background.py",
+      "sha256": "f204ef7c435e07a79ae538b997e1f0f587268e47581bc38b5624d6a90ac6c6c6",
+      "definitions": [
+        {
+          "name": "start_scheduler_process",
+          "line": 37,
+          "end_line": 53
+        },
+        {
+          "name": "stop_scheduler_process",
+          "line": 56,
+          "end_line": 82
+        },
+        {
+          "name": "get_scheduler_status",
+          "line": 85,
+          "end_line": 95
+        },
+        {
+          "name": "read_pid_file",
+          "line": 98,
+          "end_line": 104
+        },
+        {
+          "name": "write_pid_file",
+          "line": 107,
+          "end_line": 109
+        },
+        {
+          "name": "clear_pid_file",
+          "line": 112,
+          "end_line": 118
+        },
+        {
+          "name": "is_process_running",
+          "line": 121,
+          "end_line": 132
+        },
+        {
+          "name": "terminate_process",
+          "line": 135,
+          "end_line": 139
+        },
+        {
+          "name": "_is_process_running_windows",
+          "line": 142,
+          "end_line": 164
+        },
+        {
+          "name": "_terminate_process_windows",
+          "line": 167,
+          "end_line": 185
+        }
+      ]
+    },
+    {
+      "path": "auto_td/cli.py",
+      "sha256": "e477e900639aeeb15a6587563fff4f38f2c8ab33af74cd31e0dd17725fe46c71",
+      "definitions": [
+        {
+          "name": "main",
+          "line": 32,
+          "end_line": 46
+        },
+        {
+          "name": "build_parser",
+          "line": 49,
+          "end_line": 131
+        },
+        {
+          "name": "cmd_init",
+          "line": 134,
+          "end_line": 140
+        },
+        {
+          "name": "cmd_user_add",
+          "line": 143,
+          "end_line": 154
+        },
+        {
+          "name": "cmd_user_list",
+          "line": 157,
+          "end_line": 165
+        },
+        {
+          "name": "cmd_user_show",
+          "line": 168,
+          "end_line": 174
+        },
+        {
+          "name": "cmd_user_update",
+          "line": 177,
+          "end_line": 200
+        },
+        {
+          "name": "cmd_user_delete",
+          "line": 203,
+          "end_line": 210
+        },
+        {
+          "name": "cmd_user_count",
+          "line": 213,
+          "end_line": 229
+        },
+        {
+          "name": "cmd_image_add",
+          "line": 232,
+          "end_line": 236
+        },
+        {
+          "name": "cmd_image_list",
+          "line": 239,
+          "end_line": 243
+        },
+        {
+          "name": "cmd_run",
+          "line": 246,
+          "end_line": 263
+        },
+        {
+          "name": "run_once_foreground",
+          "line": 266,
+          "end_line": 269
+        },
+        {
+          "name": "cmd_daemon_worker",
+          "line": 272,
+          "end_line": 293
+        },
+        {
+          "name": "cmd_daemon_worker.request_stop",
+          "line": 277,
+          "end_line": 278
+        },
+        {
+          "name": "cmd_stop",
+          "line": 296,
+          "end_line": 303
+        },
+        {
+          "name": "cmd_status",
+          "line": 306,
+          "end_line": 312
+        },
+        {
+          "name": "cmd_ui",
+          "line": 315,
+          "end_line": 316
+        },
+        {
+          "name": "cmd_schedule_show",
+          "line": 319,
+          "end_line": 322
+        },
+        {
+          "name": "cmd_schedule_set",
+          "line": 325,
+          "end_line": 336
+        },
+        {
+          "name": "cmd_telemetry_status",
+          "line": 339,
+          "end_line": 343
+        },
+        {
+          "name": "cmd_telemetry_enable",
+          "line": 346,
+          "end_line": 352
+        },
+        {
+          "name": "cmd_telemetry_disable",
+          "line": 355,
+          "end_line": 359
+        },
+        {
+          "name": "cmd_telemetry_sync",
+          "line": 362,
+          "end_line": 366
+        },
+        {
+          "name": "print_summary",
+          "line": 369,
+          "end_line": 373
+        },
+        {
+          "name": "_storage",
+          "line": 376,
+          "end_line": 380
+        },
+        {
+          "name": "_add_user_identity_args",
+          "line": 383,
+          "end_line": 393
+        },
+        {
+          "name": "_user_args_to_dict",
+          "line": 396,
+          "end_line": 407
+        },
+        {
+          "name": "_require_manual_user_args",
+          "line": 410,
+          "end_line": 421
+        }
+      ]
+    },
+    {
+      "path": "auto_td/client.py",
+      "sha256": "d96dcc1910d96b1f49cd780c6a9c2c896f8b47f690b1996b5d4bf6076159e9b6",
+      "definitions": [
+        {
+          "name": "TDClient.__init__",
+          "line": 18,
+          "end_line": 31
+        },
+        {
+          "name": "TDClient.request",
+          "line": 33,
+          "end_line": 49
+        },
+        {
+          "name": "TDClient.check",
+          "line": 51,
+          "end_line": 77
+        },
+        {
+          "name": "TDClient.upload_photo",
+          "line": 79,
+          "end_line": 88
+        },
+        {
+          "name": "TDClient.query_count",
+          "line": 90,
+          "end_line": 104
+        },
+        {
+          "name": "TDClient.build_check_data",
+          "line": 106,
+          "end_line": 117
+        },
+        {
+          "name": "TDClient._connection_error_message",
+          "line": 119,
+          "end_line": 125
+        },
+        {
+          "name": "extract_exercise_count",
+          "line": 128,
+          "end_line": 132
+        },
+        {
+          "name": "clean_server_message",
+          "line": 135,
+          "end_line": 136
+        },
+        {
+          "name": "_recv_exact",
+          "line": 139,
+          "end_line": 146
+        },
+        {
+          "name": "_timestamp_in_allowed_windows",
+          "line": 149,
+          "end_line": 151
+        }
+      ]
+    },
+    {
+      "path": "auto_td/constants.py",
+      "sha256": "8d0c236a48218900af931edd23ce9accba586062c075a96d4850a747752fb1d7",
+      "definitions": []
+    },
+    {
+      "path": "auto_td/limits.py",
+      "sha256": "5598374f42f1297c7dbcee7e06a1f48046edb03fba6b9cc1249776fa5577e10f",
+      "definitions": [
+        {
+          "name": "has_reached_td_limit",
+          "line": 8,
+          "end_line": 10
+        },
+        {
+          "name": "td_limit_message",
+          "line": 13,
+          "end_line": 14
+        }
+      ]
+    },
+    {
+      "path": "auto_td/logging_utils.py",
+      "sha256": "ee143bceffcb8f548a32e907fcab91be4c8eabb1717d02ffa0551e34ab900be8",
+      "definitions": [
+        {
+          "name": "DailyFileHandler.__init__",
+          "line": 11,
+          "end_line": 16
+        },
+        {
+          "name": "DailyFileHandler.emit",
+          "line": 18,
+          "end_line": 24
+        },
+        {
+          "name": "DailyFileHandler.setFormatter",
+          "line": 26,
+          "end_line": 29
+        },
+        {
+          "name": "DailyFileHandler.close",
+          "line": 31,
+          "end_line": 35
+        },
+        {
+          "name": "DailyFileHandler._ensure_handler",
+          "line": 37,
+          "end_line": 48
+        },
+        {
+          "name": "setup_logging",
+          "line": 51,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "path": "auto_td/models.py",
+      "sha256": "f79bbe69d070074e22ca8627c58688788af365bc09869162b98022ad8361e2e5",
+      "definitions": [
+        {
+          "name": "User.from_dict",
+          "line": 19,
+          "end_line": 36
+        },
+        {
+          "name": "User.validated",
+          "line": 38,
+          "end_line": 47
+        },
+        {
+          "name": "User.to_dict",
+          "line": 49,
+          "end_line": 60
+        },
+        {
+          "name": "BatchResult.total",
+          "line": 83,
+          "end_line": 84
+        },
+        {
+          "name": "BatchResult.success_count",
+          "line": 87,
+          "end_line": 88
+        },
+        {
+          "name": "BatchResult.failure_count",
+          "line": 91,
+          "end_line": 92
+        },
+        {
+          "name": "_read_int",
+          "line": 95,
+          "end_line": 103
+        },
+        {
+          "name": "_image_name",
+          "line": 106,
+          "end_line": 109
+        }
+      ]
+    },
+    {
+      "path": "auto_td/paths.py",
+      "sha256": "0b09c9e4e1558debc78874c0aed86fcc1fa6c6714a49df6e5979a2585fe70a34",
+      "definitions": [
+        {
+          "name": "get_app_home",
+          "line": 7,
+          "end_line": 11
+        }
+      ]
+    },
+    {
+      "path": "auto_td/quick.py",
+      "sha256": "66ca98d76384aa8f9320ed51c650b655bc7adeca7e945ae24aa485c9cd4992e1",
+      "definitions": [
+        {
+          "name": "build_quick_user",
+          "line": 20,
+          "end_line": 42
+        },
+        {
+          "name": "normalize_campus",
+          "line": 45,
+          "end_line": 49
+        },
+        {
+          "name": "_machine_pool",
+          "line": 52,
+          "end_line": 57
+        },
+        {
+          "name": "_is_campus_machine",
+          "line": 60,
+          "end_line": 64
+        },
+        {
+          "name": "_is_direction_machine",
+          "line": 67,
+          "end_line": 72
+        }
+      ]
+    },
+    {
+      "path": "auto_td/runner.py",
+      "sha256": "b116a279a73e8bd7bcbc4940a8c3302d838ca2d0b7c84e5e962a2135fb5b170c",
+      "definitions": [
+        {
+          "name": "run_user_pipeline",
+          "line": 20,
+          "end_line": 73
+        },
+        {
+          "name": "run_all_users",
+          "line": 76,
+          "end_line": 103
+        },
+        {
+          "name": "sleep_with_countdown",
+          "line": 106,
+          "end_line": 110
+        },
+        {
+          "name": "_record_count",
+          "line": 113,
+          "end_line": 115
+        }
+      ]
+    },
+    {
+      "path": "auto_td/scheduler.py",
+      "sha256": "242420993d48f3700e3b8515173a89050d9759c785ffa46543db0d7ff5c92181",
+      "definitions": [
+        {
+          "name": "in_any_window",
+          "line": 22,
+          "end_line": 29
+        },
+        {
+          "name": "parse_window",
+          "line": 32,
+          "end_line": 34
+        },
+        {
+          "name": "run_scheduler_once",
+          "line": 37,
+          "end_line": 117
+        },
+        {
+          "name": "run_forever",
+          "line": 120,
+          "end_line": 137
+        },
+        {
+          "name": "clear_today_errors",
+          "line": 140,
+          "end_line": 156
+        },
+        {
+          "name": "format_today_status",
+          "line": 159,
+          "end_line": 177
+        },
+        {
+          "name": "_hhmm_to_minutes",
+          "line": 180,
+          "end_line": 186
+        },
+        {
+          "name": "_sleep_with_stop",
+          "line": 189,
+          "end_line": 193
+        },
+        {
+          "name": "_load_today_user_states",
+          "line": 196,
+          "end_line": 216
+        },
+        {
+          "name": "_remove_deleted_user_states",
+          "line": 219,
+          "end_line": 224
+        },
+        {
+          "name": "_discard_due_actions_outside_window",
+          "line": 227,
+          "end_line": 255
+        },
+        {
+          "name": "_perform_due_action",
+          "line": 258,
+          "end_line": 276
+        },
+        {
+          "name": "_perform_entrance",
+          "line": 279,
+          "end_line": 322
+        },
+        {
+          "name": "_perform_exit",
+          "line": 325,
+          "end_line": 370
+        },
+        {
+          "name": "_discard_current_round",
+          "line": 373,
+          "end_line": 384
+        },
+        {
+          "name": "_mark_error",
+          "line": 387,
+          "end_line": 395
+        },
+        {
+          "name": "_status_batch",
+          "line": 398,
+          "end_line": 403
+        },
+        {
+          "name": "_new_user_state",
+          "line": 406,
+          "end_line": 415
+        },
+        {
+          "name": "_completed_user_state",
+          "line": 418,
+          "end_line": 432
+        },
+        {
+          "name": "_record_count",
+          "line": 435,
+          "end_line": 437
+        },
+        {
+          "name": "_merge_counts_from_disk",
+          "line": 440,
+          "end_line": 443
+        },
+        {
+          "name": "_random_wait_seconds",
+          "line": 446,
+          "end_line": 447
+        },
+        {
+          "name": "_action_label",
+          "line": 450,
+          "end_line": 451
+        },
+        {
+          "name": "_localize",
+          "line": 454,
+          "end_line": 457
+        },
+        {
+          "name": "_iso",
+          "line": 460,
+          "end_line": 461
+        },
+        {
+          "name": "_parse_due_at",
+          "line": 464,
+          "end_line": 468
+        }
+      ]
+    },
+    {
+      "path": "auto_td/storage.py",
+      "sha256": "990f1d6038960290cf1e314706fbca2e0f09ad9c7dd5e9d5d70284888b32bf70",
+      "definitions": [
+        {
+          "name": "AppStorage.__init__",
+          "line": 14,
+          "end_line": 23
+        },
+        {
+          "name": "AppStorage.initialize",
+          "line": 25,
+          "end_line": 45
+        },
+        {
+          "name": "AppStorage.load_config",
+          "line": 47,
+          "end_line": 48
+        },
+        {
+          "name": "AppStorage.save_config",
+          "line": 50,
+          "end_line": 51
+        },
+        {
+          "name": "AppStorage.load_users",
+          "line": 53,
+          "end_line": 55
+        },
+        {
+          "name": "AppStorage.save_users",
+          "line": 57,
+          "end_line": 58
+        },
+        {
+          "name": "AppStorage.list_users",
+          "line": 60,
+          "end_line": 61
+        },
+        {
+          "name": "AppStorage.get_user",
+          "line": 63,
+          "end_line": 64
+        },
+        {
+          "name": "AppStorage.get_user_model",
+          "line": 66,
+          "end_line": 70
+        },
+        {
+          "name": "AppStorage.save_user",
+          "line": 72,
+          "end_line": 76
+        },
+        {
+          "name": "AppStorage.delete_user",
+          "line": 78,
+          "end_line": 82
+        },
+        {
+          "name": "AppStorage.validate_user",
+          "line": 84,
+          "end_line": 92
+        },
+        {
+          "name": "AppStorage.add_image",
+          "line": 94,
+          "end_line": 106
+        },
+        {
+          "name": "AppStorage.list_images",
+          "line": 108,
+          "end_line": 111
+        },
+        {
+          "name": "AppStorage.delete_image",
+          "line": 113,
+          "end_line": 122
+        },
+        {
+          "name": "AppStorage.image_path",
+          "line": 124,
+          "end_line": 125
+        },
+        {
+          "name": "AppStorage.load_settings",
+          "line": 127,
+          "end_line": 130
+        },
+        {
+          "name": "AppStorage.save_settings",
+          "line": 132,
+          "end_line": 133
+        },
+        {
+          "name": "AppStorage.update_settings",
+          "line": 135,
+          "end_line": 138
+        },
+        {
+          "name": "AppStorage.load_state",
+          "line": 140,
+          "end_line": 141
+        },
+        {
+          "name": "AppStorage.save_state",
+          "line": 143,
+          "end_line": 144
+        },
+        {
+          "name": "AppStorage.set_last_count",
+          "line": 146,
+          "end_line": 163
+        },
+        {
+          "name": "AppStorage.get_last_count",
+          "line": 165,
+          "end_line": 169
+        },
+        {
+          "name": "AppStorage._import_legacy_project",
+          "line": 171,
+          "end_line": 198
+        },
+        {
+          "name": "AppStorage._write_template_config",
+          "line": 200,
+          "end_line": 202
+        },
+        {
+          "name": "AppStorage._migrate_localhost_server_default",
+          "line": 204,
+          "end_line": 215
+        },
+        {
+          "name": "default_settings",
+          "line": 218,
+          "end_line": 224
+        },
+        {
+          "name": "default_state",
+          "line": 227,
+          "end_line": 228
+        },
+        {
+          "name": "load_legacy_jsonl",
+          "line": 231,
+          "end_line": 244
+        },
+        {
+          "name": "_read_json",
+          "line": 247,
+          "end_line": 249
+        },
+        {
+          "name": "_write_json",
+          "line": 252,
+          "end_line": 256
+        },
+        {
+          "name": "_deep_update",
+          "line": 259,
+          "end_line": 264
+        }
+      ]
+    },
+    {
+      "path": "auto_td/telemetry.py",
+      "sha256": "2102216821eb29fadcd56ce2460aeb8cc2c045c304fa3e4425ede92c76d5f25f",
+      "definitions": [
+        {
+          "name": "TelemetryTransport.post_json",
+          "line": 24,
+          "end_line": 31
+        },
+        {
+          "name": "UrlJsonTransport.post_json",
+          "line": 35,
+          "end_line": 61
+        },
+        {
+          "name": "ensure_telemetry_state",
+          "line": 64,
+          "end_line": 89
+        },
+        {
+          "name": "enable_telemetry",
+          "line": 92,
+          "end_line": 105
+        },
+        {
+          "name": "disable_telemetry",
+          "line": 108,
+          "end_line": 118
+        },
+        {
+          "name": "get_telemetry_status",
+          "line": 121,
+          "end_line": 131
+        },
+        {
+          "name": "queue_length",
+          "line": 134,
+          "end_line": 138
+        },
+        {
+          "name": "enqueue_install_initialized",
+          "line": 141,
+          "end_line": 142
+        },
+        {
+          "name": "enqueue_run_requested",
+          "line": 145,
+          "end_line": 146
+        },
+        {
+          "name": "enqueue_daemon_started",
+          "line": 149,
+          "end_line": 150
+        },
+        {
+          "name": "enqueue_daemon_stopped",
+          "line": 153,
+          "end_line": 154
+        },
+        {
+          "name": "enqueue_stop_requested",
+          "line": 157,
+          "end_line": 158
+        },
+        {
+          "name": "enqueue_user_changed",
+          "line": 161,
+          "end_line": 172
+        },
+        {
+          "name": "enqueue_snapshot_event",
+          "line": 175,
+          "end_line": 180
+        },
+        {
+          "name": "enqueue_td_count_changed",
+          "line": 183,
+          "end_line": 216
+        },
+        {
+          "name": "enqueue_daily_midnight_snapshot",
+          "line": 219,
+          "end_line": 231
+        },
+        {
+          "name": "enqueue_event",
+          "line": 234,
+          "end_line": 255
+        },
+        {
+          "name": "flush_telemetry_queue",
+          "line": 258,
+          "end_line": 306
+        },
+        {
+          "name": "_registration_payload",
+          "line": 309,
+          "end_line": 317
+        },
+        {
+          "name": "_register_installation",
+          "line": 320,
+          "end_line": 333
+        },
+        {
+          "name": "_post_event",
+          "line": 336,
+          "end_line": 351
+        },
+        {
+          "name": "_snapshot_payload",
+          "line": 354,
+          "end_line": 368
+        },
+        {
+          "name": "_queue_path",
+          "line": 371,
+          "end_line": 372
+        },
+        {
+          "name": "_append_queue",
+          "line": 375,
+          "end_line": 380
+        },
+        {
+          "name": "_read_queue",
+          "line": 383,
+          "end_line": 391
+        },
+        {
+          "name": "_write_queue",
+          "line": 394,
+          "end_line": 404
+        },
+        {
+          "name": "_mark_registered",
+          "line": 407,
+          "end_line": 410
+        },
+        {
+          "name": "_mark_unregistered",
+          "line": 413,
+          "end_line": 416
+        },
+        {
+          "name": "_is_unknown_installation_error",
+          "line": 419,
+          "end_line": 420
+        },
+        {
+          "name": "_record_sent",
+          "line": 423,
+          "end_line": 428
+        },
+        {
+          "name": "_record_last_error",
+          "line": 431,
+          "end_line": 435
+        },
+        {
+          "name": "_url",
+          "line": 438,
+          "end_line": 439
+        },
+        {
+          "name": "_signature",
+          "line": 442,
+          "end_line": 443
+        },
+        {
+          "name": "_json_body",
+          "line": 446,
+          "end_line": 447
+        },
+        {
+          "name": "_local_now",
+          "line": 450,
+          "end_line": 455
+        }
+      ]
+    },
+    {
+      "path": "auto_td/ui.py",
+      "sha256": "ae5b6552d5103e61f7fbf1c081839f6fa8ae3e739debcfcfa6ac6519ba2c43cf",
+      "definitions": [
+        {
+          "name": "UiService.__init__",
+          "line": 39,
+          "end_line": 40
+        },
+        {
+          "name": "UiService.get_state",
+          "line": 42,
+          "end_line": 75
+        },
+        {
+          "name": "UiService.list_images",
+          "line": 77,
+          "end_line": 91
+        },
+        {
+          "name": "UiService.save_uploaded_image",
+          "line": 93,
+          "end_line": 105
+        },
+        {
+          "name": "UiService.delete_image",
+          "line": 107,
+          "end_line": 109
+        },
+        {
+          "name": "UiService.add_user",
+          "line": 111,
+          "end_line": 124
+        },
+        {
+          "name": "UiService.delete_user",
+          "line": 126,
+          "end_line": 133
+        },
+        {
+          "name": "UiService.toggle_background",
+          "line": 135,
+          "end_line": 154
+        },
+        {
+          "name": "UiService.run_once",
+          "line": 156,
+          "end_line": 175
+        },
+        {
+          "name": "UiService._storage",
+          "line": 177,
+          "end_line": 181
+        },
+        {
+          "name": "serve_ui",
+          "line": 184,
+          "end_line": 198
+        },
+        {
+          "name": "_today_payload",
+          "line": 201,
+          "end_line": 218
+        },
+        {
+          "name": "_make_handler",
+          "line": 221,
+          "end_line": 350
+        },
+        {
+          "name": "_make_handler.UiRequestHandler.do_GET",
+          "line": 223,
+          "end_line": 241
+        },
+        {
+          "name": "_make_handler.UiRequestHandler.do_POST",
+          "line": 243,
+          "end_line": 259
+        },
+        {
+          "name": "_make_handler.UiRequestHandler.do_DELETE",
+          "line": 261,
+          "end_line": 271
+        },
+        {
+          "name": "_make_handler.UiRequestHandler.log_message",
+          "line": 273,
+          "end_line": 274
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._read_json",
+          "line": 276,
+          "end_line": 281
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._read_multipart_upload",
+          "line": 283,
+          "end_line": 304
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_static",
+          "line": 306,
+          "end_line": 308
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_image",
+          "line": 310,
+          "end_line": 320
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_json",
+          "line": 322,
+          "end_line": 324
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_error",
+          "line": 326,
+          "end_line": 327
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_exception",
+          "line": 329,
+          "end_line": 335
+        },
+        {
+          "name": "_make_handler.UiRequestHandler._send_bytes",
+          "line": 337,
+          "end_line": 348
+        }
+      ]
+    }
+  ],
+  "javascript_inventory": [
+    {
+      "scope": "local-ui",
+      "path": "wheel/auto_td/ui_static/app.js",
+      "sha256": "fae74015031edbdf71e3bb4a752594b11cf660cb5d4dbd27d42ae533c0fd619e",
+      "named_functions": [
+        {
+          "name": "setNotice",
+          "line": 11
+        },
+        {
+          "name": "requestJson",
+          "line": 16
+        },
+        {
+          "name": "badgeClass",
+          "line": 30
+        },
+        {
+          "name": "statusLabel",
+          "line": 37
+        },
+        {
+          "name": "actionLabel",
+          "line": 47
+        },
+        {
+          "name": "renderUsers",
+          "line": 55
+        },
+        {
+          "name": "renderImages",
+          "line": 103
+        },
+        {
+          "name": "renderState",
+          "line": 132
+        },
+        {
+          "name": "refresh",
+          "line": 149
+        },
+        {
+          "name": "withBusy",
+          "line": 155
+        },
+        {
+          "name": "deleteUser",
+          "line": 172
+        },
+        {
+          "name": "deleteImage",
+          "line": 179
+        }
+      ]
+    },
+    {
+      "scope": "historical-worker",
+      "path": "historical/telemetry-worker/src/index.js",
+      "sha256": "77ead47bda1481873ce0eeb1625c991cdbd4d6c1d00826dbc252e865fe29cc94",
+      "named_functions": [
+        {
+          "name": "handleRequest",
+          "line": 13
+        },
+        {
+          "name": "registerInstallation",
+          "line": 60
+        },
+        {
+          "name": "acceptEvent",
+          "line": 82
+        },
+        {
+          "name": "applyEvent",
+          "line": 120
+        },
+        {
+          "name": "applySnapshot",
+          "line": 154
+        },
+        {
+          "name": "normalizeUsers",
+          "line": 166
+        },
+        {
+          "name": "eventFromRow",
+          "line": 176
+        },
+        {
+          "name": "isAdmin",
+          "line": 187
+        },
+        {
+          "name": "unauthorized",
+          "line": 197
+        },
+        {
+          "name": "responseError",
+          "line": 201
+        },
+        {
+          "name": "json",
+          "line": 205
+        },
+        {
+          "name": "adminJson",
+          "line": 210
+        },
+        {
+          "name": "requireString",
+          "line": 214
+        },
+        {
+          "name": "signPayload",
+          "line": 220
+        },
+        {
+          "name": "signText",
+          "line": 224
+        },
+        {
+          "name": "timingSafeEqual",
+          "line": 236
+        },
+        {
+          "name": "dayFrom",
+          "line": 245
+        },
+        {
+          "name": "todayDay",
+          "line": 249
+        },
+        {
+          "name": "adminHtml",
+          "line": 258
+        },
+        {
+          "name": "loadJson",
+          "line": 289
+        },
+        {
+          "name": "cell",
+          "line": 294
+        },
+        {
+          "name": "upsertInstallationSql",
+          "line": 316
+        },
+        {
+          "name": "markInstallationAbsentSql",
+          "line": 329
+        },
+        {
+          "name": "upsertStudentSql",
+          "line": 333
+        },
+        {
+          "name": "upsertInstallationStudentSql",
+          "line": 345
+        },
+        {
+          "name": "insertDailyInstallationSnapshotSql",
+          "line": 358
+        },
+        {
+          "name": "insertDailyStudentSnapshotSql",
+          "line": 364
+        },
+        {
+          "name": "getInstallationSecretSql",
+          "line": 376
+        },
+        {
+          "name": "getEventSql",
+          "line": 380
+        },
+        {
+          "name": "insertEventSql",
+          "line": 384
+        },
+        {
+          "name": "insertTdDeltaSql",
+          "line": 390
+        },
+        {
+          "name": "summarySql",
+          "line": 396
+        },
+        {
+          "name": "listUsersSql",
+          "line": 407
+        },
+        {
+          "name": "listEventsSql",
+          "line": 421
+        },
+        {
+          "name": "dailySql",
+          "line": 429
+        }
+      ]
+    },
+    {
+      "scope": "historical-pages",
+      "path": "historical/telemetry-pages/app.js",
+      "sha256": "0463fc040e5ea2fe483566b232bbf4adc9355e41081b349682961800f4dc21db",
+      "named_functions": [
+        {
+          "name": "initialize",
+          "line": 30
+        },
+        {
+          "name": "refreshDashboard",
+          "line": 57
+        },
+        {
+          "name": "fetchAdminJson",
+          "line": 91
+        },
+        {
+          "name": "renderLoading",
+          "line": 107
+        },
+        {
+          "name": "renderOverview",
+          "line": 122
+        },
+        {
+          "name": "renderChart",
+          "line": 134
+        },
+        {
+          "name": "chartLabels",
+          "line": 190
+        },
+        {
+          "name": "renderUsers",
+          "line": 200
+        },
+        {
+          "name": "renderEvents",
+          "line": 220
+        },
+        {
+          "name": "renderError",
+          "line": 235
+        },
+        {
+          "name": "metricCard",
+          "line": 250
+        },
+        {
+          "name": "tableMessage",
+          "line": 254
+        },
+        {
+          "name": "payloadSummary",
+          "line": 258
+        },
+        {
+          "name": "parsePayload",
+          "line": 270
+        },
+        {
+          "name": "eventIsWarning",
+          "line": 280
+        },
+        {
+          "name": "loadSettings",
+          "line": 284
+        },
+        {
+          "name": "saveSettings",
+          "line": 298
+        },
+        {
+          "name": "normalizeEndpoint",
+          "line": 305
+        },
+        {
+          "name": "todayInShanghai",
+          "line": 310
+        },
+        {
+          "name": "formatTime",
+          "line": 323
+        },
+        {
+          "name": "formatClock",
+          "line": 336
+        },
+        {
+          "name": "formatNumber",
+          "line": 345
+        },
+        {
+          "name": "shortId",
+          "line": 351
+        },
+        {
+          "name": "safeText",
+          "line": 356
+        },
+        {
+          "name": "showToast",
+          "line": 364
+        },
+        {
+          "name": "escapeHtml",
+          "line": 374
+        }
+      ]
+    }
+  ],
+  "upstream_python": {
+    "passed": true,
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 2.945
+  },
+  "upstream_blocked_external_attempts": 12,
+  "upstream_historical_node": {
+    "passed": true,
+    "tests": 11,
+    "worker": 10,
+    "pages_static": 1,
+    "failures": 0,
+    "skipped": 0
+  },
+  "backend_probes": {
+    "reproduced": true,
+    "count": 40,
+    "observations": {
+      "P01": {
+        "server_message": "未成功，请重试",
+        "success": true
+      },
+      "P02": {
+        "request_type": 80,
+        "uses_entrance_machine": true,
+        "outside_local_windows_sent": true
+      },
+      "P03": {
+        "body_read_requested": 1000000000
+      },
+      "P06": {
+        "old_count_skips_current_day": true
+      },
+      "P10": {
+        "actions": [
+          "entrance at 09:59",
+          "exit at 11:30"
+        ],
+        "closed_period_not_polled": true
+      },
+      "P20": {
+        "telemetry_disable_overwritten_by_poll_save": true
+      },
+      "P31": {
+        "request_reached_mutation": true
+      }
+    }
+  },
+  "frontend_VM_probes": {
+    "passed": true,
+    "probes": 7,
+    "scope": "Node VM with minimal DOM and controlled fetch, not a real browser",
+    "real_school_requests": 0,
+    "third_party_requests": 0,
+    "results": [
+      {
+        "id": "F01-old-refresh-overwrites-new",
+        "reproduced": true,
+        "observation": "No request generation or response ordering guard"
+      },
+      {
+        "id": "F02-delete-leaves-real-delete-button-enabled",
+        "reproduced": true,
+        "observation": "The busy state targets refreshButton; deletion has no exclusion guard"
+      },
+      {
+        "id": "F03-manual-run-and-daemon-toggle-overlap",
+        "reproduced": true,
+        "observation": "Both operation requests can be pending concurrently"
+      },
+      {
+        "id": "F04-entire-batch-failure-still-success-notice",
+        "reproduced": true,
+        "observation": "All-failure result is presented with success styling"
+      },
+      {
+        "id": "F05-no-polling-or-request-timeout",
+        "reproduced": true,
+        "observation": "Only initial refresh, action refresh or manual refresh; hanging fetch has no application timeout"
+      },
+      {
+        "id": "F06-http200-invalid-json-becomes-empty-object",
+        "reproduced": true,
+        "observation": "JSON parse failure on HTTP 200 is silently converted to {}"
+      },
+      {
+        "id": "F07-render-text-is-not-innerHTML",
+        "reproduced": true,
+        "observation": "Positive protection: local user text is assigned via textContent"
+      }
+    ]
+  },
+  "historical_cloud_probes": {
+    "passed": true,
+    "probes": 14,
+    "results": [
+      {
+        "id": "C01-unauthenticated-reregister-replaces-secret",
+        "reproduced": true,
+        "observation": "Knowing an installation ID is sufficient to replace its signing secret via registration"
+      },
+      {
+        "id": "C02-signed-self-reported-delta-is-not-school-verified",
+        "reproduced": true,
+        "observation": "Delta and provenance are trusted from the client; no school verification or source restriction"
+      },
+      {
+        "id": "C03-admin-absent-token-rejected",
+        "reproduced": true,
+        "observation": "Positive: admin data requires the configured token"
+      },
+      {
+        "id": "C04-invalid-event-signature-rejected",
+        "reproduced": true,
+        "observation": "Positive: HMAC is checked for event intake"
+      },
+      {
+        "id": "C05-older-duplicate-clears-current-presence",
+        "reproduced": true,
+        "observation": "Actual SQLite: an older signed duplicate resets present flags to zero despite newer snapshots"
+      },
+      {
+        "id": "C06-duplicate-id-ownership-is-not-checked",
+        "reproduced": true,
+        "observation": "Given another installation event ID, duplicate processing can cross installation ownership and replace its secret"
+      },
+      {
+        "id": "C07-admin-query-token-accepted",
+        "reproduced": true,
+        "observation": "Admin credential is accepted in the URL and embedded in inline JavaScript"
+      },
+      {
+        "id": "C08-fallback-dashboard-HTML-not-escaped",
+        "reproduced": true,
+        "observation": "Stored text enters innerHTML unescaped; harmless markup injection reproduced, no live-service exploit attempted"
+      },
+      {
+        "id": "C09-registration-timestamp-is-not-validated",
+        "reproduced": true,
+        "observation": "Untrusted registered_at is persisted as a date without format/range validation"
+      },
+      {
+        "id": "C10-primary-dashboard-invalid-date-HTML-sink",
+        "reproduced": true,
+        "observation": "Primary Pages escapes user IDs but inserts invalid date fallback strings without escaping"
+      },
+      {
+        "id": "C11-primary-dashboard-localStorage-token",
+        "reproduced": true,
+        "observation": "Persistent browser storage holds a reusable admin credential; bearer header is used for requests"
+      },
+      {
+        "id": "C12-partial-DB-write-survives-request-failure",
+        "reproduced": true,
+        "observation": "No transaction: event row and presence reset persist despite HTTP 500"
+      },
+      {
+        "id": "C13-SQL-parameter-binding-keeps-markup-literal",
+        "reproduced": true,
+        "observation": "Positive: SQL bind parameters prevent text from becoming SQL syntax"
+      },
+      {
+        "id": "C14-deleting-local-user-does-not-delete-cloud-history",
+        "reproduced": true,
+        "observation": "Deletion snapshot marks absence while retaining historical student records"
+      }
+    ],
+    "source_commit": "99fd3656d1386eee2ea0d3071b7e16bdd2e59fe6",
+    "database": "Actual in-memory SQLite via node:sqlite with a D1-compatible adapter",
+    "real_network_requests": 0,
+    "deployed_service_equivalence_verified": false
+  },
+  "official_rules_sources": [
+    {
+      "url": "https://tyb.buaa.edu.cn/info/1035/4279.htm",
+      "scope": "2025-2026学年第2学期，发布2026-03-31；不是未经核实的2026秋季校历"
+    },
+    {
+      "url": "https://tyb.buaa.edu.cn/qzty/gzzd.htm",
+      "scope": "公开规章目录检索"
+    }
+  ],
+  "limitations": [
+    "No real school service requests or official final-count verification",
+    "No request to the deployed telemetry or admin service",
+    "Cloud historical source may differ from deployed code",
+    "Frontend VM probes are not browser/native GUI acceptance",
+    "In-memory SQLite adapter is not a Cloudflare production deployment",
+    "No long-term unattended or native cross-platform acceptance",
+    "No integration, production source modification or release in this round"
+  ],
+  "local_analysis_only": true
+}

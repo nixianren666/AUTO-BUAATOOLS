@@ -14,6 +14,10 @@ from core.domain import now
 
 class APIContracts(unittest.TestCase):
     def setUp(self):
+        backend.boya_scheduler.stop()
+        self.worker = patch.object(backend.boya_scheduler, 'start')
+        self.worker.start()
+        self.addCleanup(self.worker.stop)
         self.previous = dict(backend.accounts)
         self.previous_active = backend.active_username
         backend.accounts.clear()
@@ -49,7 +53,7 @@ class APIContracts(unittest.TestCase):
 
     def test_public_health_contains_no_account_identity(self):
         response = self.client.get("/api/health").json()
-        self.assertEqual(response["version"], "1.3.9")
+        self.assertEqual(response["version"], "1.4.10")
         self.assertNotIn("active_username", response)
         self.assertNotIn(self.account.username, str(response))
 

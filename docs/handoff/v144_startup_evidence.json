@@ -1,0 +1,180 @@
+{
+  "version": "1.4.4",
+  "baseline": "local1.4.3",
+  "before": {
+    "startupResult": "boot-watchdog",
+    "phases": [
+      "drawing",
+      "resetting"
+    ],
+    "emblemTransformSeen": false,
+    "samples": 4884
+  },
+  "test_patch_probe": {
+    "startupResult": "complete",
+    "phases": [
+      "drawing",
+      "flying",
+      "burst"
+    ],
+    "emblemTransformSeen": true,
+    "samples": 1783
+  },
+  "source": {
+    "tests": 289,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 70.04,
+    "blocked_non_loopback_attempts": 2,
+    "failure_names": [],
+    "error_names": []
+  },
+  "browser_checks": 68,
+  "compiled_checks": 80,
+  "compiled_td": {
+    "passed": true,
+    "tests": 95,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "compiled_modules": [
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "server.td_routes"
+    ],
+    "blocked_external": 0,
+    "elapsed_seconds": 3.91
+  },
+  "modules_match": 30,
+  "assets_match": 21,
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 2,
+      "archive_members": 320,
+      "carchive_members": 1921,
+      "pyz_members": 1726,
+      "bytes": 205086057
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33815347,
+        "sha256": "01e6f051cdb1ff949f669b8b8e88f9b22b4fa607d9494ad3de5cdbbe8422b35b"
+      },
+      {
+        "name": "TD-License-Generator.exe",
+        "size": 21181947,
+        "sha256": "cd951c52112de3d72fc7b26cf76e74e893fb9b6689c36c32a72e4f117c124ab4"
+      }
+    ],
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "native_visual": {
+    "passed": true,
+    "version": "1.4.4",
+    "profile": "private synthetic smoke profile",
+    "tool": "computer-use @oai/sky",
+    "cold_native_process": true,
+    "discrete_native_samples": 5,
+    "observations": [
+      "Cold native window initially black before document paints",
+      "Crest and wordmark draw on black background with red notice",
+      "Full crest and wordmark present before travel",
+      "Small crest observed near top-left during travel with blurred workspace revealing; notice and name no longer opaque",
+      "Normal clear interface after travel and particle finish"
+    ],
+    "limitations": [
+      "Discrete screenshots, not continuous native video",
+      "First attempt returned non-target content; rejected, not saved or counted",
+      "F5 did not reload the WebView, so a fresh own process was used",
+      "No real school writes"
+    ]
+  },
+  "source_diff": {
+    "passed": true,
+    "baseline": "local1.4.3",
+    "changed": [
+      "core/version.py",
+      "server/static/index.html",
+      "server/static/js/startup.js",
+      "scripts/notice_acceptance.cjs",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_v127_api.py",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "README.md",
+      "run.py",
+      "BUAA-Signin-mac.spec"
+    ],
+    "version_only_files": [
+      "core/version.py",
+      "run.py",
+      "README.md",
+      "BUAA-Signin-mac.spec",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "server/static/index.html",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_v127_api.py"
+    ],
+    "business_and_glass_and_license_unchanged": true,
+    "default_still_1_4_3": true
+  },
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.4",
+    "targets": [
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin-v1.4.4-portable.exe",
+      "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe"
+    ],
+    "deferred": [],
+    "main_sha256": "01e6f051cdb1ff949f669b8b8e88f9b22b4fa607d9494ad3de5cdbbe8422b35b",
+    "issuer_unchanged": true,
+    "config_unchanged_during_copy": true,
+    "td_private_unchanged_during_copy": true,
+    "user_processes_terminated": false,
+    "published": false
+  },
+  "published": false,
+  "audit_directory": "C:\\Users\\cjt16\\.codex\\tmp\\ubaa-v144-startup-20261020",
+  "limitations": [
+    "No new Setup/macOS/Linux native verification",
+    "No real school writes",
+    "Native observations are discrete screenshots, not continuous video",
+    "Reduced motion and restored-hidden startup skip intentionally preserved",
+    "Earlier source run failed; fixed candidate snapshot rerun passed, failure preserved"
+  ],
+  "git_privacy": {
+    "passed": true,
+    "counts": {
+      "git_objects": 933,
+      "working_files": 257,
+      "embedded_members": 0,
+      "bytes": 602068334
+    },
+    "findings": 0,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  }
+}

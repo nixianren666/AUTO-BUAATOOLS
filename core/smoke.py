@@ -84,3 +84,4 @@ def seed(backend):
         backend.accounts[username] = account
     backend.active_username = "fixture-account-1"
     backend.config["disclaimer_accepted"] = True
+    backend.config["disclaimer_commitment_version"] = backend.COMMITMENT_VERSION

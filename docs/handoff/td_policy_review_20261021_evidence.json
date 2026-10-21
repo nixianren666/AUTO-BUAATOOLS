@@ -1,0 +1,489 @@
+{
+  "date": "2026-10-21",
+  "current_version": "1.4.6",
+  "review_only": true,
+  "upstream": {
+    "upstream_current_branch": "open",
+    "upstream_current_head": "a4c6e9b10867d970bf31d730b28673244e7cc433",
+    "upstream_latest_pypi": "0.1.15",
+    "artifacts": [
+      {
+        "filename": "autotd_buaa-0.1.15-py3-none-any.whl",
+        "sha256": "7eb8471a732403754c578f11a339fbb46e3f674388040d2add25d4187fff08d4",
+        "matches_current_pypi": true
+      },
+      {
+        "filename": "autotd_buaa-0.1.15.tar.gz",
+        "sha256": "e0519f2863ab4ee83ce752f0c565c91d62d2d66fd16229e028c713f1037b33af",
+        "matches_current_pypi": true
+      }
+    ],
+    "response_rows": [
+      {
+        "synthetic_message": "未成功",
+        "upstream_accepted": true,
+        "ours_accepted": false,
+        "actual_school_message": false
+      },
+      {
+        "synthetic_message": "未刷卡成功",
+        "upstream_accepted": true,
+        "ours_accepted": true,
+        "actual_school_message": false
+      },
+      {
+        "synthetic_message": "本次未刷卡成功",
+        "upstream_accepted": true,
+        "ours_accepted": true,
+        "actual_school_message": false
+      },
+      {
+        "synthetic_message": "刷卡成功, 本学期锻炼次数：12",
+        "upstream_accepted": true,
+        "ours_accepted": true,
+        "actual_school_message": false
+      }
+    ],
+    "upstream_query_count_calls_check_with_enforce_time_window_false": true,
+    "school_requests": 0,
+    "production_changes": false
+  },
+  "public_source_fetches": {
+    "autotd-readme": {
+      "url": "https://raw.githubusercontent.com/DeNeRATe-cool/AutoTD/open/README.md",
+      "status": 200,
+      "sha256": "cf16a3c3c4f35a4ab384da79601c19e7d200107ebe4142ecdb246ebfd8aa7d03",
+      "bytes": 3112
+    },
+    "pypi": {
+      "url": "https://pypi.org/pypi/autotd-buaa/json",
+      "status": 200,
+      "sha256": "ce9f9b7908270f6022354d1a93a071c9f0d139e351592c14c0419bfa848288c6",
+      "bytes": 33411,
+      "latest_version": "0.1.15"
+    },
+    "official-spring": {
+      "url": "https://tyb.buaa.edu.cn/info/1019/1622.htm",
+      "status": 200,
+      "sha256": "2609a43b88131ccb4b666a10b20e317ed2440e8545e2b3cf33395310d7406677",
+      "bytes": 54857
+    },
+    "official-autumn2025": {
+      "url": "https://tyb.buaa.edu.cn/info/1019/1623.htm",
+      "status": 200,
+      "sha256": "2b220918f291548da3d34feffef45fde57f4dad3b57524958de0c6f8c7543d0d",
+      "bytes": 37184
+    },
+    "official-index": {
+      "url": "https://tyb.buaa.edu.cn/ggfw/gzzd.htm",
+      "status": 200,
+      "sha256": "b357f95b02dc7b29729f040252f3039f725538f0d05657d5a7201377af6fb852",
+      "bytes": 21849
+    },
+    "official-credits": {
+      "url": "https://tyb.buaa.edu.cn/info/1019/1618.htm",
+      "status": 200,
+      "sha256": "0cc3acd5ee8669a624b6138c590fd7f88cb8f509ee385fe96230ad86f039d01c",
+      "bytes": 39195
+    }
+  },
+  "source": {
+    "mode": "source",
+    "version": "1.4.6",
+    "checks_passed": 49,
+    "checks": [
+      "time-07:29:59",
+      "time-07:30:00",
+      "time-09:59:59",
+      "time-10:00:00",
+      "time-10:00:59",
+      "time-10:01:00",
+      "time-11:29:59",
+      "time-11:30:00",
+      "time-13:59:59",
+      "time-14:00:00",
+      "time-14:00:59",
+      "time-14:01:00",
+      "time-15:29:59",
+      "time-15:30:00",
+      "time-19:59:59",
+      "time-20:00:00",
+      "time-20:00:59",
+      "time-20:01:00",
+      "weekday-0",
+      "weekday-1",
+      "weekday-2",
+      "weekday-3",
+      "weekday-4",
+      "weekday-5",
+      "weekday-6",
+      "activity-2026-09-30",
+      "activity-2026-10-01",
+      "activity-2026-12-31",
+      "activity-2027-01-01",
+      "closing-600-431",
+      "closing-600-430",
+      "closing-600-429",
+      "closing-840-431",
+      "closing-840-430",
+      "closing-840-429",
+      "closing-1200-431",
+      "closing-1200-430",
+      "closing-1200-429",
+      "exit-deadline-419",
+      "exit-deadline-420",
+      "expiry-state-420",
+      "exit-deadline-421",
+      "expiry-state-421",
+      "sleep-next-window-never-sends-old-exit",
+      "24-concurrent-ticks-one-entry",
+      "separate-sqlite-connection-one-claim",
+      "failure-budget-not-refunded-after-resolve",
+      "changed-official-term-prevents-network",
+      "negative-denied-未成功"
+    ],
+    "time_rows": [
+      {
+        "clock": "07:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "07:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "09:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "13:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "19:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:01:00",
+        "ours": false,
+        "upstream": false
+      }
+    ],
+    "findings": [
+      {
+        "id": "TD-R02",
+        "kind": "reproduced-stale-display",
+        "old_count_visible": 12,
+        "rules_valid": false,
+        "network_sent": false,
+        "detail": "Semester mismatch safely stops requests, but current-semester progress still exposes prior manually recorded count until settings are corrected."
+      },
+      {
+        "id": "TD-R01",
+        "kind": "synthetic-negative-response-accepted",
+        "message": "未刷卡成功",
+        "observed_on_school": false
+      },
+      {
+        "id": "TD-R01",
+        "kind": "synthetic-negative-response-accepted",
+        "message": "本次未刷卡成功",
+        "observed_on_school": false
+      }
+    ],
+    "regression": {
+      "tests": 104,
+      "passed": true,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "elapsed_seconds": 2.36
+    },
+    "external_connect_attempts": 0,
+    "school_requests": 0,
+    "personal_data_used": false,
+    "production_changed": false,
+    "exe_sha256": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+  },
+  "actual_compiled_modules": {
+    "mode": "compiled",
+    "version": "1.4.6",
+    "checks_passed": 49,
+    "checks": [
+      "time-07:29:59",
+      "time-07:30:00",
+      "time-09:59:59",
+      "time-10:00:00",
+      "time-10:00:59",
+      "time-10:01:00",
+      "time-11:29:59",
+      "time-11:30:00",
+      "time-13:59:59",
+      "time-14:00:00",
+      "time-14:00:59",
+      "time-14:01:00",
+      "time-15:29:59",
+      "time-15:30:00",
+      "time-19:59:59",
+      "time-20:00:00",
+      "time-20:00:59",
+      "time-20:01:00",
+      "weekday-0",
+      "weekday-1",
+      "weekday-2",
+      "weekday-3",
+      "weekday-4",
+      "weekday-5",
+      "weekday-6",
+      "activity-2026-09-30",
+      "activity-2026-10-01",
+      "activity-2026-12-31",
+      "activity-2027-01-01",
+      "closing-600-431",
+      "closing-600-430",
+      "closing-600-429",
+      "closing-840-431",
+      "closing-840-430",
+      "closing-840-429",
+      "closing-1200-431",
+      "closing-1200-430",
+      "closing-1200-429",
+      "exit-deadline-419",
+      "exit-deadline-420",
+      "expiry-state-420",
+      "exit-deadline-421",
+      "expiry-state-421",
+      "sleep-next-window-never-sends-old-exit",
+      "24-concurrent-ticks-one-entry",
+      "separate-sqlite-connection-one-claim",
+      "failure-budget-not-refunded-after-resolve",
+      "changed-official-term-prevents-network",
+      "negative-denied-未成功"
+    ],
+    "time_rows": [
+      {
+        "clock": "07:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "07:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "09:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "13:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "19:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:01:00",
+        "ours": false,
+        "upstream": false
+      }
+    ],
+    "findings": [
+      {
+        "id": "TD-R02",
+        "kind": "reproduced-stale-display",
+        "old_count_visible": 12,
+        "rules_valid": false,
+        "network_sent": false,
+        "detail": "Semester mismatch safely stops requests, but current-semester progress still exposes prior manually recorded count until settings are corrected."
+      },
+      {
+        "id": "TD-R01",
+        "kind": "synthetic-negative-response-accepted",
+        "message": "未刷卡成功",
+        "observed_on_school": false
+      },
+      {
+        "id": "TD-R01",
+        "kind": "synthetic-negative-response-accepted",
+        "message": "本次未刷卡成功",
+        "observed_on_school": false
+      }
+    ],
+    "regression": {
+      "tests": 104,
+      "passed": true,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "elapsed_seconds": 2.39
+    },
+    "external_connect_attempts": 0,
+    "school_requests": 0,
+    "personal_data_used": false,
+    "production_changed": false,
+    "exe_sha256": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+  },
+  "runtime_source_and_exe_unchanged": {
+    "core/td_policy.py": "34ed860f0a6ecd588e8a0c87ce2a0d1ef393c7c5cbeabb3d8b1eeef971ece466",
+    "core/td_scheduler.py": "f3aabcf4e87a7cfb89645552f743b7c68b26fe47f9458b4f5a34c4dec332ca8d",
+    "core/td_client.py": "01690c11845d0b3d2b89348911e5cefcda7a7246fd650ab7dba7b582c40015be",
+    "core/td_store.py": "c7f02afccb6321b0adc56323036977286509ba5dc830ced52a442feb4789eeb7",
+    "core/td_license.py": "956344b5806e11488e261c382e7c05a4600ad55e1c8591dcbe6d517686ad20fa",
+    "server/td_routes.py": "c487c51db73f13ac5422d0c3d7761d7ae4991abc03a1cb3c12edf400c6412e88",
+    "server/static/js/td.js": "e4712b26f95c3a734283e82c05607cd0d4e940e91f58a0ba180d3e170d0c02d6",
+    "server/static/index.html": "a2e6e3d94ac0d9797b551aa89eeae0e73c841f67d6a2dbc4bdbe692825fa2a80",
+    "BUAA-Signin.exe": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+  },
+  "official_current_autumn_2026_full_notice_confirmed": false,
+  "no_school_requests": true,
+  "no_personal_configuration_or_photos_used": true,
+  "no_release_or_push": true,
+  "privacy": {
+    "passed": true,
+    "head_commit": "a1e3b45be5941f5bdde3d156399d9d9d51d4c735",
+    "findings": [],
+    "forbidden_public_files": [],
+    "counts": {
+      "git_objects": 933,
+      "working_files": 266,
+      "embedded_members": 0,
+      "bytes": 602149933
+    },
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  }
+}

@@ -3,9 +3,16 @@ os.environ["TESTING"] = "1"
 import unittest
 from fastapi.testclient import TestClient
 from server.app import app, accounts, AccountState
+from unittest.mock import patch
 
 class TestBoyaApi(unittest.TestCase):
     def setUp(self):
+        # Endpoint contracts do not exercise the live background worker.
+        from server.app import boya_scheduler
+        boya_scheduler.stop()
+        self.worker = patch.object(boya_scheduler, 'start')
+        self.worker.start()
+        self.addCleanup(self.worker.stop)
         self.client = TestClient(app)
         csrf = self.client.get("/api/session").json()["csrf"]
         self.client.headers["X-BUAA-CSRF"] = csrf
@@ -34,6 +41,12 @@ class TestBoyaApi(unittest.TestCase):
             "requiredCredit": 4.0,
         }
         accounts["23370001"] = acc
+
+    def tearDown(self):
+        self.client.close()
+        for acc in accounts.values():
+            acc.boya_client.close()
+        accounts.clear()
 
     def test_boya_status_and_courses_api(self):
         # 1. Test Boya Status

@@ -1,0 +1,576 @@
+{
+  "version": "1.4.7",
+  "baseline": "local1.4.6",
+  "status": "complete",
+  "source": {
+    "tests": 308,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "elapsed_seconds": 73.24,
+    "blocked_non_loopback_attempts": 1,
+    "failure_names": [],
+    "error_names": []
+  },
+  "browser_checks": 81,
+  "compiled_checks": 93,
+  "native_auto": {
+    "version": "1.4.7",
+    "native_gui": true,
+    "passed": true,
+    "tray_available": true,
+    "state": {
+      "ready": true,
+      "title": "BUAA 课程签到 Pro - Origin v1.4.7",
+      "bodyWidth": 1266,
+      "viewport": 1266
+    },
+    "checks": [
+      "native-boya-sign",
+      "native-boya-signout-without-invented-assessment",
+      "native-account-switch",
+      "native-regular-sign",
+      "native-render-visible",
+      "native-minimized-no-render",
+      "native-minimized-resume",
+      "native-tray-no-render",
+      "native-tray-resume"
+    ],
+    "render_environment": {
+      "reducedMotion": false,
+      "reducedTransparency": false,
+      "motionDisabled": false,
+      "initialFrames": 173
+    }
+  },
+  "source_safety_matrix": {
+    "mode": "source",
+    "version": "1.4.7",
+    "checks_passed": 52,
+    "checks": [
+      "time-07:29:59",
+      "time-07:30:00",
+      "time-09:59:59",
+      "time-10:00:00",
+      "time-10:00:59",
+      "time-10:01:00",
+      "time-11:29:59",
+      "time-11:30:00",
+      "time-13:59:59",
+      "time-14:00:00",
+      "time-14:00:59",
+      "time-14:01:00",
+      "time-15:29:59",
+      "time-15:30:00",
+      "time-19:59:59",
+      "time-20:00:00",
+      "time-20:00:59",
+      "time-20:01:00",
+      "weekday-0",
+      "weekday-1",
+      "weekday-2",
+      "weekday-3",
+      "weekday-4",
+      "weekday-5",
+      "weekday-6",
+      "activity-2026-09-30",
+      "activity-2026-10-01",
+      "activity-2026-12-31",
+      "activity-2027-01-01",
+      "closing-600-431",
+      "closing-600-430",
+      "closing-600-429",
+      "closing-840-431",
+      "closing-840-430",
+      "closing-840-429",
+      "closing-1200-431",
+      "closing-1200-430",
+      "closing-1200-429",
+      "exit-deadline-419",
+      "exit-deadline-420",
+      "expiry-state-420",
+      "exit-deadline-421",
+      "expiry-state-421",
+      "sleep-next-window-never-sends-old-exit",
+      "24-concurrent-ticks-one-entry",
+      "separate-sqlite-connection-one-claim",
+      "failure-budget-not-refunded-after-resolve",
+      "changed-official-term-prevents-network",
+      "old-term-hidden-history-preserved",
+      "negative-denied-未成功",
+      "negative-denied-未刷卡成功",
+      "negative-denied-本次未刷卡成功"
+    ],
+    "time_rows": [
+      {
+        "clock": "07:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "07:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "09:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "13:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "19:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:01:00",
+        "ours": false,
+        "upstream": false
+      }
+    ],
+    "findings": [],
+    "regression": {
+      "tests": 114,
+      "passed": true,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "elapsed_seconds": 3.6
+    },
+    "external_connect_attempts": 0,
+    "school_requests": 0,
+    "personal_data_used": false,
+    "production_changed": false,
+    "exe_sha256": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+  },
+  "compiled_safety_matrix": {
+    "mode": "compiled",
+    "version": "1.4.7",
+    "checks_passed": 52,
+    "checks": [
+      "time-07:29:59",
+      "time-07:30:00",
+      "time-09:59:59",
+      "time-10:00:00",
+      "time-10:00:59",
+      "time-10:01:00",
+      "time-11:29:59",
+      "time-11:30:00",
+      "time-13:59:59",
+      "time-14:00:00",
+      "time-14:00:59",
+      "time-14:01:00",
+      "time-15:29:59",
+      "time-15:30:00",
+      "time-19:59:59",
+      "time-20:00:00",
+      "time-20:00:59",
+      "time-20:01:00",
+      "weekday-0",
+      "weekday-1",
+      "weekday-2",
+      "weekday-3",
+      "weekday-4",
+      "weekday-5",
+      "weekday-6",
+      "activity-2026-09-30",
+      "activity-2026-10-01",
+      "activity-2026-12-31",
+      "activity-2027-01-01",
+      "closing-600-431",
+      "closing-600-430",
+      "closing-600-429",
+      "closing-840-431",
+      "closing-840-430",
+      "closing-840-429",
+      "closing-1200-431",
+      "closing-1200-430",
+      "closing-1200-429",
+      "exit-deadline-419",
+      "exit-deadline-420",
+      "expiry-state-420",
+      "exit-deadline-421",
+      "expiry-state-421",
+      "sleep-next-window-never-sends-old-exit",
+      "24-concurrent-ticks-one-entry",
+      "separate-sqlite-connection-one-claim",
+      "failure-budget-not-refunded-after-resolve",
+      "changed-official-term-prevents-network",
+      "old-term-hidden-history-preserved",
+      "negative-denied-未成功",
+      "negative-denied-未刷卡成功",
+      "negative-denied-本次未刷卡成功"
+    ],
+    "time_rows": [
+      {
+        "clock": "07:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "07:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "09:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "10:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "11:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "13:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "14:01:00",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:29:59",
+        "ours": false,
+        "upstream": false
+      },
+      {
+        "clock": "15:30:00",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "19:59:59",
+        "ours": true,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:00",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:00:59",
+        "ours": false,
+        "upstream": true
+      },
+      {
+        "clock": "20:01:00",
+        "ours": false,
+        "upstream": false
+      }
+    ],
+    "findings": [],
+    "regression": {
+      "tests": 114,
+      "passed": true,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "elapsed_seconds": 3.44
+    },
+    "external_connect_attempts": 0,
+    "school_requests": 0,
+    "personal_data_used": false,
+    "production_changed": false,
+    "exe_sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d"
+  },
+  "compiled_source_match": {
+    "passed": true,
+    "modules": [
+      "core.autostart",
+      "core.boya_actions",
+      "core.boya_client",
+      "core.boya_crypto",
+      "core.boya_scheduler",
+      "core.cas",
+      "core.domain",
+      "core.iclass",
+      "core.operations",
+      "core.profile",
+      "core.regular_policy",
+      "core.render_lifecycle",
+      "core.scheduler",
+      "core.smoke",
+      "core.td_client",
+      "core.td_license",
+      "core.td_license_public",
+      "core.td_policy",
+      "core.td_scheduler",
+      "core.td_store",
+      "core.updates",
+      "core.vault",
+      "core.version",
+      "core.webvpn",
+      "core",
+      "server.app",
+      "server.management",
+      "server.td_routes",
+      "server.update_routes",
+      "server"
+    ],
+    "assets": [
+      "server/static/favicon.ico",
+      "server/static/index.html",
+      "server/static/css/startup.css",
+      "server/static/css/stitch-glass.css",
+      "server/static/css/style.css",
+      "server/static/css/td.css",
+      "server/static/images/app_logo.png",
+      "server/static/images/buaa-emblem.svg",
+      "server/static/images/buaa-wordmark.svg",
+      "server/static/images/buaa_logo.svg",
+      "server/static/images/BUAA_LOGO_SOURCE.json",
+      "server/static/js/app.js",
+      "server/static/js/render-lifecycle.js",
+      "server/static/js/startup.js",
+      "server/static/js/stitch-ambient.js",
+      "server/static/js/td-calendar.js",
+      "server/static/js/td.js",
+      "server/static/js/ui-controls.js",
+      "server/static/js/ui-motion.js",
+      "server/static/js/ui-surfaces.js",
+      "server/static/js/updates.js"
+    ],
+    "entry": "run",
+    "exe_sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d"
+  },
+  "native_observations": {
+    "passed": true,
+    "checks": [
+      "licensed-synthetic-account-enters-TD",
+      "old-semester-progress-visible-as-unknown",
+      "historical-retention-copy-visible",
+      "invalid-calendar-disables-manual-and-auto-controls",
+      "glass-settings-still-use-current-calendar",
+      "unconfirmed-rules-save-blocked",
+      "underlying-historical-count-preserved",
+      "synthetic-fixture-clean-exit-requested"
+    ],
+    "method": "Actual compiled Windows WebView2, Computer Use clicks/screenshots; final local API/storage checks",
+    "synthetic_only": true,
+    "continuous_video": false,
+    "school_requests": 0
+  },
+  "artifact_privacy": {
+    "passed": true,
+    "findings": [],
+    "counts": {
+      "files": 2,
+      "archive_members": 320,
+      "carchive_members": 1921,
+      "pyz_members": 1726,
+      "bytes": 205106102
+    },
+    "assets": [
+      {
+        "name": "BUAA-Signin.exe",
+        "size": 33819323,
+        "sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d"
+      },
+      {
+        "name": "TD-License-Generator.exe",
+        "size": 21184019,
+        "sha256": "31c9d3ad01bdc282b14d3c6821fe7cf5022492815b5b4aa92aad9a54c88aa040"
+      }
+    ],
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of image content",
+      "Setup compressed payload requires installer acceptance and matching portable hash",
+      "DMG requires native mount and tree comparison; matching ZIP inspected separately"
+    ]
+  },
+  "source_diff": {
+    "passed": true,
+    "changed": [
+      "BUAA-Signin-mac.spec",
+      "README.md",
+      "core/td_client.py",
+      "core/td_scheduler.py",
+      "core/version.py",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "run.py",
+      "scripts/td_acceptance.cjs",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "server/static/index.html",
+      "server/static/js/td.js",
+      "tests/test_api.py",
+      "tests/test_td.py",
+      "tests/test_v127_api.py"
+    ],
+    "version_only": [
+      "core/version.py",
+      "run.py",
+      "BUAA-Signin-mac.spec",
+      "installer/setup.iss",
+      "installer/version_info.txt",
+      "scripts/verify_compiled.py",
+      "scripts/verify_native_service.py",
+      "tests/test_api.py",
+      "tests/test_v127_api.py"
+    ],
+    "sibling_conflicts": [],
+    "original_school_endpoints_parameters_unchanged": true,
+    "regular_boya_license_issuer_unchanged": true
+  },
+  "delivery": {
+    "version": "1.4.7",
+    "candidate_passed": true,
+    "all_targets_updated": true,
+    "targets": [
+      {
+        "target": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin-v1.4.7-portable.exe",
+        "updated": true,
+        "sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "candidate_sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "previous_sha256": null
+      },
+      {
+        "target": "C:\\Users\\cjt16\\Desktop\\ubaa\\dist\\BUAA-Signin.exe",
+        "updated": true,
+        "sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "candidate_sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "previous_sha256": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+      },
+      {
+        "target": "C:\\Users\\cjt16\\Desktop\\ubaa\\BUAA-Signin.exe",
+        "updated": true,
+        "sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "candidate_sha256": "1aa2433268caee2ffd473113e84df4baa1b0620b522bee747622b724b02cbc5d",
+        "previous_sha256": "678807926011ff9ae3a94ecccbf234cc2426edb5cf3086f90ef922c8b346fefe"
+      }
+    ],
+    "configuration_overwritten": false,
+    "private_unchanged_during_copy": true,
+    "issuer_unchanged_sha256": "31c9d3ad01bdc282b14d3c6821fe7cf5022492815b5b4aa92aad9a54c88aa040",
+    "user_process_terminated": false,
+    "published": false
+  },
+  "issuer_not_rebuilt_key_not_regenerated": true,
+  "new_setup": false,
+  "mac_linux_native_tested": false,
+  "real_school_requests": 0,
+  "pushed": false,
+  "published": false,
+  "git_privacy": {
+    "passed": true,
+    "head_commit": "a1e3b45be5941f5bdde3d156399d9d9d51d4c735",
+    "findings": [],
+    "forbidden_public_files": [],
+    "counts": {
+      "git_objects": 933,
+      "working_files": 268,
+      "embedded_members": 0,
+      "bytes": 602182074
+    },
+    "known_values_supplied": 8,
+    "limitations": [
+      "No OCR of historical images",
+      "Compiled/archive inspection is a separate gate",
+      "Only objects reachable from local Git refs; deleted/unreachable server objects excluded"
+    ]
+  },
+  "initial_test_assertion_correction": "Source-first failed only because a new test expected aria-valuenow=0 for unknown count. Correct expectation is absence of aria-valuenow; failure evidence retained. Final source and compiled UI passed."
+}

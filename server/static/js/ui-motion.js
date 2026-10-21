@@ -135,6 +135,34 @@
     });
   });
   const finish = () => { for (const key of [...motions.keys()]) stop(key); for (const host of [...flights.keys()]) clearFlight(host); };
+  document.addEventListener('DOMContentLoaded', () => {
+    const details=document.getElementById('tdLibrary'),body=document.getElementById('tdLibraryBody');
+    if(!details||!body)return;
+    const summary=details.querySelector('summary');
+    summary.addEventListener('click',event=>{
+      event.preventDefault();
+      const previous=motions.get('td-library'),expanded=previous?!previous.expanded:!details.open;
+      // Sample the interrupted frame before cancelling. Animate the outer box:
+      // body padding must not leave a jump at the end of a collapse.
+      const height=details.getBoundingClientRect().height;
+      stop('td-library');details.open=true;body.inert=!expanded;
+      summary.setAttribute('aria-expanded',String(expanded));
+      if(!expanded&&body.contains(document.activeElement))summary.focus({preventScroll:true});
+      const settle=()=>{details.open=expanded;body.inert=!expanded;details.classList.remove('ui-accordion-moving');summary.setAttribute('aria-expanded',String(expanded));};
+      if(!allowed()){settle();return;}
+      const style=getComputedStyle(details),border=parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth);
+      const full=details.getBoundingClientRect().height,collapsed=summary.getBoundingClientRect().height+border;
+      const target=expanded?full:collapsed,duration=Math.min(340,Math.max(160,Math.abs(target-height)*.45));
+      details.classList.add('ui-accordion-moving');
+      let animation;
+      try{animation=details.animate([{height:height+'px'},{height:target+'px'}],{duration,easing:'cubic-bezier(.22,1,.36,1)'});}
+      catch{settle();return;}
+      const state={animations:[animation],expanded,finish:settle};motions.set('td-library',state);
+      animation.finished.then(()=>{if(motions.get('td-library')===state){motions.delete('td-library');state.finish();}}).catch(()=>{if(motions.get('td-library')===state)stop('td-library');});
+    });
+  });
+  document.addEventListener('buaa:tdgallery',()=>{stop('td-library');play('td-gallery',[...document.querySelectorAll('#tdGallery .td-photo')],8,300,30);});
+  for(const name of ['buaa:accountview','buaa:mainview'])document.addEventListener(name,()=>{stop('td-library');stop('td-gallery');});
   document.addEventListener('visibilitychange', () => { if (renderHidden()) finish(); });
   addEventListener('buaa:renderstate', () => { if (renderHidden()) finish(); });
   reduced.addEventListener?.('change', () => { if (reduced.matches) finish(); });

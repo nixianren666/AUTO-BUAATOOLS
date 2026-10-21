@@ -84,6 +84,23 @@ const fs = require('node:fs');
       await page.evaluate(() => renderBoyaStatistics({semester_known:true,moral_completed:1,labor_completed:0,art_completed:0,security_health_completed:0}));
       assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '1');
     });
+    await check('sidebar-boya-shares-semester-category-caps-and-unknown-state', async () => {
+      const requests=[];const record=request=>requests.push(request.url());page.on('request',record);
+      for (const [stats,expected] of [
+        [{semester_known:true,moral_completed:5,labor_completed:0,art_completed:2,security_health_completed:3},'4/6'],
+        [{semester_known:true,moral_completed:5,labor_completed:8,art_completed:2,security_health_completed:3},'6/6'],
+        [{semester_known:false,moral_completed:99},'—/6'],
+        [{},'—/6'],
+      ]) {
+        await page.evaluate(stats=>renderBoyaStatistics(stats),stats);
+        assert.equal(await page.locator('#navBadgeBoya').textContent(),expected);
+        assert.equal(await page.locator('#boyaEarnedCredits').textContent(),expected.split('/')[0]);
+      }
+      page.off('request',record);
+      assert.equal(requests.filter(url=>/\/api\//.test(url)).length,0);
+      assert.equal(await page.locator('#navBadgeBoya').evaluate(e=>e.classList.contains('highlight')),false);
+      assert.equal(await page.locator('#navBtnTD .nav-badge').textContent(),'Beta');
+    });
     await check('failed-autostart-keeps-system-state-and-shows-error', async () => {
       await page.route('**/api/system/autostart',async route => route.fulfill({json:{status:'error',enabled:false}}));
       await page.evaluate(async()=>{document.getElementById('autostartCheckbox').checked=true;await toggleAutostart(true);});
@@ -110,6 +127,7 @@ const fs = require('node:fs');
       assert.equal(value.category,'智育');
       assert.equal(await page.locator('#boyaCoursesFeed .feed-card').count(),0);
     });
+    await require('./td_acceptance.cjs').verifyTD(page, check);
     await check('old-account-response-cannot-overwrite-new-view', async () => {
       let release;
       await page.route('**/api/classes**', async route => {
@@ -134,6 +152,8 @@ const fs = require('node:fs');
       assert.equal(await page.locator('#classesFeed img').count(), 0);
     });
     await require('./onboarding_acceptance.cjs').verifyOnboarding(browser, url, check);
+    await require('./notice_acceptance.cjs').verifyNotice(browser, url, check);
+    await require('./sso_acceptance.cjs').verifySso(browser, url, check);
     assert.deepEqual(errors, []);
     fs.writeFileSync(reportPath, JSON.stringify({ passed: true, checks, script_errors: errors }, null, 2));
   } catch (error) {
