@@ -37,9 +37,17 @@ exports.verifyTDGate = async (page, check) => {
     await page.locator('#tdLicenseCode').fill('TDL1.'+'synthetic'.repeat(15));await page.locator('#tdLicenseActivateBtn').click();
     await page.waitForFunction(()=>document.getElementById('tdLicenseError').textContent.includes('invalid'));
     await locked();assert.equal(writes,1);
+    // The error becomes visible before the async operation releases its busy UI.
+    await page.waitForFunction(()=>!document.getElementById('tdLicenseActivateBtn').disabled);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   });
   await check('td-entrance-success-admits-current-account-only',async()=>{
-    await page.locator('#tdLicenseActivateBtn').click();await page.waitForFunction(()=>appState.currentMainView==='td'&&!document.getElementById('tdSettingsBtn').disabled);
+    await page.locator('#tdLicenseActivateBtn').click();
+    try { await page.waitForFunction(()=>appState.currentMainView==='td'&&!document.getElementById('tdSettingsBtn').disabled); }
+    catch(error) {
+      const state=await page.evaluate(()=>({view:appState.currentMainView,user:appState.activeUsername,codeLength:document.getElementById('tdLicenseCode').value.length,valid:document.getElementById('tdLicenseForm').checkValidity(),disabled:document.getElementById('tdLicenseActivateBtn').disabled,error:document.getElementById('tdLicenseError').textContent}));
+      throw new Error(error.message+'; synthetic activation state '+JSON.stringify({...state,writes}));
+    }
     await page.locator('#tdLicenseModal').waitFor({state:'hidden'});
     assert.equal(await page.locator('#tdLicenseModal').isVisible(),false);assert.equal(writes,2);
     await page.locator('#tdLicenseBtn').click();await page.keyboard.press('Escape');

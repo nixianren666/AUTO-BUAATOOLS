@@ -145,12 +145,13 @@ exports.verifyTD = async function(page, check) {
     await page.locator('#tdLibrary summary').click();
     assert.equal(await page.locator('#tdLibrary').evaluate(e=>e.open),!sample.open);
     await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.waitForFunction(()=>!document.getElementById('tdLibrary').classList.contains('ui-accordion-moving'));
     await page.evaluate(()=>{const d=document.getElementById('tdLibrary');if(!d.open)d.querySelector('summary').click();});
-    await page.waitForTimeout(380);
+    await page.waitForFunction(()=>document.getElementById('tdLibrary').open&&!document.getElementById('tdLibrary').classList.contains('ui-accordion-moving'));
     await page.evaluate(()=>{document.getElementById('tdLibrary').querySelector('summary').click();window.dispatchEvent(new CustomEvent('buaa:renderstate',{detail:{visible:false}}));});
-    await page.waitForTimeout(380);
+    await page.waitForFunction(()=>!document.getElementById('tdLibrary').classList.contains('ui-accordion-moving'));
     await page.evaluate(()=>{window.dispatchEvent(new CustomEvent('buaa:renderstate',{detail:{visible:true}}));const d=document.getElementById('tdLibrary');if(!d.open)d.querySelector('summary').click();});
-    await page.waitForTimeout(380);
+    await page.waitForFunction(()=>document.getElementById('tdLibrary').open&&!document.getElementById('tdLibrary').classList.contains('ui-accordion-moving'));
     assert.equal(await page.locator('#tdLibraryBody').evaluate(e=>e.inert),false);
   });
   await check('td-manual-explicit-phase-confirmation-error-and-modal-exclusivity',async()=>{
