@@ -1,0 +1,232 @@
+{
+  "passed": true,
+  "version": "1.4.10",
+  "commit": "7bd78c1572401480910206d71717dadd9ae94c8e",
+  "run_id": 39654048700,
+  "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.10",
+  "asset_count": 15,
+  "platform_check_counts": {
+    "Windows-x64": 102,
+    "macOS-arm64": 97,
+    "macOS-x86_64": 97,
+    "Linux-x86_64": 97
+  },
+  "source_tests_each": 332,
+  "browser_checks_each": 90,
+  "final_integrity": {
+    "passed": true,
+    "version": "1.4.10",
+    "commit": "7bd78c1572401480910206d71717dadd9ae94c8e",
+    "python_minor": "3.12",
+    "application_modules": [
+      "core/__init__.py",
+      "core/autostart.py",
+      "core/boya_actions.py",
+      "core/boya_client.py",
+      "core/boya_crypto.py",
+      "core/boya_scheduler.py",
+      "core/cas.py",
+      "core/cas_transport.py",
+      "core/domain.py",
+      "core/iclass.py",
+      "core/operations.py",
+      "core/profile.py",
+      "core/regular_policy.py",
+      "core/render_lifecycle.py",
+      "core/scheduler.py",
+      "core/smoke.py",
+      "core/td_client.py",
+      "core/td_license.py",
+      "core/td_license_public.py",
+      "core/td_policy.py",
+      "core/td_scheduler.py",
+      "core/td_store.py",
+      "core/updates.py",
+      "core/vault.py",
+      "core/version.py",
+      "core/webvpn.py",
+      "server/__init__.py",
+      "server/app.py",
+      "server/management.py",
+      "server/td_routes.py",
+      "server/update_routes.py"
+    ],
+    "entry_script_equal_source": true,
+    "static_assets": {
+      "server/static/css/startup.css": "6296774fdcd05adfba96927a7dcaacce6fc0728f37f59b222a4193d447e0802d",
+      "server/static/css/stitch-glass.css": "08ddbe961b39e935fafb4b49e7a73d70788699c1e3aa7da4aaa9ff37cbca6cf9",
+      "server/static/css/style.css": "8839ecde4b81523f32681d7cf1d503c1513d6fe02caad813a9890afdf651477b",
+      "server/static/css/td.css": "a696d3240bfb6c76ca2615f7ead574b6bda052620c9842b47bcc32ab92797f51",
+      "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+      "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+      "server/static/images/buaa-emblem.svg": "46018a6e4b04bb12a1e93935b9bb528e995be2c99356b7550a1106649df9466c",
+      "server/static/images/buaa-wordmark.svg": "0640709a990ca5d9705a1a11eb24dc66478336106240dcded16a4756e2e06efc",
+      "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+      "server/static/images/BUAA_LOGO_SOURCE.json": "d0e29ba0a2ac1b40445afd1de52f8bbe5b1c4956ba7f0bc44681aa35d8fabc01",
+      "server/static/index.html": "35ff332f9e3d0359acba5fa50149f26c940411a8db9775c2e10de7955d180d1c",
+      "server/static/js/app.js": "dd8327791dfe9786592ea273cf12230e30db28c64702bf3625258777e4a4e565",
+      "server/static/js/render-lifecycle.js": "76c3b2909d8aecc311c4eb38b2caacce5f64af4cb4c1cefb824f49913a98c03e",
+      "server/static/js/startup.js": "586a2dc407a29abd614619fb8177e2e08e46ebc2ad7cbd2ecd22699ba1606873",
+      "server/static/js/stitch-ambient.js": "86a799cb9eb0af3389017cde2cbe5ff959d8423d47428e3126a4b993a5c609a8",
+      "server/static/js/td-calendar.js": "88c647cbeb0d12a2324f51d978f045d02f2173b156b4a1934835f01482f2966c",
+      "server/static/js/td.js": "103eed866a052050517a790bcd20a4ba46e2469d035e41af9a166931df0ff90d",
+      "server/static/js/ui-controls.js": "83ef3764fce9e9ce234a03c0d64cf00105061f285972c37ac672e6da571dc8b4",
+      "server/static/js/ui-motion.js": "4c3b0b5b3735083bca13aede627b6f1755c9086dfe2bd118f5668b4261b7259f",
+      "server/static/js/ui-surfaces.js": "21bd496d702d1ae3b7eb6a6d0cf4cf666689853bda10c51324f88d2c7bb82661",
+      "server/static/js/updates.js": "bfae81f5068d7eb6aa2a795983b62e1b71a09ee4967297688c161298b08181ad"
+    },
+    "executable_sha256": "d36dc7827e7333f0cbdc6f6aaa4b0cf4298f4fd8c210bfe574681378056d5f96"
+  },
+  "computer_use": {
+    "passed": true,
+    "version": "1.4.10",
+    "commit": "7bd78c1572401480910206d71717dadd9ae94c8e",
+    "executable_sha256": "d36dc7827e7333f0cbdc6f6aaa4b0cf4298f4fd8c210bfe574681378056d5f96",
+    "platform": "Windows",
+    "actual_computer_use": true,
+    "input_method": "sky actual click and Escape; no scripted DOM clicks",
+    "checks": [
+      "Native final version and original glass layout observed",
+      "Sidebar Boya0/6 and TD Beta observed",
+      "Actual Boya navigation: main progress matches sidebar0/6",
+      "Actual TD entrance opens activation gate while previous Boya page remains visible",
+      "Free non-profit study notice is red inside glass card",
+      "Actual Escape does not dismiss unactivated gate",
+      "Actual return button closes gate and returns regular page",
+      "Actual student account center displays two isolated synthetic accounts",
+      "Actual click switches regular course and identity to simulated account2",
+      "Actual logs navigation exposes automatic TD category and account-scoped synthetic logs"
+    ],
+    "school_credentials_used": false,
+    "issuer_keys_used": false,
+    "real_school_requests": 0,
+    "screenshot_files_saved": false,
+    "limitations": [
+      "Synthetic profile only; no real school account or write acceptance",
+      "First game-occluded attempt retained separately as not passed",
+      "This final10-observation check does not relabel prior13-observation local run as current",
+      "Complete startup/pledge/activated-license boundary coverage is in exact-commit browser/native automation; not claimed as current manual observations"
+    ],
+    "owned_fixture_gracefully_exited": true
+  },
+  "anonymous_real_update_recognition": {
+    "passed": true,
+    "real_school_writes": 0,
+    "checks": [
+      {
+        "version": "1.3.9",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.3.9",
+          "latest_version": "1.4.10",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.10",
+          "checked_at": 1792611007,
+          "automatic_interval_seconds": 86400,
+          "status": "update_available",
+          "message": "发现新版本 v1.4.10",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        }
+      },
+      {
+        "version": "1.4.10",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.4.10",
+          "latest_version": "1.4.10",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.10",
+          "checked_at": 1792611012,
+          "automatic_interval_seconds": 86400,
+          "status": "up_to_date",
+          "message": "当前已是最新版本",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        }
+      }
+    ],
+    "status": "verified"
+  },
+  "old_releases": {
+    "passed": true,
+    "checks": [
+      {
+        "id": 416690979,
+        "tag": "v1.3.9",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 415982295,
+        "tag": "v1.3.8",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 412406275,
+        "tag": "v1.2.7",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388930110,
+        "tag": "v1.2.6",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388402178,
+        "tag": "v1.2.5",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 387973739,
+        "tag": "v1.2.2",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 386902450,
+        "tag": "v1.2.0",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      }
+    ]
+  },
+  "local_sync": {
+    "passed": true,
+    "version": "1.4.10",
+    "commit": "7bd78c1572401480910206d71717dadd9ae94c8e",
+    "formally_published": true,
+    "files": {
+      "BUAA-Signin.exe": "d36dc7827e7333f0cbdc6f6aaa4b0cf4298f4fd8c210bfe574681378056d5f96",
+      "BUAA-Signin-v1.4.10-portable.exe": "d36dc7827e7333f0cbdc6f6aaa4b0cf4298f4fd8c210bfe574681378056d5f96",
+      "dist/BUAA-Signin.exe": "d36dc7827e7333f0cbdc6f6aaa4b0cf4298f4fd8c210bfe574681378056d5f96",
+      "BUAA-Signin-Setup-v1.4.10.exe": "77e40d03e147d2e42706cd1941f0459cb2bef1f8ee3bc808dcfd2889bbcc5857",
+      "dist_installer/BUAA-Signin-Setup-v1.4.10.exe": "77e40d03e147d2e42706cd1941f0459cb2bef1f8ee3bc808dcfd2889bbcc5857"
+    },
+    "pending_locked_files": [],
+    "configuration_preserved_during_replacement": true,
+    "configuration_copied": false,
+    "existing_user_processes_terminated": false,
+    "issuer_unchanged": true
+  },
+  "privacy": {
+    "git": true,
+    "artifacts": true,
+    "metadata": true
+  },
+  "limitations": [
+    "No real-school account end-to-end or writes",
+    "Current autumn TD calendar and pure readonly count API unverified",
+    "Native CI does not represent physical macOS/Linux user desktop/reboot",
+    "No Apple notarization or vendor signing",
+    "Offline single use cannot defeat restored system snapshots"
+  ]
+}
