@@ -100,19 +100,24 @@ const fs = require('node:fs');
       assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '1');
     });
     await check('sidebar-boya-shares-semester-category-caps-and-unknown-state', async () => {
-      const requests=[];const record=request=>requests.push(request.url());page.on('request',record);
-      for (const [stats,expected] of [
+      const samples=[
         [{semester_known:true,moral_completed:5,labor_completed:0,art_completed:2,security_health_completed:3},'4/6'],
         [{semester_known:true,moral_completed:5,labor_completed:8,art_completed:2,security_health_completed:3},'6/6'],
         [{semester_known:false,moral_completed:99},'—/6'],
         [{},'—/6'],
-      ]) {
-        await page.evaluate(stats=>renderBoyaStatistics(stats),stats);
-        assert.equal(await page.locator('#navBadgeBoya').textContent(),expected);
-        assert.equal(await page.locator('#boyaEarnedCredits').textContent(),expected.split('/')[0]);
+      ];
+      // Observe calls made by this synchronous renderer, not unrelated 2.5s
+      // log polling that can land between Node/DOM round trips on a slow host.
+      const rendered=await page.evaluate(samples=>{
+        const original=apiFetch,requests=[];apiFetch=(...args)=>{requests.push(String(args[0]));return original(...args);};
+        try{return {requests,snapshots:samples.map(([stats])=>{
+          renderBoyaStatistics(stats);return {badge:document.getElementById('navBadgeBoya').textContent,earned:document.getElementById('boyaEarnedCredits').textContent};
+        })};}finally{apiFetch=original;}
+      },samples);
+      for(let i=0;i<samples.length;i++){
+        assert.equal(rendered.snapshots[i].badge,samples[i][1]);assert.equal(rendered.snapshots[i].earned,samples[i][1].split('/')[0]);
       }
-      page.off('request',record);
-      assert.equal(requests.filter(url=>/\/api\//.test(url)).length,0);
+      assert.deepEqual(rendered.requests,[]);
       assert.equal(await page.locator('#navBadgeBoya').evaluate(e=>e.classList.contains('highlight')),false);
       assert.equal(await page.locator('#navBtnTD .nav-badge').textContent(),'Beta');
     });
