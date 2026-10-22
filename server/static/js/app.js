@@ -38,6 +38,7 @@ let appState = {
 // Every management request is authenticated and bound to the captured account.
 const nativeFetch = window.fetch.bind(window);
 let managementSession = null;
+let managementEnding = false;
 let runtimeCapabilities = { mode: 'headless', autostart_supported: false, exit_behavior: 'management-session' };
 let viewGeneration = 0;
 // The first login waits for both independent startup responses. Never queue a
@@ -113,6 +114,7 @@ async function establishManagementSession() {
   return useManagementSession(await response.json());
 }
 function ensureManagementSession() {
+  if (managementEnding) return Promise.reject(new Error('正在退出管理，不再恢复会话'));
   if (!managementSession) managementSession = establishManagementSession().catch(error => { managementSession = null; throw error; });
   return managementSession;
 }
@@ -127,6 +129,7 @@ function updateRuntimeControls() {
   }
 }
 async function apiFetch(input, options = {}) {
+  if (managementEnding) throw new Error('正在退出管理，已停止后续页面请求');
   const username = appState.activeUsername;
   const scoped = /^\/api\/(classes|signin|status|mode|logout|boya\/)/.test(String(input));
   const url = new URL(input, window.location.origin);
@@ -142,8 +145,10 @@ async function apiFetch(input, options = {}) {
   }
   const session = ensureManagementSession();
   const csrf = await session;
+  if (managementEnding) throw new Error('正在退出管理，已停止后续页面请求');
   if (opts.method && !["GET", "HEAD"].includes(opts.method.toUpperCase())) opts.headers["X-BUAA-CSRF"] = csrf;
   let response = await nativeFetch(url.pathname + url.search, opts);
+  if (managementEnding) throw new Error('正在退出管理，忽略迟到响应');
   if (response.status === 401) {
     if (managementSession === session) managementSession = null;
     if (!['GET', 'HEAD'].includes((opts.method || 'GET').toUpperCase())) {
@@ -152,6 +157,7 @@ async function apiFetch(input, options = {}) {
       throw new Error('管理会话已过期，请重新登录后核对结果，再手动操作；没有自动重复提交。');
     }
     await ensureManagementSession();
+    if (managementEnding) throw new Error('正在退出管理，不再重放读取');
     response = await nativeFetch(url.pathname + url.search, opts);
   }
   if (!response.ok) {
@@ -1653,14 +1659,22 @@ async function toggleAutostart(enabled) {
 // 安全退出软件
 async function requestAppExit() {
   if (runtimeCapabilities.exit_behavior !== 'application') {
+    if (managementEnding) return;
     if (!confirm('仅退出当前浏览器管理会话？\n服务器后台任务继续运行。')) return;
+    const pending = managementSession;
+    managementEnding = true;
     try {
-      await apiFetch('/api/session', { method: 'DELETE' });
+      const csrf = pending ? await pending : null;
+      if (csrf) {
+        const response = await managementRequest({method:'DELETE',headers:{'X-BUAA-CSRF':csrf}});
+        if (!response.ok && response.status !== 401) throw new Error('退出管理未确认');
+      }
+      managementSession = null;
       // A reload would immediately create a new loopback session when the
       // local headless service has no password. Clear the entire document and
       // its polling instead, without terminating the shared application.
       window.location.replace('about:blank');
-    } catch { showToast('退出管理未完成，请检查连接后重试', 'error'); }
+    } catch { managementEnding = false; showToast('退出管理未完成，请检查连接后重试', 'error'); }
     return;
   }
   if (!confirm("确定彻底退出 BUAA 课程独立签到助手吗？\n退出后后台所有学生的自动签到及博雅守护将停止。")) {

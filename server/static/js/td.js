@@ -3,7 +3,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   let data = null, owner = '', generation = 0, requestId = 0, controller = null;
-  let timer = null, gallerySignature = '', modalOwner = '', busy = false, manualPhase = 'entry';
+  let timer = null, gallerySignature = '', modalOwner = '', busy = false;
+  let receivedAt = 0, serverEpoch = 0, statusFresh = false;
   let entrance = false, accessPending = false, accessState = null, accessId = 0, accessController = null, expiryTimer = null;
   const selected = new Set();
   const visible = () => appState.currentMainView === 'td' && !document.hidden && window.BUAARenderLifecycle?.visible !== false;
@@ -96,7 +97,7 @@
   }
   function schedule() {
     clearTimeout(timer);
-    if (visible() && owner) timer = setTimeout(refresh, 15000);
+    if (visible() && owner) timer = setTimeout(refresh, data?.batch?.active ? 3000 : 15000);
   }
   function changedAccount() {
     if (owner !== appState.activeUsername) {
@@ -104,7 +105,7 @@
       leave(); accessState = null;
       if (appState.currentMainView === 'td') showMainView('regular');
       owner = appState.activeUsername; generation++; requestId++;
-      controller?.abort(); data = null; gallerySignature = ''; selected.clear(); busy = false;
+      controller?.abort(); data = null; statusFresh = false; gallerySignature = ''; selected.clear(); busy = false;
       ['tdSettingsModal', 'tdCountModal', 'tdGroupModal', 'tdManualModal', 'tdLicenseModal'].forEach(id => setUISurface(id, false));
       $('tdGallery').replaceChildren();
       text('tdUploadStatus', ''); $('tdLicenseRequest').value='';$('tdLicenseCode').value='';text('tdLicenseError','');render();
@@ -123,9 +124,10 @@
       const result = await request('status', user, 'GET', undefined, controller.signal);
       if (!current(user, gen) || id !== requestId) return;
       if (!licensed(result.license)) { accessState = result.license; data = null; render(); enter(); return; }
-      data = result; accessState = result.license; render(); watchExpiry();
+      data = result; serverEpoch=Date.parse(result.server_time)/1000; receivedAt=performance.now();statusFresh=true;
+      accessState = result.license; render(); watchExpiry();
     } catch (error) {
-      if (current(user, gen) && id === requestId && error.name !== 'AbortError') text('tdTaskText', '本地状态读取失败，保留上次显示；' + error.message);
+      if (current(user, gen) && id === requestId) {statusFresh=false;renderTask();}
     } finally { clearTimeout(timeout); schedule(); }
   }
   function progress(id, fill, count, total) {
@@ -141,14 +143,15 @@
     $('tdLicenseBtn').disabled=!hasUser||busy||!data;
     entranceControls();
     text('tdIdentity', hasUser ? `当前学生：${appState.activeUser?.name || owner} · 与学生账号中心一致` : '请先在学生账号中心添加账号，无需单独登录 TD');
-    text('tdDaemonStatus', !hasUser ? '尚未添加学生账号' : enabled ? (data.rules_valid ? 'TD 自动守护已开启' : 'TD 规则待核对，未执行') : 'TD 自动守护已暂停');
+    text('tdDaemonStatus', !hasUser ? '尚未添加学生账号' : data?.batch?.active&&data.batch.mode==='manual' ? 'TD 手动当日队列执行中' : enabled ? (data.rules_valid ? 'TD 自动守护已开启' : 'TD 规则待核对，未执行') : 'TD 自动守护已暂停');
     $('tdDaemonDot').className = 'origin-status-dot' + (enabled ? ' green' : '');
     $('tdAutoToggle').checked = enabled; $('tdAutoToggle').disabled = !hasUser || !data || busy || !authorized || (!enabled&&(!data.rules_valid||!data.groups?.length));
     for (const id of ['tdSettingsBtn','tdCountBtn','tdRefreshBtn','tdSettingsSave','tdCountSave','tdGroupSave','tdManualSave']) $(id).disabled = !hasUser || busy || (!data && id !== 'tdRefreshBtn');
     $('tdDropzone').setAttribute('aria-disabled', String(!hasUser || busy));
-    $('tdManualBtn').disabled = busy || !data?.manual?.allowed;
-    text('tdManualBtn', data?.manual?.phase === 'exit' ? '手动配对出口' : '手动入口');
-    $('tdManualBtn').title = data?.manual?.reason || '本人到场后手动提交当前步骤，与自动守护共用预算';
+    text('tdManualBtn', '手动 TD');
+    $('tdManualBtn').title = data?.batch?.reason || '一次启动当天剩余队列，按间隔依次入口与出口，与自动守护共用预算';
+    $('tdBatchStopBtn').classList.toggle('hidden',!data?.batch?.active);
+    $('tdBatchStopBtn').disabled=busy;
     const p = data?.settings, count = data?.progress.count;
     $('tdQuickCampusSelect').value = p?.campus || '学院路'; $('tdQuickCampusSelect').disabled = !data || busy; window.BUAAUiControls?.syncSelect($('tdQuickCampusSelect'));
     text('tdActivity', p?.confirmed ? `${p.start} — ${p.end} · ${data.activity_current ? '活动日期内' : '当前不在活动日期内'} · ${data.within_window ? '当前可执行时段' : '等待允许时段'}` : '先按本学期官方通知核对活动日期，再开启守护');
@@ -161,13 +164,27 @@
     text('tdBudget', `已认领 ${data?.today.attempted || 0} 轮（含失败/不确定）；配对流程完成不等于学校最终有效次数`);
     progress('tdTermBar','tdTermFill',count,p?.target || 32); progress('tdTodayBar','tdTodayFill',completed,p?.daily_limit || 3);
     const state = data?.task.state;
-    const labels = {idle:'等待下一轮',sending_entry:'入口请求处理中，禁止重复提交',sending_exit:'出口请求处理中，禁止重复提交',waiting_exit:'入口已接收，等待配对出口',uncertain:'结果待核验，已停止重发',rejected:'请求未接受，请核对官方记录',resolved:'已人工解除本地暂停，未补记成功'};
-    const due = state === 'waiting_exit' && data.task.due ? ` · 预计 ${new Date(data.task.due * 1000).toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})} 出口` : '';
-    text('tdTaskText', data ? (data.task.note || labels[state] || '尚未开始') + due : hasUser ? '正在读取当前学生的本地状态…' : '添加账号后即可管理本人图库和进度');
+    renderTask();
     $('tdTaskDot').className = 'origin-status-dot' + (['uncertain','rejected','sending_entry','sending_exit'].includes(state) ? ' purple' : state === 'waiting_exit' ? ' cyan' : '');
     $('tdResolveBtn').classList.toggle('hidden', !['uncertain','rejected','sending_entry','sending_exit','waiting_exit'].includes(state));
     $('tdResolveBtn').disabled = busy;
     renderGallery();
+  }
+  function renderTask() {
+    if (!$('tdManualBtn')) return;
+    const now=serverEpoch+(performance.now()-receivedAt)/1000;
+    const fresh=statusFresh&&Number.isFinite(now)&&performance.now()-receivedAt<20000;
+    $('tdManualBtn').disabled=busy||!fresh||!data?.batch?.allowed||now>Number(data?.batch?.start_before||0);
+    if(!data){text('tdTaskText',owner?'正在读取当前学生的本地状态…':'添加账号后即可管理本人图库和进度');return;}
+    if(!fresh){text('tdTaskText','本地状态尚未同步；上次状态已保留，请刷新核对，不能据此判断学校结果');return;}
+    const task=data.task||{}, state=task.state, active=data.batch?.active;
+    const seconds=Math.max(0,Math.ceil(Number(task.due||0)-now));
+    let message=task.note||'尚未开始';
+    if(state==='sending_entry')message='正在入口：请求处理中，禁止重复启动';
+    else if(state==='sending_exit')message='正在出口：请求处理中，禁止重复启动';
+    else if(state==='waiting_exit')message=active?(seconds?`已入：等待出口，剩余 ${seconds} 秒`:'已入：已到出口等待时间，等待后端处理'): '已入：后续队列已暂停，原配对保留，请核对状态';
+    else if(state==='idle'&&active)message=data.today?.attempted>0?(seconds?`已出：等待下一轮入口，剩余 ${seconds} 秒`:'已出：等待后端开始下一轮入口'):(seconds?`等待首次入口，剩余 ${seconds} 秒`:'等待后端开始首次入口');
+    text('tdTaskText',message+' · 请求状态不等于学校最终有效次数');
   }
   function selection() {
     const available = [...$('tdGallery').querySelectorAll('input:not(:disabled)')];
@@ -303,17 +320,18 @@
     });
     for(const role of ['Entry','Exit'])$('td'+role+'Picker').addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();$('td'+role+'File').click();}});
     $('tdManualBtn').addEventListener('click',()=>{
-      if(busy||!data?.manual?.allowed)return;
-      modalOwner=owner;manualPhase=data.manual.phase;
-      text('tdManualTitle',manualPhase==='exit'?'TD · 手动配对出口':'TD · 手动入口');
-      text('tdManualDesc',manualPhase==='exit'?'将使用本轮已固定的出口照片与设备完成配对，不另选照片组。':'将认领一轮今日预算，并固定本轮入口 / 出口照片组。提交后请按提示完成配对出口。');
+      if(busy||$('tdManualBtn').disabled)return;
+      modalOwner=owner;
+      text('tdManualTitle','TD · 启动当日队列');
+      text('tdManualDesc','一次启动当天剩余的入口 / 等待 / 出口队列，最多3轮；已有配对沿用已固定照片组。执行中不能再次启动，离开页面不会停止队列。');
       $('tdManualConfirmed').checked=false;text('tdManualError','');setUISurface('tdManualModal',true);
     });
     $('tdManualForm').addEventListener('submit',async e=>{
       e.preventDefault();if(modalOwner!==owner||busy)return;
-      const payload={phase:manualPhase,confirmed:$('tdManualConfirmed').checked};text('tdManualError','');
-      await mutate($('tdManualSave'),async(user,gen)=>{try{await request('manual',user,'POST',payload);if(current(user,gen))setUISurface('tdManualModal',false);}catch(error){if(current(user,gen))text('tdManualError',error.message);}});
+      const payload={confirmed:$('tdManualConfirmed').checked};text('tdManualError','');
+      await mutate($('tdManualSave'),async(user,gen)=>{try{await request('batch',user,'POST',payload);if(current(user,gen))setUISurface('tdManualModal',false);}catch(error){if(current(user,gen))text('tdManualError',error.message);}});
     });
+    $('tdBatchStopBtn').addEventListener('click',e=>{if(data?.batch?.active&&confirm('暂停后续队列？在途请求可能已发送，原配对和预算会保留，请核对学校记录。'))mutate(e.target,user=>request('toggle',user,'POST',{enabled:false}));});
     $('tdSettingsBtn').addEventListener('click',()=>openSettings());
     $('tdQuickCampusSelect').addEventListener('change',()=>{const campus=$('tdQuickCampusSelect').value;$('tdQuickCampusSelect').value=data?.settings.campus||'学院路';window.BUAAUiControls?.syncSelect($('tdQuickCampusSelect'));openSettings(campus);});
     for(const id of ['tdSemesterStart','tdSemesterEnd','tdStart'])$(id).addEventListener('input',updateDateBounds);
@@ -347,6 +365,7 @@
     zone.addEventListener('drop',e => {e.preventDefault();zone.classList.remove('td-dragover');if(owner&&!busy){const files=[...e.dataTransfer.files];if(files.length!==2)showToast('每次请拖入一组两张照片，再核对入口和出口','info');else openGroup(files);}});
 
     changedAccount();
+    setInterval(()=>{if(visible())renderTask();},1000);
   });
   document.addEventListener('buaa:accountview',changedAccount);
   document.addEventListener('buaa:mainview',() => { if(visible())refresh();else{controller?.abort();schedule();} });

@@ -154,22 +154,64 @@ exports.verifyTD = async function(page, check) {
     await page.waitForFunction(()=>document.getElementById('tdLibrary').open&&!document.getElementById('tdLibrary').classList.contains('ui-accordion-moving'));
     assert.equal(await page.locator('#tdLibraryBody').evaluate(e=>e.inert),false);
   });
-  await check('td-manual-explicit-phase-confirmation-error-and-modal-exclusivity',async()=>{
+  await check('td-manual-batch-confirmation-error-and-modal-exclusivity',async()=>{
     const state=await page.evaluate(async user=>(await apiFetch('/api/td/status?username='+encodeURIComponent(user))).json(),expectedUser);
-    let phase='entry',writes=[];
-    const mockStatus=async r=>r.fulfill({json:{...state,manual:{allowed:true,phase,reason:''}}});
+    let writes=[];
+    const mockStatus=async r=>r.fulfill({json:{...state,batch:{allowed:true,active:false,start_before:Date.now()/1000+600,reason:''}}});
     const mockManual=async r=>{writes.push(r.request().postDataJSON());await r.fulfill({status:409,json:{detail:'synthetic no campus write'}});};
-    await page.route('**/api/td/status?**',mockStatus);await page.route('**/api/td/manual?**',mockManual);
+    await page.route('**/api/td/status?**',mockStatus);await page.route('**/api/td/batch?**',mockManual);
     await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>!document.getElementById('tdManualBtn').disabled);
     await page.locator('#tdManualBtn').click();await page.locator('#tdManualSave').click();assert.equal(writes.length,0);
     await page.locator('#tdManualConfirmed').check();await page.locator('#tdManualSave').click();
     await page.waitForFunction(()=>document.getElementById('tdManualError').textContent.includes('synthetic'));
-    assert.deepEqual(writes,[{phase:'entry',confirmed:true}]);
+    assert.deepEqual(writes,[{confirmed:true}]);
     await page.evaluate(()=>setUISurface('tdSettingsModal',true));assert.equal(await page.locator('#tdManualModal').evaluate(e=>e.classList.contains('hidden')),true);
-    await page.keyboard.press('Escape');phase='exit';await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>document.getElementById('tdManualBtn').textContent.includes('出口'));
+    await page.keyboard.press('Escape');await page.locator('#tdRefreshBtn').click();assert.match(await page.locator('#tdManualBtn').textContent(),/手动 TD/);
     await page.locator('#tdManualBtn').click();assert.equal(await page.locator('#tdManualConfirmed').isChecked(),false);
     assert.match(await page.locator('#tdManualDesc').textContent(),/已固定/);await page.keyboard.press('Escape');
-    await page.unroute('**/api/td/status?**',mockStatus);await page.unroute('**/api/td/manual?**',mockManual);await page.locator('#tdRefreshBtn').click();
+    await page.unroute('**/api/td/status?**',mockStatus);await page.unroute('**/api/td/batch?**',mockManual);await page.locator('#tdRefreshBtn').click();
+  });
+  await check('td-live-batch-phases-countdown-and-no-browser-school-writes',async()=>{
+    const original=await page.evaluate(async user=>(await apiFetch('/api/td/status?username='+encodeURIComponent(user))).json(),expectedUser);
+    let phase='sending_entry',attempted=1,reads=0;const due=Date.now()/1000+120;
+    const status=async r=>{reads++;await r.fulfill({json:{...original,server_time:new Date().toISOString(),today:{attempted,completed:attempted-1},task:{state:phase,due},batch:{active:true,mode:'manual',allowed:false,reason:'queue active'}}});};
+    await page.route('**/api/td/status?**',status);
+    const networkBefore=network.filter(q=>q.method==='POST').length;
+    for(const [next,label] of [['sending_entry',/正在入口/],['waiting_exit',/已入.*剩余 \d+ 秒/],['sending_exit',/正在出口/],['idle',/已出.*剩余 \d+ 秒/]]){
+      phase=next;await page.locator('#tdRefreshBtn').click();await page.waitForFunction(expected=>new RegExp(expected).test(document.getElementById('tdTaskText').textContent),label.source);
+      assert.equal(await page.locator('#tdManualBtn').isDisabled(),true);assert.equal(await page.locator('#tdBatchStopBtn').isVisible(),true);
+    }
+    const before=await page.locator('#tdTaskText').textContent();
+    await page.waitForFunction(previous=>document.getElementById('tdTaskText').textContent!==previous,before,{timeout:4000});
+    assert.equal(network.filter(q=>q.method==='POST').length,networkBefore);assert.ok(reads>=4);
+    await page.unroute('**/api/td/status?**',status);await page.locator('#tdRefreshBtn').click();
+  });
+  await check('td-batch-window-closed-and-initial-auto-countdown',async()=>{
+    const original=await page.evaluate(async user=>(await apiFetch('/api/td/status?username='+encodeURIComponent(user))).json(),expectedUser);
+    let active=false;
+    const status=async r=>r.fulfill({json:{...original,server_time:new Date().toISOString(),today:{attempted:0,completed:0},task:{state:'idle',due:Date.now()/1000+90},batch:{active,mode:'auto',allowed:!active,start_before:Date.now()/1000-1,reason:'outside window'}}});
+    await page.route('**/api/td/status?**',status);await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>document.getElementById('tdManualBtn').disabled);
+    active=true;await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>document.getElementById('tdTaskText').textContent.includes('等待首次入口'));
+    assert.equal(await page.locator('#tdManualBtn').isDisabled(),true);
+    await page.unroute('**/api/td/status?**',status);await page.locator('#tdRefreshBtn').click();
+  });
+  await check('td-batch-double-submit-is-one-request-and-shows-active-state',async()=>{
+    const original=await page.evaluate(async user=>(await apiFetch('/api/td/status?username='+encodeURIComponent(user))).json(),expectedUser);
+    let active=false,writes=0,release;const pending=new Promise(resolve=>release=resolve);
+    const status=async r=>r.fulfill({json:{...original,server_time:new Date().toISOString(),task:{state:'waiting_exit',due:Date.now()/1000+100},batch:{active,mode:'manual',allowed:!active,start_before:Date.now()/1000+600,reason:''}}});
+    const start=async r=>{writes++;await pending;active=true;await r.fulfill({json:{status:'ok',queued:true}});};
+    await page.route('**/api/td/status?**',status);await page.route('**/api/td/batch?**',start);
+    try{
+      await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>!document.getElementById('tdManualBtn').disabled);
+      await page.locator('#tdManualBtn').click();await page.locator('#tdManualConfirmed').check();
+      await page.locator('#tdManualSave').click();
+      await page.locator('#tdManualForm').dispatchEvent('submit');
+      assert.equal(await page.locator('#tdManualBtn').isDisabled(),true);assert.equal(await page.locator('#tdManualSave').isDisabled(),true);
+      release();await page.waitForFunction(()=>document.getElementById('tdDaemonStatus').textContent.includes('手动当日队列'));
+      assert.equal(writes,1);assert.equal(await page.locator('#tdManualBtn').isDisabled(),true);
+      await page.setViewportSize({width:960,height:620});assert.equal(await page.evaluate(()=>document.body.scrollWidth<=innerWidth+2),true);
+      await page.setViewportSize({width:1280,height:840});
+    }finally{release();await page.unroute('**/api/td/status?**',status);await page.unroute('**/api/td/batch?**',start);await page.locator('#tdRefreshBtn').click();}
   });
   await check('td-selection-and-keyboard-modal-exclusivity',async () => {
     await page.locator('#tdSelectAll').check();assert.equal(await page.locator('#tdDeleteBtn').isDisabled(),false);

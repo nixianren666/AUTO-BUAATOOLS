@@ -572,7 +572,8 @@
             <button class="origin-btn origin-btn-ghost" id="tdLicenseBtn" type="button">激活 / 续期</button>
             <button class="origin-btn origin-btn-ghost" id="tdRefreshBtn" type="button">↻ 刷新本地状态</button>
             <button class="origin-btn origin-btn-ghost" id="tdCountBtn" type="button">核对学期次数</button>
-            <button class="origin-btn origin-btn-ghost" id="tdManualBtn" type="button" disabled>手动入口</button>
+            <button class="origin-btn origin-btn-ghost" id="tdManualBtn" type="button" disabled>手动 TD</button>
+            <button class="origin-btn origin-btn-ghost hidden" id="tdBatchStopBtn" type="button">暂停后续队列</button>
             <button class="origin-btn origin-btn-ghost hidden" id="tdResolveBtn" type="button">处理待核验记录</button>
             <span class="td-caption">参考时段（需核对本学期通知）· 07:30–10:00 / 11:30–14:00 / 15:30–20:00</span>
           </div>
@@ -759,8 +760,8 @@
     </div>
 
     <div class="origin-modal-backdrop hidden" id="tdManualModal" role="dialog" aria-modal="true" aria-labelledby="tdManualTitle">
-      <div class="origin-modal-dialog"><div class="modal-header"><h3 class="modal-title" id="tdManualTitle">手动 TD 入口</h3><button type="button" class="origin-icon-btn" data-td-close="tdManualModal" aria-label="关闭">✕</button></div>
-        <form id="tdManualForm"><div class="modal-body"><p class="modal-desc" id="tdManualDesc"></p><p class="td-caption">与自动共用今日最多3轮预算；失败和不确定也占用预算。入口/出口固定同一照片组，出口需等待3–4分钟并在入口7分钟内完成。手动不会开启自动守护。</p><label class="origin-checkbox-label td-consent"><input id="tdManualConfirmed" type="checkbox" required><span>本人已到对应入口/出口并实际参与锻炼，确认只提交当前这一步；了解请求不保证最终认定。</span></label><p class="td-inline-error" id="tdManualError" role="alert"></p></div><div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdManualModal">取消</button><button type="submit" class="origin-btn origin-btn-primary" id="tdManualSave">确认提交</button></div></form>
+      <div class="origin-modal-dialog"><div class="modal-header"><h3 class="modal-title" id="tdManualTitle">启动当日 TD 队列</h3><button type="button" class="origin-icon-btn" data-td-close="tdManualModal" aria-label="关闭">✕</button></div>
+        <form id="tdManualForm"><div class="modal-body"><p class="modal-desc" id="tdManualDesc"></p><p class="td-caption">与自动共用今日最多3轮预算；已使用的轮次不会重置，失败或不确定立即停止且不盲目重发。每轮入口/出口固定同一照片组，步骤间保留3–4分钟等待；临近截止、授权或规则变化时停止后续请求。手动队列不会开启每日自动守护。</p><label class="origin-checkbox-label td-consent"><input id="tdManualConfirmed" type="checkbox" required><span>本人实际参与锻炼，确认启动当天剩余完整队列；了解离开网页后队列继续、请求接收不保证学校最终认定。</span></label><p class="td-inline-error" id="tdManualError" role="alert"></p></div><div class="modal-footer"><button type="button" class="origin-btn origin-btn-ghost" data-td-close="tdManualModal">取消</button><button type="submit" class="origin-btn origin-btn-primary" id="tdManualSave">确认启动</button></div></form>
       </div>
     </div>
     <div class="origin-modal-backdrop hidden" id="tdLicenseModal" role="dialog" aria-modal="true" aria-labelledby="tdLicenseTitle">

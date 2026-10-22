@@ -8,6 +8,7 @@ from pathlib import Path
 import struct
 import tempfile
 import threading
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -54,7 +55,7 @@ class TDStateTests(unittest.TestCase):
         self.user = '90101'  # Deliberately synthetic, not a real student identifier.
         self.accounts = {self.user: SimpleNamespace(removed=False)}
         self.client = FakeClient(); self.logs=[];self.license=FakeLicense()
-        self.engine = TDEngine(self.store,self.accounts.get,lambda *a,**kw:self.logs.append((a,kw)),self.client,lambda:self.now,licensing=self.license)
+        self.engine = TDEngine(self.store,self.accounts.get,lambda *a,**kw:self.logs.append((a,kw)),self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         self.settings=dict(campus='学院路',semester_start='2026-09-01',semester_end='2027-01-31',start='2026-10-01',end='2026-12-31',target=32,daily_limit=3,confirmed=True,weekdays=list(range(7)),closed_dates=[])
         self.store.configure(self.user,self.settings)
         self.images=[self.store.add_image(self.user,jpeg(color))['id'] for color in ['navy','purple','teal']]
@@ -76,7 +77,7 @@ class TDStateTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.engine.manual(self.user,'entry',True)
     def test_near_license_expiry_blocks_new_entry_but_preserves_existing_exit(self):
         self.license.expires_epoch=self.now.timestamp()+429;self.engine.tick(self.user);self.assertEqual(self.client.calls,[])
-        self.license.expires_epoch=self.now.timestamp()+1000;self.engine.tick(self.user);self.advance_due();self.license.expires_epoch=self.now.timestamp()+10
+        self.license.expires_epoch=self.now.timestamp()+1600;self.engine.tick(self.user);self.advance_due();self.license.expires_epoch=self.now.timestamp()+10
         self.engine.tick(self.user);self.assertEqual(self.job()['completed'],1)
     def test_expiry_between_entry_and_exit_never_resends_or_refunds(self):
         self.engine.tick(self.user);self.advance_due();self.license.active=False;self.engine.tick(self.user)
@@ -266,6 +267,8 @@ class TDStateTests(unittest.TestCase):
         self.engine.tick(self.user);self.assertEqual(self.client.calls,[])
     def test_editing_activity_preserves_same_semester_count_and_day_budget(self):
         self.engine.record_count(self.user,12);self.run_pair()
+        with self.assertRaises(ValueError):self.engine.configure(self.user,{**self.settings,'start':'2026-10-02'})
+        self.engine.toggle(self.user,False)
         self.engine.configure(self.user,{**self.settings,'start':'2026-10-02'})
         self.assertEqual(self.job()['attempted'],1)
         self.assertEqual(self.engine.status(self.user)['progress']['count'],12)
@@ -321,6 +324,116 @@ class TDStateTests(unittest.TestCase):
         self.assertEqual(self.job()['completed'],1);self.assertEqual(self.job()['attempted'],1)
         self.assertEqual(self.client.calls[3][3],self.store.read_image(self.user,frozen['exit_image']))
         self.assertFalse(self.engine.status(self.user)['settings']['enabled'])
+
+    def test_batch_manual_one_start_completes_three_pairs_and_stops(self):
+        self.engine.toggle(self.user,False)
+        self.assertTrue(self.engine.start_batch(self.user,True)['queued'])
+        self.assertEqual(self.client.calls,[])
+        for _ in range(6):
+            self.engine.tick(self.user)
+            self.advance_due()
+        self.assertEqual((self.job()['attempted'],self.job()['completed']),(3,3))
+        self.assertFalse(self.job()['batch_active'])
+        self.assertFalse(self.engine.status(self.user)['settings']['enabled'])
+        self.engine.tick(self.user)
+        self.assertEqual(len(self.client.calls),12)
+        with self.assertRaises(ValueError):self.engine.start_batch(self.user,True)
+
+    def test_batch_parallel_starts_are_one_persisted_queue(self):
+        self.engine.toggle(self.user,False)
+        def start(_):
+            try:self.engine.start_batch(self.user,True);return True
+            except ValueError:return False
+        with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(start,range(8)))
+        self.assertEqual(sum(results),1);self.assertEqual(self.job()['attempted'],0)
+        with self.assertRaises(ValueError):self.engine.manual(self.user,'entry',True)
+        with self.assertRaises(ValueError):self.engine.toggle(self.user,True)
+
+    def test_batch_manual_existing_budget_only_finishes_remaining_rounds(self):
+        self.run_pair();self.engine.toggle(self.user,False)
+        self.engine.start_batch(self.user,True)
+        self.engine.tick(self.user);self.assertEqual(self.job()['attempted'],1)
+        self.advance_due()
+        for _ in range(4):self.engine.tick(self.user);self.advance_due()
+        self.assertEqual((self.job()['attempted'],self.job()['completed']),(3,3))
+        self.assertEqual(len(self.client.calls),12)
+
+    def test_batch_pause_and_resume_pending_exit_never_repeats_entry(self):
+        self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True);self.engine.tick(self.user)
+        self.engine.toggle(self.user,False);self.advance_due();self.engine.tick(self.user)
+        self.assertEqual(len(self.client.calls),2)
+        self.engine.start_batch(self.user,True);self.engine.tick(self.user)
+        self.assertEqual(len(self.client.calls),4);self.assertEqual(self.job()['completed'],1)
+
+    def test_batch_failure_and_restart_never_replay_pending_write(self):
+        self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True)
+        self.client.error=TimeoutError();self.engine.tick(self.user)
+        other=TDStore(self.store.root);self.addCleanup(other.db.close)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine.tick(self.user)
+        with self.assertRaises(ValueError):engine.start_batch(self.user,True)
+        self.assertEqual(len(self.client.calls),1);self.assertEqual(self.job()['attempted'],1)
+        self.assertFalse(self.job()['batch_active'])
+
+    def test_batch_restart_preserves_due_and_pair_without_new_click(self):
+        self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True);self.engine.tick(self.user)
+        before=dict(self.job());other=TDStore(self.store.root);self.addCleanup(other.db.close)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine.tick(self.user);self.assertEqual(self.job(),before);self.assertEqual(len(self.client.calls),2)
+        self.advance_due();engine.tick(self.user)
+        self.assertEqual(self.job()['completed'],1);self.assertEqual(len(self.client.calls),4)
+
+    def test_batch_auto_randomizes_only_first_start_then_uses_pair_intervals(self):
+        calls=[]
+        self.engine.schedule_delay=lambda maximum:(calls.append(maximum) or 60)
+        self.engine.tick(self.user)
+        self.assertEqual(len(calls),1);self.assertEqual(self.client.calls,[])
+        self.assertEqual(self.job()['due'],self.now.timestamp()+60)
+        self.engine.tick(self.user);self.assertEqual(len(calls),1)
+        self.advance_due()
+        for _ in range(6):self.engine.tick(self.user);self.advance_due()
+        self.assertEqual(len(calls),1);self.assertEqual(self.job()['completed'],3)
+
+    def test_batch_requires_full_remaining_window_and_license_margin(self):
+        self.engine.toggle(self.user,False);self.now=self.now.replace(hour=9,minute=50)
+        with self.assertRaises(ValueError):self.engine.start_batch(self.user,True)
+        self.assertFalse(self.engine.status(self.user)['batch']['allowed'])
+        self.now=self.now.replace(hour=8,minute=0);self.license.expires_epoch=self.now.timestamp()+1000
+        with self.assertRaises(ValueError):self.engine.start_batch(self.user,True)
+        self.assertEqual(self.client.calls,[]);self.assertEqual(self.job()['attempted'],0)
+
+    def test_batch_closed_window_or_new_day_never_sends_late_queue(self):
+        self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True);self.engine.tick(self.user)
+        self.now=self.now.replace(hour=11,minute=35);self.engine.tick(self.user)
+        self.assertEqual(len(self.client.calls),2);self.assertFalse(self.job()['batch_active'])
+        self.assertEqual(self.job()['state'],'uncertain')
+        self.now+=timedelta(days=1);self.engine.tick(self.user)
+        self.assertEqual(self.job()['attempted'],0);self.assertEqual(len(self.client.calls),2)
+
+    def test_batch_status_is_readable_while_sending_and_does_not_trigger_requests(self):
+        self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True)
+        entered=threading.Event();release=threading.Event();original=self.client.check
+        def slow(*args):
+            entered.set();release.wait(3);return original(*args)
+        self.client.check=slow
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            future=pool.submit(self.engine.tick,self.user)
+            self.assertTrue(entered.wait(1))
+            try:
+                status=pool.submit(self.engine.status,self.user).result(timeout=1)
+                self.assertEqual(status['task']['state'],'sending_entry');self.assertFalse(status['batch']['allowed'])
+            finally:release.set()
+            future.result(timeout=2)
+        self.assertEqual(len(self.client.calls),2)
+
+    def test_batch_old_process_sending_state_is_uncertain_not_in_progress(self):
+        with self.store.transaction():
+            self.store.save_job(owner_key(self.user),self.now.date().isoformat(),dict(state='sending_entry',attempted=1,completed=0,
+                due=0,entry_at=self.now.timestamp(),batch_active=True,batch_mode='manual',batch_window_end=self.now.timestamp()+3600,sender_process='synthetic-prior-process'))
+        self.assertEqual(self.engine.status(self.user)['task']['state'],'uncertain')
+        self.engine.tick(self.user)
+        self.assertEqual(self.job()['state'],'uncertain');self.assertFalse(self.job()['batch_active'])
+        self.assertEqual(self.job()['attempted'],1);self.assertEqual(self.client.calls,[])
     def test_manual_rejects_auto_enabled_unconfirmed_or_wrong_phase(self):
         with self.assertRaises(ValueError):self.engine.manual(self.user,'entry',True)
         self.engine.toggle(self.user,False)
@@ -474,6 +587,48 @@ class TDAPITests(unittest.TestCase):
         self.assertEqual(client.get('/api/td/status?username=90101').status_code,401)
         client.get('/api/session')
         self.assertEqual(client.post('/api/td/toggle?username=90101',json={'enabled':True}).status_code,403)
+    def test_batch_strict_confirmation_identity_and_csrf(self):
+        for body in ({},{'confirmed':1},{'confirmed':True,'phase':'entry'},{'confirmed':True,'username':'90102'}):
+            self.assertEqual(self.client.post('/api/td/batch?username=90101',json=body).status_code,422)
+        self.assertEqual(self.client.post('/api/td/batch',json={'confirmed':True}).status_code,422)
+        other=TestClient(self.app);self.addCleanup(other.close);other.get('/api/session')
+        self.assertEqual(other.post('/api/td/batch?username=90101',json={'confirmed':True}).status_code,403)
+        with patch.object(TDClient,'request',side_effect=AssertionError('No real campus traffic')):
+            self.assertEqual(self.client.post('/api/td/batch?username=90101',json={'confirmed':True}).status_code,409)
+            self.assertEqual(self.client.get('/api/td/status?username=90101').json()['today']['attempted'],0)
+    def test_status_route_does_not_wait_for_the_network_operation_lock(self):
+        self.client.get('/api/td/status?username=90101')
+        engine=self.app.state.td_holder['engine'];entered=threading.Event();release=threading.Event()
+        def hold():
+            with engine.account_lock('90101'):
+                entered.set();release.wait(3)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            blocker=pool.submit(hold);self.assertTrue(entered.wait(1))
+            try:self.assertEqual(pool.submit(self.client.get,'/api/td/status?username=90101').result(timeout=1).status_code,200)
+            finally:release.set()
+            blocker.result(timeout=2)
+    def test_batch_api_returns_before_waits_and_background_uses_same_queue(self):
+        self.client.get('/api/td/status?username=90101')
+        engine=self.app.state.td_holder['engine'];engine.licensing.close();engine.licensing=FakeLicense()
+        engine.clock=lambda:datetime(2026,10,19,8,0,tzinfo=TZ)
+        engine.client=FakeClient()
+        engine.configure('90101',dict(campus='学院路',semester_start='2026-09-01',semester_end='2027-01-31',start='2026-10-01',end='2026-12-31',target=32,daily_limit=3,confirmed=True,weekdays=list(range(7)),closed_dates=[]))
+        images=[engine.store.add_image('90101',jpeg(color))['id'] for color in ('navy','teal')]
+        engine.store.create_group('90101',*images,'Synthetic lifecycle pair',True)
+        with TestClient(self.app) as client:
+            client.headers['X-BUAA-CSRF']=client.get('/api/session').json()['csrf']
+            started=time.monotonic();response=client.post('/api/td/batch?username=90101',json={'confirmed':True})
+            self.assertEqual(response.status_code,200);self.assertTrue(response.json()['queued'])
+            self.assertLess(time.monotonic()-started,2,'Queue start must not wait through a 3–4 minute phase')
+            deadline=time.monotonic()+7
+            while time.monotonic()<deadline:
+                state=client.get('/api/td/status?username=90101').json()
+                if state['task']['state']=='waiting_exit':break
+                time.sleep(.05)
+            self.assertEqual(state['task']['state'],'waiting_exit');self.assertEqual(state['today']['attempted'],1)
+            self.assertEqual(client.post('/api/td/batch?username=90101',json={'confirmed':True}).status_code,409)
+            self.assertEqual(client.post('/api/td/toggle?username=90101',json={'enabled':False}).status_code,200)
+            self.assertEqual(len(engine.client.calls),2)
     def test_offline_license_request_scope_strict_payload_and_default_deny(self):
         user='?username=90101'
         first=self.client.post('/api/td/license/request'+user,json={})

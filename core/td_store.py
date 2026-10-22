@@ -78,6 +78,10 @@ class TDStore:
     def save_job(self, owner, day, data):
         self.db.execute("INSERT OR REPLACE INTO jobs VALUES (?,?,?)", (owner, day, json.dumps(data)))
 
+    def batches(self, owner):
+        return [(row[0], json.loads(row[1])) for row in self.db.execute(
+            'SELECT day,data FROM jobs WHERE owner=?', (owner,)) if json.loads(row[1]).get('batch_active') is True]
+
     def outstanding(self, owner):
         return [(row[0], json.loads(row[1])) for row in self.db.execute(
             "SELECT day,data FROM jobs WHERE owner=? ORDER BY day DESC", (owner,))
@@ -88,7 +92,7 @@ class TDStore:
         with self.transaction():
             previous = self.profile(owner)
             structural = any(settings[k] != previous[k] for k in ("semester_start", "semester_end", "start", "end", "campus", "daily_limit", "target", "weekdays", "closed_dates"))
-            if structural and self.outstanding(owner):
+            if self.batches(owner) or structural and self.outstanding(owner):
                 raise ValueError("仍有配对或待核验记录，请先暂停并核对后再改规则")
             validate_settings(settings)
             old_term = (previous['semester_start'], previous['semester_end'])

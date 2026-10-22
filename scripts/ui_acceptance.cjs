@@ -175,8 +175,19 @@ const fs = require('node:fs');
     await require('./notice_acceptance.cjs').verifyNotice(browser, url, check);
     await require('./sso_acceptance.cjs').verifySso(browser, url, check);
     await check('headless-loopback-exit-clears-page-without-reauth-or-service-stop',async()=>{
+      let release,held=false,bootstraps=0;const blocked=new Promise(resolve=>release=resolve);
+      const watch=request=>{if(new URL(request.url()).pathname==='/api/session'&&request.method()==='GET')bootstraps++;};
+      page.on('request',watch);
+      await page.route('**/api/logs?logout_race=1',async route=>{held=true;await blocked;await route.fulfill({status:401,json:{detail:'synthetic delayed expiry'}});});
+      await page.route('**/api/session',async route=>{
+        if(route.request().method()!=='DELETE')return route.continue();
+        const response=await route.fetch();release();await new Promise(resolve=>setTimeout(resolve,120));await route.fulfill({response});
+      });
+      await page.evaluate(()=>{void apiFetch('/api/logs?logout_race=1').catch(()=>{});});
+      const deadline=Date.now()+5000;while(!held&&Date.now()<deadline)await page.waitForTimeout(20);assert.ok(held);
       page.removeAllListeners('dialog');page.on('dialog',dialog=>dialog.accept());
       await page.evaluate(()=>{void requestAppExit();});await page.waitForURL('about:blank');
+      assert.equal(bootstraps,0,'Late 401 must not recreate the loopback session during logout');
       assert.equal((await context.request.get(new URL('/api/health',url).href)).status(),200);
       assert.equal((await context.request.get(new URL('/api/accounts',url).href)).status(),401);
     });

@@ -40,6 +40,10 @@ class Manual(StrictModel):
     confirmed: StrictBool
 
 
+class Batch(StrictModel):
+    confirmed: StrictBool
+
+
 class Activation(StrictModel):
     code: Annotated[str, Field(strict=True,min_length=80,max_length=4096)]
 
@@ -133,7 +137,19 @@ def install(app, config_path, resolve_account, accounts, log):
 
     @app.get("/api/td/status")
     async def status(username: str = Query(min_length=1)):
-        return await perform(username, lambda engine: engine.status(username))
+        resolve_account(username)
+        # Reads use the short storage lock, not the network-operation lock, so
+        # sending_entry/sending_exit remain observable while sockets are busy.
+        try:
+            return await asyncio.to_thread(service().status,username)
+        except (OSError,sqlite3.Error) as exc:
+            raise HTTPException(503,'TD私有数据暂不可读，请检查磁盘与权限') from exc
+
+    @app.post('/api/td/batch')
+    async def batch(body: Batch, username: str = Query(min_length=1)):
+        result=await perform(username,lambda e:e.start_batch(username,body.confirmed))
+        await start()
+        return {'status':'ok',**result}
 
     @app.post("/api/td/settings")
     async def settings(body: Settings, username: str = Query(min_length=1)):
