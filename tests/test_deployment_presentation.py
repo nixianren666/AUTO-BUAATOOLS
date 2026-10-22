@@ -41,6 +41,15 @@ class DeploymentPresentation(unittest.TestCase):
             self.assertTrue(capabilities()['autostart_supported'])
             self.assertEqual(capabilities()['exit_behavior'],'application')
 
+    def test_phone_layout_hint_is_server_runtime_not_user_agent_or_auth(self):
+        for mode in ('desktop','headless'):
+            with patch.dict(os.environ,{'BUAA_RUNTIME_MODE':mode}),TestClient(backend.app) as c:
+                page=c.get('/',headers={'User-Agent':'synthetic iPhone Mobile'})
+                self.assertIn('data-runtime-mode="'+mode+'"',page.text)
+                self.assertIn('/static/css/remote-phone.css',page.text)
+                self.assertIn('/static/js/remote-phone.js',page.text)
+                self.assertEqual(capabilities()['exit_behavior'],'application' if mode=='desktop' else 'management-session')
+
     def test_container_identity_is_private_persistent_and_never_rotates_bad_file(self):
         with tempfile.TemporaryDirectory() as d,patch.dict(os.environ,{'BUAA_TD_DEVICE_FILE':str(Path(d)/'.td-device-id')}):
             first=container_installation_id();self.assertEqual(len(first),64)

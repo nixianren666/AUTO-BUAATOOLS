@@ -1623,7 +1623,8 @@ async def serve_index(request: Request):
         play = startup_presentation.claim(prefetch=prefetch)
         return HTMLResponse(
             index_file.read_text(encoding='utf-8').replace('data-startup-enabled="pending"',
-                                                        'data-startup-enabled="' + ('true' if play else 'false') + '"'),
+                                                        'data-startup-enabled="' + ('true' if play else 'false') + '"')
+            .replace('data-runtime-mode="pending"', 'data-runtime-mode="' + capabilities()['mode'] + '"'),
             headers={
                 "Cache-Control": "no-cache, no-store, must-revalidate",
                 "Pragma": "no-cache",

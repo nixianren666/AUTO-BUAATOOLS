@@ -35,6 +35,7 @@ const fs = require('node:fs');
   try {
     await page.goto(url, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => typeof appState === 'object' && appState.accounts.length === 2);
+    await require('./remote_phone_acceptance.cjs').verifyRemotePhone(browser, url, check);
     await check('initialization-and-paused-health', async () => {
       const refresh=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/classes');
       await page.evaluate(()=>{if(!window.__acceptanceViewPoll)throw new Error('Missing normal active-view refresh');clearInterval(__acceptanceViewPoll.id);__acceptanceViewPoll.callback();});

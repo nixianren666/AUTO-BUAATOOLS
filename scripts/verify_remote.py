@@ -34,11 +34,18 @@ def main():
                     # local fixture session to shut down only our child process.
                     try:
                         q=c.post('/api/session',json={'password':'synthetic-remote-admin'})
+                        if q.status_code==429:
+                            # Extra phone login shares the real per-IP budget.
+                            # Respect its Retry-After; never relax production limits.
+                            delay=int(q.headers.get('Retry-After','61'))
+                            assert 1<=delay<=61,'Unexpected management retry interval'
+                            time.sleep(delay)
+                            q=c.post('/api/session',json={'password':'synthetic-remote-admin'})
                         if q.status_code==200:c.post('/api/exit',headers={'X-BUAA-CSRF':q.json()['csrf']})
                     except httpx.HTTPError:pass
                     try:proc.wait(timeout=12)
                     except subprocess.TimeoutExpired:proc.terminate();proc.wait(timeout=10)
         assert proc.returncode==0,'Remote fixture did not exit cleanly'
-    print(json.dumps({'passed':True,'compiled':bool(args.executable),'checks':10,'real_school_writes':0}))
+    print(json.dumps({'passed':True,'compiled':bool(args.executable),'checks':13,'real_school_writes':0}))
 
 if __name__=='__main__':main()

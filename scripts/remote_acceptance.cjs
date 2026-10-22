@@ -21,6 +21,7 @@ const {chromium}=require('playwright');
  const check=async(name,fn)=>{fs.writeFileSync(reportPath,JSON.stringify({passed:false,current:name,checks}));await fn();checks.push(name);};
  const login=async()=>{await p.locator('#managementPassword').fill(process.env.BUAA_ACCEPTANCE_ADMIN);await p.locator('#managementLoginSubmit').click();await p.locator('#managementLoginModal').waitFor({state:'hidden'});};
  try{
+  await require('./remote_phone_acceptance.cjs').verifyPhoneManagement(browser,url,process.env.BUAA_ACCEPTANCE_ADMIN,check);
   await check('remote-first-use-glass-login-without-native-prompt',async()=>{
    await p.goto(url,{waitUntil:'domcontentloaded'});await p.locator('#managementLoginModal').waitFor({state:'visible'});
    assert.equal(prompts,0);assert.equal(await p.locator('#disclaimerModal').isVisible(),false);

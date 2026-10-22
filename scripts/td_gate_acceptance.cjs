@@ -94,7 +94,9 @@ exports.verifyTDGate = async (page, check) => {
     await page.locator('#tdLicenseBtn').click();assert.equal(await page.locator('#tdLicenseRequestBtn').isDisabled(),true);await page.keyboard.press('Escape');
     const renewable=async r=>{const response=await r.fetch();await r.fulfill({response,json:{...await response.json(),license:{...active,renewable:true}}});};
     await page.route('**/api/td/status?**',renewable);await page.locator('#tdRefreshBtn').click();await page.waitForFunction(()=>!document.getElementById('tdLicenseBtn').disabled);
-    await page.locator('#tdLicenseBtn').click();assert.equal(await page.locator('#tdLicenseRequestBtn').isDisabled(),false);assert.equal(await page.locator('#tdLicenseActivateBtn').isDisabled(),false);
+    await page.locator('#tdLicenseBtn').click();
+    await page.waitForFunction(()=>document.getElementById('tdLicenseAccessState').textContent.includes('已进入续期窗口'));
+    assert.equal(await page.locator('#tdLicenseRequestBtn').isDisabled(),false);assert.equal(await page.locator('#tdLicenseActivateBtn').isDisabled(),false);
     assert.match(await page.locator('#tdLicenseAccessState').textContent(),/续期窗口/);
     await page.locator('#tdLicenseRequestBtn').click();await page.waitForFunction(()=>document.getElementById('tdLicenseRequest').value.startsWith('TDR1.'));
     await page.keyboard.press('Escape');await page.unroute('**/api/td/status?**',renewable);await page.locator('#navBtnRegular').click();allowed=false;

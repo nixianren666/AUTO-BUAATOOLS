@@ -170,13 +170,19 @@
     $('tdResolveBtn').disabled = busy;
     renderGallery();
   }
+  function taskText(message) {
+    text('tdTaskText', message);
+    // Announce phase changes, not every ticking second, to screen readers.
+    const phase = message.replace(/，剩余 \d+ 秒/g, '');
+    if ($('tdTaskAnnouncement')?.textContent !== phase) text('tdTaskAnnouncement', phase);
+  }
   function renderTask() {
     if (!$('tdManualBtn')) return;
     const now=serverEpoch+(performance.now()-receivedAt)/1000;
     const fresh=statusFresh&&Number.isFinite(now)&&performance.now()-receivedAt<20000;
     $('tdManualBtn').disabled=busy||!fresh||!data?.batch?.allowed||now>Number(data?.batch?.start_before||0);
-    if(!data){text('tdTaskText',owner?'正在读取当前学生的本地状态…':'添加账号后即可管理本人图库和进度');return;}
-    if(!fresh){text('tdTaskText','本地状态尚未同步；上次状态已保留，请刷新核对，不能据此判断学校结果');return;}
+    if(!data){taskText(owner?'正在读取当前学生的本地状态…':'添加账号后即可管理本人图库和进度');return;}
+    if(!fresh){taskText('本地状态尚未同步；上次状态已保留，请刷新核对，不能据此判断学校结果');return;}
     const task=data.task||{}, state=task.state, active=data.batch?.active;
     const seconds=Math.max(0,Math.ceil(Number(task.due||0)-now));
     let message=task.note||'尚未开始';
@@ -184,7 +190,7 @@
     else if(state==='sending_exit')message='正在出口：请求处理中，禁止重复启动';
     else if(state==='waiting_exit')message=active?(seconds?`已入：等待出口，剩余 ${seconds} 秒`:'已入：已到出口等待时间，等待后端处理'): '已入：后续队列已暂停，原配对保留，请核对状态';
     else if(state==='idle'&&active)message=data.today?.attempted>0?(seconds?`已出：等待下一轮入口，剩余 ${seconds} 秒`:'已出：等待后端开始下一轮入口'):(seconds?`等待首次入口，剩余 ${seconds} 秒`:'等待后端开始首次入口');
-    text('tdTaskText',message+' · 请求状态不等于学校最终有效次数');
+    taskText(message+' · 请求状态不等于学校最终有效次数');
   }
   function selection() {
     const available = [...$('tdGallery').querySelectorAll('input:not(:disabled)')];

@@ -100,7 +100,7 @@ class TDStateTests(unittest.TestCase):
     def test_waiting_exit_resumes_from_persisted_state(self):
         self.engine.tick(self.user); self.advance_due()
         other=TDStore(self.store.root); self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         engine.tick(self.user); self.assertEqual(self.job()['completed'],1); self.assertEqual(len(self.client.calls),4)
     def test_photo_failure_stops_without_count_or_success(self):
         self.client.count=12
@@ -168,7 +168,7 @@ class TDStateTests(unittest.TestCase):
         self.assertFalse(self.engine.status(self.user)['settings']['enabled'])
     def test_concurrent_engines_claim_once(self):
         other=TDStore(self.store.root); self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         with ThreadPoolExecutor(2) as pool: list(pool.map(lambda e:e.tick(self.user),[self.engine,engine]))
         self.assertEqual(self.job()['attempted'],1); self.assertEqual(len(self.client.calls),2)
     def test_media_isolation_and_path_traversal(self):
@@ -283,7 +283,7 @@ class TDStateTests(unittest.TestCase):
     def test_expired_term_count_stays_hidden_across_restart(self):
         self.engine.record_count(self.user,12);self.now=datetime(2027,3,1,8,tzinfo=TZ)
         other=TDStore(self.store.root);self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**k:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**k:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         self.assertIsNone(engine.status(self.user)['progress']['count'])
         self.assertEqual(other.profile(owner_key(self.user))['count'],12)
     def test_current_term_count_survives_activity_end_and_same_calendar(self):
@@ -369,7 +369,7 @@ class TDStateTests(unittest.TestCase):
         self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True)
         self.client.error=TimeoutError();self.engine.tick(self.user)
         other=TDStore(self.store.root);self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         engine.tick(self.user)
         with self.assertRaises(ValueError):engine.start_batch(self.user,True)
         self.assertEqual(len(self.client.calls),1);self.assertEqual(self.job()['attempted'],1)
@@ -378,7 +378,7 @@ class TDStateTests(unittest.TestCase):
     def test_batch_restart_preserves_due_and_pair_without_new_click(self):
         self.engine.toggle(self.user,False);self.engine.start_batch(self.user,True);self.engine.tick(self.user)
         before=dict(self.job());other=TDStore(self.store.root);self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         engine.tick(self.user);self.assertEqual(self.job(),before);self.assertEqual(len(self.client.calls),2)
         self.advance_due();engine.tick(self.user)
         self.assertEqual(self.job()['completed'],1);self.assertEqual(len(self.client.calls),4)
@@ -452,7 +452,7 @@ class TDStateTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.engine.manual(self.user,'entry',True)
         with self.assertRaises(ValueError):self.engine.manual(self.user,'entry',True)
         other=TDStore(self.store.root);self.addCleanup(other.db.close)
-        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license)
+        engine=TDEngine(other,self.accounts.get,lambda *a,**kw:None,self.client,lambda:self.now,licensing=self.license,schedule_delay=lambda maximum:0)
         with self.assertRaises(ValueError):engine.manual(self.user,'entry',True)
         self.assertEqual(len(self.client.calls),1);self.assertEqual(self.job()['attempted'],1)
     def test_manual_concurrent_entry_only_one_claim(self):

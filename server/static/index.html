@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-startup-enabled="pending">
+<html lang="zh-CN" data-startup-enabled="pending" data-runtime-mode="pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.12">
   <link rel="stylesheet" href="/static/css/startup.css?v=1.4.12">
   <link rel="stylesheet" href="/static/css/td.css?v=1.4.12">
+  <link rel="stylesheet" href="/static/css/remote-phone.css?v=1.4.12">
 </head>
 <body class="origin-theme">
   <div id="startupStage" aria-label="正在启动 AUTO-BUAA" role="status" aria-live="polite">
@@ -565,9 +566,9 @@
                 <p class="td-caption" id="tdBudget">本地已完成配对流程；学校最终认定另计</p>
               </div>
             </div>
-            <div class="td-task-strip" role="status" aria-live="polite"><span class="origin-status-dot" id="tdTaskDot"></span><span id="tdTaskText">尚未开始</span></div>
+            <div class="td-task-strip"><span class="origin-status-dot" id="tdTaskDot" aria-hidden="true"></span><span id="tdTaskText" aria-live="off">尚未开始</span><span id="tdTaskAnnouncement" class="td-phase-announcement" role="status" aria-live="polite" aria-atomic="true"></span></div>
           </div>
-          <div class="td-toolbar">
+          <div class="td-toolbar" id="tdActionToolbar">
             <span class="td-caption" id="tdLicenseState" role="status">TD 离线授权 · 待读取</span>
             <button class="origin-btn origin-btn-ghost" id="tdLicenseBtn" type="button">激活 / 续期</button>
             <button class="origin-btn origin-btn-ghost" id="tdRefreshBtn" type="button">↻ 刷新本地状态</button>
@@ -845,6 +846,7 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
+  <script src="/static/js/remote-phone.js?v=1.4.12"></script>
   <script src="/static/js/render-lifecycle.js?v=1.4.12"></script>
   <script src="/static/js/startup.js?v=1.4.12" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
   <script src="/static/js/stitch-ambient.js?v=1.4.12"></script>

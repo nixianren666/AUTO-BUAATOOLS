@@ -20,7 +20,7 @@
   const originalFocus = document.activeElement;
   const wasInert = workspace?.inert;
   const previousFilters = layers.map(el => el.style.filter);
-  const icon = document.querySelector('.origin-logo-mark');
+  const icon = document.querySelector('[data-remote-phone] .remote-phone-logo') || document.querySelector('.origin-logo-mark');
   const previousVisibility = icon?.style.visibility || '';
   let frame = 0, readyFrame = 0, timer = 0, afterPaint, cycle = performance.now(), flightStart = 0, hiddenAt = 0;
   let phase = 'drawing', ready = false, fading = false, closed = false, context = null, pixels = [], particles = [];

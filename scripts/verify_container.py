@@ -46,7 +46,7 @@ sys.addaudithook(guard)
         start(True)
         env=dict(os.environ,BUAA_ACCEPTANCE_ADMIN='synthetic-remote-admin',NODE_PATH=os.environ.get('BUAA_NODE_MODULES',''))
         r=subprocess.run([shutil.which('node'),'scripts/remote_acceptance.cjs',f'http://127.0.0.1:{port}/',os.environ.get('BUAA_TEST_BROWSER',''),str(output/'docker-browser.json')],env=env,capture_output=True,text=True,timeout=240)
-        assert r.returncode==0,r.stderr[-1500:];checks.append('docker-real-password-browser-ten-contracts')
+        assert r.returncode==0,r.stderr[-1500:];checks.append('docker-real-password-browser-thirteen-contracts-including-phone')
         script="""from pathlib import Path
 import json
 from core.vault import encrypt
