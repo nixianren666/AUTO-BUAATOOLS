@@ -5,13 +5,15 @@ const {chromium}=require('playwright');
  const [url,executablePath,reportPath]=process.argv.slice(2),checks=[];
  const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{})});
  const context=await browser.newContext({viewport:{width:1000,height:760},reducedMotion:'reduce'});
+ const version=(await(await context.request.get(new URL('/api/health',url).href)).json()).version;
+ assert.match(version,/^\d+\.\d+\.\d+$/);
  const errors=[];let prompts=0,loginPosts=0,writePosts=0;
  const protect=async c=>c.route('**/*',async route=>{
   const r=route.request(),u=new URL(r.url());
   if(!['127.0.0.1','localhost'].includes(u.hostname))return route.abort();
   if(u.pathname==='/api/session'&&r.method()==='POST')loginPosts++;
   if(u.pathname==='/api/logs/clear'&&r.method()==='POST')writePosts++;
-  if(u.pathname==='/api/system/updates')return route.fulfill({json:{current_version:'1.4.11',latest_version:'1.4.11',status:'up_to_date',message:'当前已是最新版本'}});
+  if(u.pathname==='/api/system/updates')return route.fulfill({json:{current_version:version,latest_version:version,status:'up_to_date',message:'当前已是最新版本'}});
   return route.continue();
  });
  await protect(context);const p=await context.newPage();

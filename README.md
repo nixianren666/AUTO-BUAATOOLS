@@ -15,14 +15,14 @@
 
 **开启任务，后台按规则自动执行。** 课堂与博雅一起守护，多账号独立运行。
 
-[![Version](https://img.shields.io/badge/version-1.4.11-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.12-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8b5cf6)](#下载与安装)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/nixianren666/AUTO-BUAATOOLS/total?label=downloads&color=38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)
 
 [**⬇️ 下载客户端**](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) · [🖼️ 界面与功能](#界面展示) · [🛡️ 操作安全](#怎么减少漏选错选和重复操作)
 
-源码版本 **v1.4.11**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
+源码版本 **v1.4.12**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
 
 [⚠️ 使用前必读](#免责声明) · [🔐 账号隐私](#账号与隐私如何保护) · [🚀 三步上手](#第一次使用三步完成设置) · [⚙️ 后台部署](#源码与后台部署) · [💬 常见问题](#常见问题)
 
@@ -488,3 +488,12 @@ TD 旧协议没有 TLS；照片会在执行对应请求时发送给学校服务�
 <sub>Built for BUAAers · 开源、可审查，在自己的设备上运行</sub>
 </div>
 
+
+
+### VPN、系统隧道与网络切换
+
+“校园网直连”表示请求校方原始地址，“WebVPN”表示使用学校网页网关；两者都由系统路由决定最终出口，不表示能绕过第三方VPN/TUN。关闭HTTP代理也不代表系统隧道已关闭。软件保持TLS证书校验，不自动修改系统路由、DNS、VPN或强制全局IPv4。
+
+短暂断网、DNS/连接/读取失败或未知课表响应会保留上次数据并标记未同步；不能据此认为没有课程、已经签到或登录必然失效。仅明确的认证失效响应进入已有认证退避；博雅Cookie交换遇到网络失败不会立即追加密码登录。网络恢复后再进行只读同步；不重放结果不确定的学校写入。
+
+若开启系统隧道后请求失败，请核对隧道客户端对学校认证、UC、iclass、博雅及学校WebVPN域名的分流、DNS和端口可达性。TD的校内TCP连接与学校WebVPN网页通道不同，不能据此推定可达。反馈时提供软件版本、发生时间和脱敏错误类型即可；拓扑快照本身不足以确认具体原因。

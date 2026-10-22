@@ -34,6 +34,8 @@ def main():
         call("codesign","--force","--deep","-s","-",str(dist/"BUAA-Signin.app"))
         call("codesign","--verify","--deep","--strict",str(dist/"BUAA-Signin.app"))
     call(sys.executable,"scripts/verify_compiled.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"),"--native")
+    embedded_env = dict(os.environ, BUAA_TEST_REPORT_DIR=str(ROOT/'acceptance/network-embedded'))
+    subprocess.run([sys.executable, 'scripts/test_isolated.py', '--embedded-executable', str(executable), '--pattern', 'test_network_session_separation.py'], cwd=ROOT, env=embedded_env, check=True)
     call(sys.executable,"scripts/verify_remote.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance/remote-compiled"))
     if os.environ.get("GITHUB_ACTIONS")=="true":
         call(sys.executable,"scripts/verify_native_service.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"))

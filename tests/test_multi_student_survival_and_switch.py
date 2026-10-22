@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from server.app import app, accounts, AccountState, active_username
 from core.scheduler import SigninScheduler
 from core.boya_scheduler import BoyaScheduler
+from core.boya_client import BoyaApiError
 
 
 class TestMultiStudentSurvivalAndSwitch(unittest.TestCase):
@@ -67,7 +68,7 @@ class TestMultiStudentSurvivalAndSwitch(unittest.TestCase):
     def test_boya_scheduler_credentials_renew(self):
         """测试 BoyaScheduler 在 Token 过期时能自动利用凭据重新换取 Token"""
         acc = AccountState(username="20240004", name="赵六", password="boya_password")
-        acc.boya_client.acquire_token = MagicMock(return_value=None)
+        acc.boya_client.acquire_token = MagicMock(side_effect=BoyaApiError('session_expired', 'synthetic CAS login form'))
         acc.boya_client.login_with_credentials = MagicMock(return_value="new_mock_token")
 
         scheduler = BoyaScheduler(get_accounts_func=lambda: [acc], add_log_func=lambda *a, **kw: None)

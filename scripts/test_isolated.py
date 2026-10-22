@@ -10,8 +10,13 @@ import tempfile
 import time
 import unittest
 import traceback
+import argparse
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--embedded-executable', type=Path)
+    parser.add_argument('--pattern', default='test_*.py')
+    args = parser.parse_args()
     project = Path(__file__).resolve().parent.parent
     if not os.environ.get("BUAA_NODE_MODULES") and (project/"node_modules").is_dir():
         os.environ["BUAA_NODE_MODULES"] = str(project/"node_modules")
@@ -46,14 +51,47 @@ def main():
         os.chdir(source)
         sys.path.insert(0, str(source))
         sys.dont_write_bytecode = True
+        embedded_modules = []
+        if args.embedded_executable:
+            # Execute the exact packaged Python code, with disposable data and
+            # the same external-traffic guard as the source contracts.
+            import importlib.abc
+            import importlib.util
+            from PyInstaller.archive.readers import CArchiveReader
+            archive = CArchiveReader(str(args.embedded_executable.resolve()))
+            pyz = archive.open_embedded_archive('PYZ.pyz')
+            class EmbeddedApplication(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname.split('.')[0] not in ('core', 'server'):
+                        return None
+                    if fullname not in pyz.toc:
+                        raise ImportError('Application module absent from executable: '+fullname)
+                    package = pyz.toc[fullname][0] == 1
+                    return importlib.util.spec_from_loader(fullname, self, is_package=package)
+                def create_module(self, spec):
+                    return None
+                def exec_module(self, module):
+                    file = source.joinpath(*module.__name__.split('.'))
+                    if module.__spec__.submodule_search_locations is not None:
+                        module.__path__ = [str(file)]
+                        file = file/'__init__.py'
+                    else:
+                        file = file.with_suffix('.py')
+                    module.__file__ = str(file)
+                    embedded_modules.append(module.__name__)
+                    exec(pyz.extract(module.__name__), module.__dict__)
+            sys.meta_path.insert(0, EmbeddedApplication())
         stream = io.StringIO()
         started = time.monotonic()
         with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
-            suite = unittest.defaultTestLoader.discover("tests", pattern="test_*.py")
+            suite = unittest.defaultTestLoader.discover("tests", pattern=args.pattern)
             result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
         (report_dir/"test-output.txt").write_text(stream.getvalue(), encoding="utf-8")
         summary = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors), "skipped": len(result.skipped), "passed": result.wasSuccessful() and not result.skipped, "elapsed_seconds": round(time.monotonic()-started,2), "blocked_non_loopback_attempts": len(blocked), "failure_names": [str(t) for t,_ in result.failures], "error_names": [str(t) for t,_ in result.errors]}
         (report_dir/"test-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        if args.embedded_executable:
+            import hashlib
+            (report_dir/'embedded-code.json').write_text(json.dumps({'executable_sha256':hashlib.sha256(args.embedded_executable.read_bytes()).hexdigest(), 'modules':sorted(embedded_modules), 'tests_executed_from_packaged_application':True},indent=2),encoding='utf-8')
         (report_dir/"blocked-network-callers.json").write_text(json.dumps(blocked,indent=2),encoding="utf-8")
         print(json.dumps(summary, ensure_ascii=False))
         os.chdir(project)

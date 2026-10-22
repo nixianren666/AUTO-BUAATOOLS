@@ -6,6 +6,7 @@ import random
 from collections import defaultdict
 from core.domain import now as china_now, regular_start, regular_window, CHINA
 from core.regular_policy import MAX_POSTS, minimum_retry_delay
+from core.iclass import IclassSessionExpired
 
 logger = logging.getLogger("buaa_signin_scheduler")
 
@@ -100,7 +101,7 @@ class SigninScheduler:
                     epoch = getattr(account, "auth_epoch", 0)
                 try:
                     classes = await client.get_today_classes()
-                except Exception:
+                except IclassSessionExpired:
                     if not account or not self.reconnect_account or not await self.reconnect_account(account):
                         raise
                     client = item["client"] = account.client

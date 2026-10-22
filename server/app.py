@@ -29,7 +29,7 @@ from server.management import install as install_management
 from server.presentation import StartupPresentation, capabilities
 from server.update_routes import install as install_updates
 
-from core.iclass import IclassClient
+from core.iclass import IclassClient, IclassSessionExpired
 from core.scheduler import SigninScheduler
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
 from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius, get_current_semester_range
@@ -941,6 +941,7 @@ async def get_today_classes(username: Optional[str] = None):
         classes = await curr.client.get_today_classes()
         curr.last_classes = classes
         curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+        curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
         if classes:
             add_log("info", f"【{curr.name}】今日课表刷新完成，共 {len(classes)} 门课。", username=curr.username, user_name=curr.name, category="regular")
         else:
@@ -948,18 +949,21 @@ async def get_today_classes(username: Optional[str] = None):
         return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
     except Exception as e:
         logger.debug(f"Fetch classes error: {type(e).__name__}")
-        # 如果是因为会话失效且存有密码，自动重新连接并重试一次
-        if curr.password:
+        # A tunnel/DNS/read failure is not evidence of expired authentication.
+        # Only explicit authentication responses may initiate credential use.
+        if isinstance(e, IclassSessionExpired) and curr.password:
             try:
                 ok = await connect_single_account(curr)
                 if ok and curr.client.is_authenticated():
                     classes = await curr.client.get_today_classes()
                     curr.last_classes = classes
                     curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                    curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
                     return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
             except Exception:
                 pass
         add_log("error", f"【{curr.name}】获取常规课程课表失败: {type(e).__name__}", username=curr.username, user_name=curr.name, category="regular")
+        curr.regular_health = {**curr.regular_health, "stale": True, "error": type(e).__name__}
         return {"status": "stale", "stale": True, "classes": curr.last_classes or [], "username": curr.username, "name": curr.name, "message": "课表未同步，显示上次成功数据"}
 
 

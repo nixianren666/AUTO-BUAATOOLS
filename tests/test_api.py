@@ -7,6 +7,7 @@ import os
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from server.app import app
+from core.version import VERSION
 
 
 class TestApiServer(unittest.TestCase):
@@ -72,7 +73,7 @@ class TestApiServer(unittest.TestCase):
     def test_health_current_version(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["version"], "1.4.11")
+        self.assertEqual(resp.json()["version"], VERSION)
 
     def test_system_autostart(self):
         resp = self.client.get("/api/system/autostart")

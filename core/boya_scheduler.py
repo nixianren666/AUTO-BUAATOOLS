@@ -10,6 +10,7 @@ import math
 import random
 import threading
 import time
+import httpx
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
@@ -250,12 +251,18 @@ class BoyaScheduler:
             token = acc.boya_client.acquire_token()
             if token:
                 return True
+            return False
         except BoyaApiError as exc:
             if exc.code == "captcha_required":
                 acc.auth_requires_input = True
                 return False
+            if exc.code != "session_expired":
+                return False
+        except httpx.HTTPError:
+            # Transport failure does not justify submitting the password next.
+            return False
         except Exception:
-            pass
+            return False
         if not getattr(acc, "password", None):
             return False
         try:

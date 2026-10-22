@@ -37,6 +37,10 @@ class CasFlowError(ValueError):
     """A safe user-facing failure, without credential-bearing redirect URLs."""
 
 
+class CasSessionExpired(CasFlowError):
+    """A complete CAS login form explicitly requires authentication again."""
+
+
 class CasCaptchaRequired(CasFlowError):
     def __init__(self, response, captcha):
         super().__init__('统一认证需要验证码，请在界面重新登录')
@@ -73,7 +77,7 @@ def _next_step(response, mode, state):
     if error:
         raise CasFlowError(error)
     if CasParser.extract_execution(html):
-        raise CasFlowError('统一认证仍停留在登录页，请检查账号密码或验证码')
+        raise CasSessionExpired('统一认证仍停留在登录页，请检查账号密码或验证码')
     return None
 
 

@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 import httpx
 
 from core.cas import CasParser
-from core.cas_transport import resolve_auth_redirect, follow_auth_response_sync, CasFlowError, CasCaptchaRequired, REDIRECTS
+from core.cas_transport import resolve_auth_redirect, follow_auth_response_sync, CasFlowError, CasCaptchaRequired, CasSessionExpired, REDIRECTS
 from core.webvpn import to_webvpn_url
 from core.boya_crypto import BykcCrypto
 from core.domain import trusted_url, semester, semester_bounds, course_id, now as china_now
@@ -141,6 +141,8 @@ class BoyaClient:
                 return self._set_acquired_token()
             except CasCaptchaRequired as error:
                 raise BoyaApiError('captcha_required', str(error)) from None
+            except CasSessionExpired as error:
+                raise BoyaApiError('session_expired', str(error)) from None
             except CasFlowError as error:
                 raise BoyaApiError('cas_error', str(error)) from None
 
@@ -175,7 +177,7 @@ class BoyaClient:
                             if token:
                                 return token
                         if CasParser.extract_execution(resp.text) or CasParser.find_login_error(resp.text):
-                            raise BoyaApiError("cas_error", "统一认证会话已失效，请在界面重新登录")
+                            raise BoyaApiError("session_expired", "统一认证会话已失效，请在界面重新登录")
                         break
                     break
         return None
@@ -244,13 +246,13 @@ class BoyaClient:
                     raise
         try:
             resp = self.http_client.post(endpoint_url, content=req_enc.body, headers=headers, timeout=25)
-            if resp.status_code in (401, 403):
+            if resp.status_code == 401:
                 self.token = None
                 raise BoyaSessionExpired("博雅会话已失效")
-            if "login" in resp.text.lower() and "<html" in resp.text.lower():
+            resp.raise_for_status()
+            if "<html" in resp.text.lower() and CasParser.extract_execution(resp.text):
                 self.token = None
                 raise BoyaSessionExpired("博雅凭证过期")
-            resp.raise_for_status()
             try:
                 decoded = crypto.decrypt_response(resp.content)
             except Exception as exc:

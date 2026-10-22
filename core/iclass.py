@@ -21,6 +21,14 @@ from core.webvpn import from_webvpn_url, to_webvpn_url
 
 logger = logging.getLogger("buaa_signin")
 
+
+class IclassSessionExpired(RuntimeError):
+    """An explicit authentication response, distinct from a transport failure."""
+
+
+class IclassReadError(RuntimeError):
+    """A failed read must not discard credentials or authorize a write."""
+
 SIGNIN_MY_CENTER_URL = "https://iclass.buaa.edu.cn:8346/?type=jumpMyCenter"
 SIGNIN_LOGIN_REDIRECT_LIMIT = 10
 
@@ -345,7 +353,9 @@ class IclassClient:
         对应 UBAA LocalSigninApiBackend.getTodayClasses
         """
         if not await self.ensure_iclass_session():
-            raise RuntimeError(self.last_error or "未登录课堂考勤系统或登录会话已失效")
+            # Failed bootstrap can be a routing/HTTP/protocol failure. It does
+            # not establish that the existing SSO cookies need a password POST.
+            raise IclassReadError("课堂会话暂未建立，请检查网络或在界面重新连接")
 
         date_str = class_date.strftime("%Y%m%d")
 
@@ -366,13 +376,28 @@ class IclassClient:
                     params=params,
                     timeout=httpx.Timeout(timeout=4.0, connect=2.5),
                 )
+                expired = resp.status_code == 401
+                if resp.status_code in REDIRECTS and resp.headers.get("location"):
+                    target = resolve_auth_redirect(str(resp.url), resp.headers["location"], self.mode)
+                    parsed = urllib.parse.urlsplit(from_webvpn_url(target))
+                    expired = (parsed.hostname in ("sso.buaa.edu.cn", "uc.buaa.edu.cn", "d.buaa.edu.cn")
+                               and parsed.path in ("/login", "/api/login"))
+                if expired:
+                    self.user_id = self.session_id = None
+                    raise IclassSessionExpired("课堂会话失效，请重新认证")
                 resp.raise_for_status()
 
                 data = resp.json()
+                if not isinstance(data, dict):
+                    raise IclassReadError("课堂课表响应格式异常")
                 status = str(data.get("STATUS", ""))
                 if "STATUS" not in data or status not in ("0", "200", "success"):
-                    self.user_id = self.session_id = None
-                    raise RuntimeError("课堂会话失效，请重新认证")
+                    message = data.get("ERRMSG")
+                    if isinstance(message, str) and any(marker in message for marker in
+                            ("未登录", "未登陆", "请重新登录", "会话失效", "会话已失效", "会话过期", "登录已过期")):
+                        self.user_id = self.session_id = None
+                        raise IclassSessionExpired("课堂会话失效，请重新认证")
+                    raise IclassReadError("课堂服务未确认课表数据，保留现有会话")
                 if not isinstance(data.get("result"), list):
                     raise RuntimeError("课堂课表响应不完整")
 
@@ -413,12 +438,14 @@ class IclassClient:
                         }
                     )
                 return classes
+            except IclassSessionExpired:
+                raise
             except Exception as e:
                 errors.append(type(e).__name__)
                 logger.debug("课表读取失败: %s", type(e).__name__)
                 continue
 
-        raise RuntimeError("课表读取失败，保留上次数据，请检查网络与认证")
+        raise IclassReadError("课表读取失败，保留上次数据，请检查网络与认证")
 
     def signin_record(self, course_id):
         user = self.operation_user or self.user_info.get("schoolid")

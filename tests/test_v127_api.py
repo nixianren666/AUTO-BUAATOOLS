@@ -11,6 +11,7 @@ if not os.environ.get("BUAA_CONFIG_FILE") or os.environ.get("TESTING") != "1":
 from fastapi.testclient import TestClient
 from server import app as backend
 from core.domain import now
+from core.version import VERSION
 
 class APIContracts(unittest.TestCase):
     def setUp(self):
@@ -53,7 +54,7 @@ class APIContracts(unittest.TestCase):
 
     def test_public_health_contains_no_account_identity(self):
         response = self.client.get("/api/health").json()
-        self.assertEqual(response["version"], "1.4.11")
+        self.assertEqual(response["version"], VERSION)
         self.assertNotIn("active_username", response)
         self.assertNotIn(self.account.username, str(response))
 
