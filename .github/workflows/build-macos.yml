@@ -68,6 +68,8 @@ jobs:
         run: python scripts/test_isolated.py
       - name: Password-protected headless browser contracts
         run: python scripts/verify_remote.py --report-dir acceptance/remote-source
+      - name: Fresh headless password and recovery UI
+        run: python scripts/verify_management_setup.py --report-dir acceptance/setup-source
       - name: Actual isolated Docker deployment and persistent volume
         if: runner.os == 'Linux'
         run: python scripts/verify_container.py --report-dir acceptance/container

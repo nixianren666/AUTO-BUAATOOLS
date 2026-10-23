@@ -30,3 +30,8 @@ tools/td_issuer.py
 tools/td_issuer.spec
 tests/test_td_issuer.py
 .td-device-id
+.management-private.json
+.management-setup-token
+.wechat-private
+.management-*
+.wechat-*

@@ -70,7 +70,8 @@ class TestUIInteractions(unittest.TestCase):
                     if output_dir:
                         pathlib.Path(output_dir).mkdir(parents=True,exist_ok=True)
                         shutil.copy2(report,pathlib.Path(output_dir)/"browser-summary.json")
-                    self.assertTrue(evidence["passed"],str(evidence))
+                        (pathlib.Path(output_dir)/'browser-driver.txt').write_text(result.stderr[-6000:],encoding='utf-8')
+                    self.assertTrue(evidence["passed"],str(evidence)+'\n'+result.stderr[-2000:])
                 self.assertEqual(result.returncode,0,result.stderr[-2000:])
             finally:
                 server.should_exit = True

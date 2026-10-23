@@ -177,6 +177,9 @@ def add_log(
     logs_list.append(entry)
     if len(logs_list) > 1000:
         logs_list.pop(0)
+    notifications = globals().get('wechat_notifications')
+    if notifications:
+        notifications.offer(entry)
 
 
 class AccountState:
@@ -287,6 +290,10 @@ def resolve_account(username=None):
 
 async def dispose_account(account):
     account.removed = True
+    try:
+        await wechat_notifications.remove(account.username)
+    except ValueError:
+        add_log('error','微信绑定清理未能保存，本进程已停止通知；请检查私有目录后核对绑定状态',username=account.username)
     try:
         await remove_td_account(account.username)
     except Exception:
@@ -683,9 +690,10 @@ async def switch_account(req: SwitchAccountRequest):
         "status": "ok",
         "active_account": target_acc.to_dict(is_active=True),
         "classes": target_acc.last_classes or [],
-        "boya_selected": target_acc.boya_selected_courses or [],
+        "boya_selected": enrich_selected_courses(target_acc.boya_selected_courses or [], target_acc.boya_all_courses or []),
         "boya_courses": enrich_pool(target_acc.boya_all_courses or []),
-        "boya_statistics": target_acc.boya_statistics or {},
+        "boya_statistics": compute_semester_statistics(target_acc.boya_selected_courses or [], target_acc.boya_statistics or {}),
+        "boya_cached": target_acc.boya_all_courses is not None or target_acc.boya_selected_courses is not None,
     }
 
 
@@ -1136,11 +1144,19 @@ def ensure_boya_read_session(acc):
 
 
 @app.get("/api/boya/courses")
-async def get_boya_courses(force: bool = False, username: Optional[str] = None):
+async def get_boya_courses(force: bool = False, username: Optional[str] = None, cached: bool = False):
     stale = False
     curr = resolve_account(username)
     if not curr:
         return {"status": "unauthenticated", "stale":True, "courses":[], "is_demo":False}
+
+    # Reading a completed snapshot never waits behind a worker's network lock.
+    # Fresh school actions still enforce their own authentication and guards.
+    if cached and not force and curr.boya_all_courses is not None:
+        authenticated = curr.boya_client.is_authenticated()
+        return {"status": "success" if authenticated else "stale", "stale": not authenticated,
+                "courses": enrich_pool(curr.boya_all_courses), "username": curr.username,
+                "last_refresh_time": curr.boya_last_refresh_time, "is_demo": False}
 
     if not await asyncio.to_thread(ensure_boya_read_session, curr):
         courses = curr.boya_all_courses or []
@@ -1645,3 +1661,5 @@ async def serve_favicon():
 # Isolated TD routes use the same account identities and management boundary.
 from server.td_routes import install as install_td
 remove_td_account = install_td(app, CONFIG_FILE, resolve_account, accounts, add_log)
+from server.wechat import install as install_wechat
+wechat_notifications = install_wechat(app, CONFIG_FILE, accounts)

@@ -58,6 +58,10 @@
   display: none !important;
 }
 
+/* New credential/notification flows use semantic hidden attributes. */
+#managementLoginModal [hidden], #wechatModal [hidden],
+#managementChangeButton[hidden] { display: none !important; }
+
 html, body {
   width: 100%;
   height: 100%;

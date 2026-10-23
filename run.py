@@ -425,8 +425,16 @@ def main():
     # 2. 如果是无头服务模式（Linux 服务器 / Docker / 终端守护），直接启动主线程 Web 服务
     if is_headless:
         host = args.host or "127.0.0.1"
-        if host not in ("127.0.0.1", "localhost", "::1") and (not os.environ.get("BUAA_ADMIN_PASSWORD") or not os.environ.get("BUAA_ALLOWED_HOSTS")):
-            raise RuntimeError("远程监听必须设置应用管理密码和 BUAA_ALLOWED_HOSTS")
+        if host not in ("127.0.0.1", "localhost", "::1") and not os.environ.get("BUAA_ALLOWED_HOSTS"):
+            raise RuntimeError("远程监听必须设置 BUAA_ALLOWED_HOSTS")
+        from core.management_store import ManagementStore
+        management_store = ManagementStore()
+        if not os.environ.get('BUAA_ADMIN_PASSWORD') and not management_store.read():
+            setup_host = '127.0.0.1' if host in ('0.0.0.0', '::') else host
+            setup_host = f'[{setup_host}]' if ':' in setup_host else setup_host
+            print('  首次设置：请将下列私有链接的地址换为服务器地址，在本人浏览器打开。')
+            print(f'  http://{setup_host}:{port}/#setup={management_store.bootstrap_token()}')
+            print('  此链接仅用于初始化，请勿转发；密码和恢复码设置后失效。')
         print("=" * 66)
         print("  [*] AUTO-BUAA 课程独立签到助手 Pro (Linux / Headless Web 服务模式)")
         print("=" * 66)

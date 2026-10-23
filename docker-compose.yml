@@ -1,7 +1,7 @@
 services:
   auto-buaa:
     build: .
-    image: auto-buaa:1.4.11
+    image: auto-buaa:1.4.13
     restart: unless-stopped
     init: true
     ports:
@@ -12,7 +12,7 @@ services:
       TZ: Asia/Shanghai
       HEADLESS: "1"
       BUAA_TD_DEVICE_FILE: /data/.td-device-id
-      BUAA_ADMIN_PASSWORD: ${BUAA_ADMIN_PASSWORD:?Set a separate application management password}
+      BUAA_ADMIN_PASSWORD: ${BUAA_ADMIN_PASSWORD:-}
       BUAA_ALLOWED_HOSTS: "127.0.0.1,localhost"
     security_opt:
       - no-new-privileges:true

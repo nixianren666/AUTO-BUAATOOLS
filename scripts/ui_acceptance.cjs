@@ -6,6 +6,15 @@ const fs = require('node:fs');
 (async () => {
   const [url, executablePath, reportPath] = process.argv.slice(2);
   const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
+  if (process.env.BUAA_ACCEPTANCE_COOKIE) {
+    assert.ok(['127.0.0.1','localhost'].includes(new URL(url).hostname));
+    const create=browser.newContext.bind(browser);
+    browser.newContext=async options=>{
+      const context=await create(options);
+      await context.addCookies([{name:'buaa_session',value:process.env.BUAA_ACCEPTANCE_COOKIE,url,httpOnly:true,sameSite:'Strict'}]);
+      return context;
+    };
+  }
   const context = await browser.newContext({ viewport: { width: 1280, height: 840 }, timezoneId: 'Pacific/Honolulu' });
   await context.route('**/*', route => {
     const host = new URL(route.request().url()).hostname;
@@ -53,6 +62,8 @@ const fs = require('node:fs');
       await page.locator('#tabBoyaSelected').click();
       assert.equal(await page.locator('#boyaCoursesFeed .feed-card').count(), 2);
     });
+    await require('./boya_cache_acceptance.cjs').verifyBoyaCache(page,check);
+    await require('./wechat_acceptance.cjs').verifyWechat(page,check);
     await check('boya-sign-and-signout-do-not-invent-exam-pass', async () => {
       await page.locator('[data-action="sign"][data-id="2001"]').click();
       await page.waitForFunction(() => appState.boyaSelected.some(c => c.courseId === 2001 && c.signed_in));

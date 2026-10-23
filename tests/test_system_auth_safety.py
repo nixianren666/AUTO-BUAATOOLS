@@ -31,6 +31,14 @@ class ReadAuthenticationSafety(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(result['stale'])
         self.assertEqual(acquire.call_count, 1)
 
+    async def test_explicit_cached_view_does_not_renew_or_wait_on_school_lock(self):
+        # Default API authentication contracts below stay intact. The browser
+        # now explicitly asks for its view cache, not a school synchronization.
+        with patch.object(self.acc.boya_client,'acquire_token') as acquire, patch.object(backend,'account_lock',side_effect=AssertionError('cache must not wait on network lock')):
+            data=await backend.get_boya_courses(username=self.acc.username,cached=True)
+        self.assertEqual(data['courses'],[])
+        self.assertTrue(data['stale']);acquire.assert_not_called()
+
     async def test_captcha_on_page_read_stops_all_automatic_auth_paths(self):
         acquire = Mock(side_effect=BoyaApiError('captcha_required', 'synthetic challenge'))
         with patch.object(self.acc.boya_client, 'acquire_token', acquire):

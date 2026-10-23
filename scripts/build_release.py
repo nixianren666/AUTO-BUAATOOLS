@@ -38,6 +38,10 @@ def main():
     subprocess.run([sys.executable, 'scripts/test_isolated.py', '--embedded-executable', str(executable), '--pattern', 'test_network_session_separation.py'], cwd=ROOT, env=embedded_env, check=True)
     subprocess.run([sys.executable, 'scripts/test_isolated.py', '--embedded-executable', str(executable), '--pattern', 'test_td.py'], cwd=ROOT, env=dict(os.environ, BUAA_TEST_REPORT_DIR=str(ROOT/'acceptance/td-embedded')), check=True)
     call(sys.executable,"scripts/verify_remote.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance/remote-compiled"))
+    call(sys.executable,"scripts/verify_management_setup.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance/setup-compiled"))
+    for contract in ('test_management_recovery.py','test_wechat_notifications.py','test_wechat_api.py','test_wechat_storage.py'):
+        subprocess.run([sys.executable,'scripts/test_isolated.py','--embedded-executable',str(executable),'--pattern',contract],
+            cwd=ROOT,env=dict(os.environ,BUAA_TEST_REPORT_DIR=str(ROOT/'acceptance'/contract.removesuffix('.py'))),check=True)
     if os.environ.get("GITHUB_ACTIONS")=="true":
         call(sys.executable,"scripts/verify_native_service.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance"))
     if system=="win32":

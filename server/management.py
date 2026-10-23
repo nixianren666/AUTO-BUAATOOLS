@@ -13,11 +13,17 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pydantic import Field
 from server.presentation import capabilities
+from core.management_store import ManagementStore
 
 def install(app):
     sessions = {}
     attempts = defaultdict(deque)
     password = os.environ.get("BUAA_ADMIN_PASSWORD", "")
+    store = ManagementStore()
+    hashing = asyncio.Semaphore(2)
+    headless_setup = os.environ.get('BUAA_RUNTIME_MODE') == 'headless'
+    # A malformed private store fails startup rather than opening the service.
+    store.read()
     allowed = {"127.0.0.1", "localhost", "::1"}
     allowed.update(x.strip().lower() for x in os.environ.get("BUAA_ALLOWED_HOSTS", "").split(",") if x.strip())
     if os.environ.get("TESTING") == "1":
@@ -58,7 +64,8 @@ def install(app):
         if origin and origin.rstrip("/") != f"{request.url.scheme}://{host}":
             return JSONResponse({"detail": "拒绝跨站管理请求"}, status_code=403)
         public = (request.url.path == "/api/health" or
-                  request.url.path == "/api/session" and request.method in ("GET", "POST"))
+                  request.url.path == "/api/session" and request.method in ("GET", "POST") or
+                  request.url.path in ('/api/management/setup', '/api/management/reset') and request.method == 'POST')
         if request.url.path.startswith("/api/") and not public:
             session = sessions.get(request.cookies.get("buaa_session"))
             if not session or time.monotonic() - session[1] > 86400:
@@ -80,48 +87,110 @@ def install(app):
         existing = sessions.get(request.cookies.get("buaa_session"))
         if existing and time.monotonic()-existing[1] <= 86400:
             return {"csrf": existing[0], "runtime": capabilities()}
-        if password or not local(request):
+        configured = bool(store.read() or password)
+        if configured or headless_setup or not local(request):
             return JSONResponse({"detail": "需要管理密码", "password_required": True,
-                                 "configured": bool(password)}, status_code=401)
+                                 "configured": configured,
+                                 "setup_required": headless_setup and not configured,
+                                 "recovery_available": bool(store.read())}, status_code=401)
         return response_session(request)
 
     class ManagementLogin(BaseModel):
         password: str = Field(strict=True, max_length=1024)
 
-    @app.post("/api/session")
-    async def authenticate(request: Request):
-        # This is the only anonymous JSON write. Bound it before JSON/model
-        # parsing (including chunked bodies), rather than after allocation.
+    class Credentials(BaseModel):
+        password: str = Field(strict=True, min_length=8, max_length=128)
+        proof: str = Field(strict=True, max_length=1024)
+
+    async def bounded_body(request, model):
         data = bytearray()
         try:
             async with asyncio.timeout(12):
                 async for chunk in request.stream():
-                    if len(data)+len(chunk)>16384:
-                        return JSONResponse({"detail":"管理登录请求过大"},status_code=413)
+                    if len(data) + len(chunk) > 16384:
+                        return JSONResponse({'detail': '管理请求过大'}, status_code=413)
                     data.extend(chunk)
-            body=ManagementLogin.model_validate(json.loads(data))
+            return model.model_validate(json.loads(data))
         except TimeoutError:
-            return JSONResponse({"detail":"管理登录请求超时"},status_code=408)
-        except (ValueError,TypeError):
-            return JSONResponse({"detail":"管理密码格式无效"},status_code=422)
-        key = request.client.host
-        stamp = time.monotonic()
-        # Bound per-peer buckets as well as session count on exposed servers.
+            return JSONResponse({'detail': '管理请求超时'}, status_code=408)
+        except (ValueError, TypeError):
+            return JSONResponse({'detail': '管理凭据格式无效'}, status_code=422)
+
+    def limited(request):
+        key, stamp = request.client.host, time.monotonic()
         if len(attempts) >= 1024:
             for old_key, values in list(attempts.items()):
-                if not values or stamp-values[-1] > 60:attempts.pop(old_key, None)
+                if not values or stamp-values[-1] > 60:
+                    attempts.pop(old_key, None)
             if key not in attempts and len(attempts) >= 1024:
-                return JSONResponse({"detail":"管理登录繁忙，请稍后重试"},status_code=429,headers={"Retry-After":"60"})
+                return JSONResponse({'detail': '管理登录繁忙'}, status_code=429, headers={'Retry-After': '60'})
         history = attempts[key]
         while history and stamp-history[0] > 60:
             history.popleft()
         if len(history) >= 5:
-            return JSONResponse({"detail": "请稍后重试管理登录"}, status_code=429,
-                                headers={"Retry-After": str(max(1, int(61-(stamp-history[0]))))})
+            return JSONResponse({'detail': '请稍后重试管理登录'}, status_code=429,
+                                headers={'Retry-After': str(max(1, int(61-(stamp-history[0]))))})
         history.append(stamp)
-        if not password or not secrets.compare_digest(body.password.encode('utf-8'), password.encode('utf-8')):
+
+    @app.post("/api/session")
+    async def authenticate(request: Request):
+        # This is the only anonymous JSON write. Bound it before JSON/model
+        # parsing (including chunked bodies), rather than after allocation.
+        body = await bounded_body(request, ManagementLogin)
+        if isinstance(body, JSONResponse): return body
+        rate = limited(request)
+        if rate: return rate
+        if hashing.locked(): return JSONResponse({'detail':'管理验证繁忙，请稍后重试'},status_code=429,headers={'Retry-After':'5'})
+        async with hashing:
+            valid = await asyncio.to_thread(store.verify, body.password, password)
+        if not valid:
             return JSONResponse({"detail": "管理密码错误"}, status_code=401)
         return response_session(request)
+
+    async def replace_credentials(request, action):
+        body = await bounded_body(request, Credentials)
+        if isinstance(body, JSONResponse): return body
+        rate = limited(request)
+        if rate: return rate
+        if hashing.locked(): return JSONResponse({'detail':'管理验证繁忙，请稍后重试'},status_code=429,headers={'Retry-After':'5'})
+        try:
+            if action == 'setup':
+                if not headless_setup or store.read() or password:
+                    return JSONResponse({'detail': '服务已经配置或不支持初始化'}, status_code=409)
+                if not secrets.compare_digest(body.proof.encode(), store.bootstrap_token().encode()):
+                    return JSONResponse({'detail': '初始化凭据无效，请使用部署日志中的初始化链接'}, status_code=403)
+                async with hashing:
+                    code = await asyncio.to_thread(store.set_password, body.password, first=True)
+            else:
+                async with hashing:
+                    code = await asyncio.to_thread(store.set_password, body.password,
+                        **({'recovery': body.proof} if action == 'reset' else {'current': body.proof, 'legacy': password}))
+        except PermissionError:
+            return JSONResponse({'detail': '管理凭据无效'}, status_code=401)
+        except (ValueError, FileExistsError):
+            return JSONResponse({'detail': '凭据状态已变化，请刷新后重新操作'}, status_code=409)
+        except OSError:
+            return JSONResponse({'detail': '管理凭据保存失败，原凭据保持，请检查私有目录'}, status_code=503)
+        sessions.clear()
+        # Show the new offline recovery code once; only its hash is persisted.
+        result = response_session(request)
+        payload = json.loads(result.body)
+        payload['recovery_code'] = code
+        result.body = json.dumps(payload).encode()
+        result.headers['content-length'] = str(len(result.body))
+        return result
+
+    @app.post('/api/management/setup')
+    async def setup(request: Request):
+        return await replace_credentials(request, 'setup')
+
+    @app.post('/api/management/reset')
+    async def reset(request: Request):
+        return await replace_credentials(request, 'reset')
+
+    @app.post('/api/management/password')
+    async def change_password(request: Request):
+        return await replace_credentials(request, 'password')
 
     @app.delete("/api/session")
     async def logout(request: Request):

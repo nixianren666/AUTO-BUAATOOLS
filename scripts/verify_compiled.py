@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import secrets
 
 import httpx
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
@@ -36,6 +37,10 @@ def main():
     for key in ("BUAA_ADMIN_PASSWORD","BUAA_ALLOWED_HOSTS","BUAA_CONFIG_FILE","BUAA_SMOKE_PROFILE"):
         env.pop(key,None)
     checks=[]
+    # Headless apps now require a first-run claim. This fixture explicitly owns
+    # a disposable password; source and packaged setup flows have separate tests.
+    fixture_password=secrets.token_urlsafe(24)
+    env['BUAA_ADMIN_PASSWORD']=fixture_password
     with tempfile.TemporaryDirectory(prefix="buaa-compiled-acceptance-") as directory:
         env['BUAA_VAULT_DIR']=str(Path(directory)/'vault')
         with open(Path(directory)/"process-output.txt","w",encoding="utf-8") as log:
@@ -54,7 +59,10 @@ def main():
                     assert health["application"]=="AUTO-BUAATOOLS"
                     checks.append("compiled-version-and-application-identity")
                     assert client.get("/api/accounts").status_code==401
-                    csrf=client.get("/api/session").json()["csrf"]
+                    assert client.get("/api/session").status_code==401
+                    login=client.post('/api/session',json={'password':fixture_password})
+                    assert login.status_code==200
+                    csrf=login.json()['csrf']
                     assert client.post("/api/boya/select",json={"course_id":2003}).status_code==403
                     client.headers["X-BUAA-CSRF"]=csrf
                     accounts=client.get("/api/accounts").json()["accounts"]
@@ -68,6 +76,7 @@ def main():
                     if not browser and sys.platform=="win32":
                         browser=r"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
                     browser_env=dict(env)
+                    browser_env['BUAA_ACCEPTANCE_COOKIE']=client.cookies.get('buaa_session')
                     if os.environ.get("BUAA_NODE_MODULES"):
                         browser_env["NODE_PATH"]=os.environ["BUAA_NODE_MODULES"]
                     result=subprocess.run([node,str(root/"scripts/ui_acceptance.cjs"),base+"/",browser,str(output/"compiled-browser.json")],env=browser_env,capture_output=True,text=True,timeout=600)
@@ -87,6 +96,7 @@ def main():
     if args.native:
         native=output/"compiled-native.json"
         native_env=dict(env)
+        native_env.pop('BUAA_ADMIN_PASSWORD',None)
         if sys.platform=="linux" and os.environ.get("GITHUB_ACTIONS")=="true":
             native_env["QT_DEBUG_PLUGINS"]="1"
         with open(output/"compiled-native-output.txt","w",encoding="utf-8") as native_log:

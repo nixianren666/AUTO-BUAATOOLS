@@ -1,5 +1,13 @@
 # Third-party notices
 
+## Tencent openclaw-weixin protocol reference
+
+The optional notification client is an independent Python implementation based
+on the official [Tencent/openclaw-weixin](https://github.com/Tencent/openclaw-weixin)
+protocol documentation, snapshot `874637a0dbc24050f72d1385add4fc6170a2d726`
+(channel version 2.4.10, MIT, Copyright (C) 2026 Tencent).
+It does not bundle or execute OpenClaw, Hermes, or agent plugins.
+
 ## AutoTD
 
 The TD campus message format and device mapping were studied from

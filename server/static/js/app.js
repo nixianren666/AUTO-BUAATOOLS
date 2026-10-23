@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.4.1 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.4.13 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -41,12 +41,23 @@ let managementSession = null;
 let managementEnding = false;
 let runtimeCapabilities = { mode: 'headless', autostart_supported: false, exit_behavior: 'management-session' };
 let viewGeneration = 0;
+// View caches are per account and never used as authorization for an action.
+const accountViewCache = new Map();
+const boyaReads = new Map();
+function rememberAccountView() {
+  if (!appState.activeUsername) return;
+  accountViewCache.set(appState.activeUsername, {
+    classes: appState.classes, boyaCourses: appState.boyaCourses,
+    boyaSelected: appState.boyaSelected, boyaStatistics: appState.boyaStatistics,
+    boyaStatus: appState.boyaStatus, boyaDataStale: appState.boyaDataStale,
+  });
+}
 // The first login waits for both independent startup responses. Never queue a
 // second prompt after the user has deliberately closed the initial login card.
 const firstLoginState = { disclaimerAccepted: false, accountsReady: false, prompted: false, accepting: false, commitmentText: '', commitmentVersion: '', noticeLoading: false, composing: false };
-async function managementRequest(options = {}) {
+async function managementRequest(options = {}, endpoint = '/api/session') {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 12000);
-  try { return await nativeFetch('/api/session', { ...options, credentials: 'same-origin', signal: controller.signal }); }
+  try { return await nativeFetch(endpoint, { ...options, credentials: 'same-origin', signal: controller.signal }); }
   finally { clearTimeout(timer); }
 }
 function useManagementSession(data) {
@@ -55,7 +66,7 @@ function useManagementSession(data) {
   updateRuntimeControls();
   return data.csrf;
 }
-async function managementLogin(message, configured = true, reconnect = false) {
+async function managementLogin(message, configured = true, reconnect = false, state = {}) {
   // Do not steal the startup timeline's keyboard focus or trap its key guard.
   if (document.documentElement.classList.contains('startup-running')) {
     await new Promise(resolve => document.addEventListener('buaa:startupfinished', resolve, { once: true }));
@@ -67,24 +78,61 @@ async function managementLogin(message, configured = true, reconnect = false) {
   const previousInert = workspace?.inert;
   if (workspace) workspace.inert = true;
   modal.classList.remove('hidden'); status.textContent = message;
-  input.hidden = reconnect; input.required = !reconnect;
-  submit.textContent = reconnect ? '重新连接' : '登录管理';
-  input.disabled = !configured; submit.disabled = !configured;
-  if (configured) input.focus();
+  const proof = document.getElementById('managementProof'), confirm = document.getElementById('managementConfirm');
+  const forgot = document.getElementById('managementForgot'), recovery = document.getElementById('managementRecoveryCode');
+  const cancel = document.getElementById('managementCancel');
+  let mode = state.change_password ? 'password' : state.setup_required ? 'setup' : 'login', completedCsrf = null;
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  if (fragment.has('setup')) { proof.value = fragment.get('setup'); history.replaceState(null, '', location.pathname + location.search); }
+  const layout = () => {
+    const saving = mode === 'saved', changing = ['setup','reset','password'].includes(mode);
+    document.getElementById('managementLoginTitle').textContent = ({setup:'首次设置应用管理', reset:'重置管理密码', password:'设置密码与恢复码', saved:'保存管理恢复码'})[mode] || '登录应用管理';
+    document.getElementById('managementLoginDesc').textContent = mode === 'setup' ? '使用部署日志中的私有初始化链接，由你设置管理密码和离线恢复方式。' : mode === 'reset' ? '输入上次保存的恢复码和新密码；成功后旧会话及旧恢复码失效。' : '应用管理凭据与学校密码无关，关闭网页不影响后台任务。';
+    document.getElementById('managementProofGroup').hidden = !changing;
+    proof.required = changing; proof.autocomplete = mode === 'password' ? 'current-password' : 'off';
+    proof.previousElementSibling.textContent = mode === 'setup' ? '部署初始化凭据' : mode === 'password' ? '当前管理密码' : '离线恢复码';
+    document.getElementById('managementConfirmGroup').hidden = !changing; confirm.required = changing;
+    document.getElementById('managementRecoveryGroup').hidden = !saving;
+    input.hidden = reconnect || saving; input.required = !reconnect && !saving;
+    input.autocomplete = changing ? 'new-password' : 'current-password';
+    input.maxLength = changing ? 128 : 1024; input.minLength = changing ? 8 : 0;
+    configured = configured || changing || saving;
+    input.disabled = !configured; submit.disabled = !configured;
+    submit.textContent = saving ? '已保存，进入管理' : reconnect ? '重新连接' : changing ? '保存新管理凭据' : '登录管理';
+    forgot.hidden = reconnect || saving || mode === 'setup' || (!state.recovery_available && mode !== 'reset');
+    forgot.textContent = mode === 'reset' ? '返回登录' : '忘记密码';
+    cancel.hidden = mode !== 'password';
+  };
+  layout(); if (configured) (reconnect ? submit : input).focus();
   return new Promise(resolve => {
     let busy = false, retryAt = 0;
+    const finish = csrf => {
+      modal.classList.add('hidden'); form.onsubmit = null; forgot.onclick = null; cancel.onclick = null;
+      proof.value = confirm.value = input.value = recovery.value = ''; status.textContent = '';
+      if (workspace) workspace.inert = previousInert;
+      resolve(csrf);
+    };
+    forgot.onclick = () => { if (busy) return; mode = mode === 'reset' ? 'login' : 'reset'; proof.value = confirm.value = input.value = ''; status.textContent = ''; layout(); proof.focus(); };
+    cancel.onclick = () => { if(!busy&&mode==='password')finish(state.csrf); };
     form.onsubmit = async event => {
       event.preventDefault();
+      if (mode === 'saved') {
+        if (!document.getElementById('managementRecoverySaved').checked) { status.textContent = '请先保存恢复码并确认。'; return; }
+        finish(completedCsrf); return;
+      }
       if (!configured || busy || (!reconnect && !input.value)) return;
+      if (['setup','reset','password'].includes(mode) && input.value !== confirm.value) { status.textContent = '两次新密码不一致'; return; }
       if (Date.now() < retryAt) { status.textContent = '登录尝试较多，请稍后再试。'; return; }
       busy = true; submit.disabled = true; input.disabled = true; status.textContent = '正在验证管理密码…';
       let password = input.value; input.value = '';
       try {
-        const response = await managementRequest(reconnect ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+        const changing = ['setup','reset','password'].includes(mode);
+        const response = await managementRequest(reconnect ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', ...(state.csrf ? {'X-BUAA-CSRF':state.csrf} : {}) }, body: JSON.stringify(changing ? { password, proof: proof.value } : { password }) }, changing ? '/api/management/' + mode : '/api/session');
         password = '';
         if (reconnect && response.status === 401) {
           const data = await response.json(); configured = data.configured !== false; reconnect = false;
-          input.hidden = false; input.required = true; submit.textContent = '登录管理';
+          state = data; mode = data.setup_required ? 'setup' : 'login'; layout();
+          if(data.setup_required)throw new Error('请使用部署日志中的私有初始化链接完成首次设置。');
           if (!configured) throw new Error('服务尚未设置远程管理密码，请联系部署者配置并刷新网页。');
           throw new Error('此页面需要应用管理密码，请输入后登录。');
         }
@@ -92,13 +140,18 @@ async function managementLogin(message, configured = true, reconnect = false) {
           retryAt = Date.now() + Math.min(60, Math.max(1, Number(response.headers.get('Retry-After')) || 60)) * 1000;
           throw new Error('登录尝试较多，请等待一分钟再试。');
         }
-        if (!response.ok) throw new Error(response.status === 401 ? '管理密码不正确，请重新输入。' : '管理登录暂时不可用，请稍后重试。');
-        const csrf = useManagementSession(await response.json());
-        modal.classList.add('hidden'); form.onsubmit = null; status.textContent = '';
-        if (workspace) workspace.inert = previousInert;
-        resolve(csrf);
+        const data = await response.json().catch(() => ({}));
+        if(response.status===401&&!changing)throw new Error('管理密码不正确，请核对后重试。');
+        if (!response.ok) throw new Error(data.detail || '管理登录暂时不可用，请稍后重试。');
+        const csrf = useManagementSession(data);
+        if (data.recovery_code) {
+          completedCsrf = csrf; mode = 'saved'; proof.value = confirm.value = '';
+          recovery.value = data.recovery_code; document.getElementById('managementRecoverySaved').checked = false;
+          status.textContent = '新管理凭据已保存，旧恢复码和旧会话已失效。'; layout(); return;
+        }
+        finish(csrf);
       } catch (error) { status.textContent = error.name === 'AbortError' ? '连接超时，请检查网络后重试。' : error.message; }
-      finally { password = ''; busy = false; submit.disabled = !configured; input.disabled = !configured; if (!modal.classList.contains('hidden')) (reconnect ? submit : input).focus(); }
+      finally { password = ''; busy = false; submit.disabled = !configured; input.disabled = !configured; if (!modal.classList.contains('hidden')) (mode==='saved' ? recovery : reconnect ? submit : input).focus(); }
     };
   });
 }
@@ -108,7 +161,7 @@ async function establishManagementSession() {
   catch { return managementLogin('无法连接管理服务，请检查网络后重新连接。', true, true); }
   if (response.status === 401) {
     const data = await response.json().catch(() => ({}));
-    return managementLogin(data.configured === false ? '服务尚未设置远程管理密码，请由部署者配置后刷新；不能用学校密码替代。' : '此页面需要应用管理密码。', data.configured !== false);
+    return managementLogin(data.setup_required ? '请使用部署日志中的私有初始化链接完成首次设置。' : data.configured === false ? '服务尚未设置远程管理密码，请联系部署者。' : '此页面需要应用管理密码。', data.configured !== false, false, data);
   }
   if (!response.ok) throw new Error('无法建立管理会话（' + response.status + '），请核对部署地址与访问权限');
   return useManagementSession(await response.json());
@@ -120,6 +173,8 @@ function ensureManagementSession() {
 }
 function updateRuntimeControls() {
   const desktop = runtimeCapabilities.exit_behavior === 'application';
+  const passwordButton = document.getElementById('managementChangeButton');
+  if (passwordButton) passwordButton.hidden = desktop;
   const autostart = document.getElementById('autostartWidget');
   if (autostart) { autostart.hidden = !runtimeCapabilities.autostart_supported; autostart.classList.toggle('hidden', !runtimeCapabilities.autostart_supported); autostart.title = '本机开机自启；后台服务请使用部署工具管理'; }
   for (const button of document.querySelectorAll('[onclick="requestAppExit()"], [onclick="handleDisclaimerDecline()"]')) {
@@ -127,6 +182,14 @@ function updateRuntimeControls() {
     button.setAttribute('aria-label', desktop ? '退出应用' : '退出管理');
     if (button.matches('[onclick="handleDisclaimerDecline()"]')) button.textContent = desktop ? '退出软件' : '退出管理';
   }
+}
+async function changeManagementPassword() {
+  try {
+    const csrf = await ensureManagementSession();
+    setUISurface('glassPopover', false);
+    managementSession = managementLogin('设置新密码，同时生成新的离线恢复码。', true, false, {change_password:true,csrf});
+    await managementSession;
+  } catch (error) { managementSession=null; showToast(error.message,'error'); }
 }
 async function apiFetch(input, options = {}) {
   if (managementEnding) throw new Error('正在退出管理，已停止后续页面请求');
@@ -162,7 +225,7 @@ async function apiFetch(input, options = {}) {
   }
   if (!response.ok) {
     if (response.status === 401) managementSession = null;
-    if (url.pathname.startsWith('/api/td/')) {
+    if (url.pathname.startsWith('/api/td/') || url.pathname.startsWith('/api/wechat/')) {
       const failure = await response.json().catch(() => ({}));
       throw new Error(typeof failure.detail === 'string' ? failure.detail : 'TD 参数或请求无效，请核对设置');
     }
@@ -181,7 +244,7 @@ document.addEventListener("click", event => {
   if (!target || target.disabled) return;
   const action = target.dataset.action;
   const id = target.dataset.id;
-  const handlers = { regularSign: () => manualSignIn(id), select: () => selectBoyaCourse(id), drop: () => dropBoyaCourse(id), sign: () => boyaSign(id, 1), signout: () => boyaSign(id, 2), switchAccount: () => switchStudentAccount(id), deleteAccount: () => deleteAccount(id) };
+  const handlers = { wechat: () => window.BUAAWechat?.open(id), regularSign: () => manualSignIn(id), select: () => selectBoyaCourse(id), drop: () => dropBoyaCourse(id), sign: () => boyaSign(id, 1), signout: () => boyaSign(id, 2), switchAccount: () => switchStudentAccount(id), deleteAccount: () => deleteAccount(id) };
   if (handlers[action]) { event.preventDefault(); event.stopPropagation(); handlers[action](); }
 });
 
@@ -203,7 +266,7 @@ document.addEventListener('keydown', event => {
   if (!modal || modal.classList.contains('hidden')) return;
   if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); }
   if (event.key === 'Tab') {
-    const controls = [...modal.querySelectorAll('input,button')].filter(el => !el.disabled && !el.hidden && el.getClientRects().length);
+    const controls = [...modal.querySelectorAll('input,button,textarea')].filter(el => !el.disabled && !el.hidden && el.getClientRects().length);
     const first = controls[0], last = controls[controls.length - 1];
     if (first && (!modal.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last))) {
       event.preventDefault(); event.stopImmediatePropagation(); (event.shiftKey ? last : first).focus();
@@ -216,7 +279,7 @@ function setUISurface(id, visible) {
   if (window.BUAATDAccess?.blocksSurface(id, visible)) return false;
   if (window.BUAAUiSurfaces) return window.BUAAUiSurfaces.set(id, visible);
   // If optional motion fails to load, preserve exclusive, immediate controls.
-  const ids = ["glassPopover", "updatePanel", "accountCardsModal", "loginModal", "manualSignModal", "tdSettingsModal", "tdCountModal", "tdGroupModal", "tdManualModal", "tdLicenseModal", "disclaimerModal"];
+  const ids = ["glassPopover", "updatePanel", "accountCardsModal", "loginModal", "manualSignModal", "tdSettingsModal", "tdCountModal", "tdGroupModal", "tdManualModal", "tdLicenseModal", "wechatModal", "disclaimerModal"];
   const modal = document.getElementById("disclaimerModal");
   if (visible && id !== "disclaimerModal" && modal && !modal.classList.contains("hidden")) return false;
   ids.forEach(otherId => {
@@ -632,24 +695,39 @@ function parseSignConfigPoints(c) {
 async function fetchBoyaData(isManual = false) {
   const requestedUsername = appState.activeUsername;
   const requestedGeneration = viewGeneration;
+  if (!requestedUsername) return;
+  const readKey = `${requestedGeneration}:${requestedUsername}`;
+  const existing = boyaReads.get(readKey);
+  if (existing) {
+    await existing.promise;
+    if (isManual && !existing.manual && viewStillCurrent(requestedUsername, requestedGeneration)) return fetchBoyaData(true);
+    return;
+  }
+  const job = { manual: isManual };
+  job.promise = refreshBoyaParts(requestedUsername, requestedGeneration, isManual);
+  boyaReads.set(readKey, job);
+  try { await job.promise; }
+  finally { if (boyaReads.get(readKey) === job) boyaReads.delete(readKey); }
+}
+
+async function refreshBoyaParts(requestedUsername, requestedGeneration, isManual) {
   if (isManual) showToast("正在同步博雅学分与最新课表...", "info");
-  try {
-    const [coursesRes, selectedRes, statusRes, statsRes] = await Promise.all([
-      apiFetch("/api/boya/courses" + (isManual ? "?force=true" : "")).then(r => r.json()),
-      apiFetch("/api/boya/selected" + (isManual ? "?force=true" : "")).then(r => r.json()),
-      apiFetch("/api/boya/status").then(r => r.json()),
-      apiFetch("/api/boya/statistics" + (isManual ? "?force=true" : "")).then(r => r.json()),
-    ]);
-
-
-    if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
-    // 严密字段兼容读取
-    appState.boyaCourses = coursesRes.courses || coursesRes.all_courses || [];
-    appState.boyaSelected = selectedRes.selected || selectedRes.selected_courses || [];
-    appState.boyaStatistics = statsRes.statistics || statsRes || {};
-
-    if (statusRes && statusRes.status !== "error") {
-      appState.boyaStatus = statusRes;
+  const staleParts = new Set();
+  const refresh = async part => {
+    const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const query = isManual && part !== 'status' ? '?force=true' : part === 'courses' ? '?cached=true' : '';
+      const response = await apiFetch(`/api/boya/${part}` + query, {signal:controller.signal});
+      const data = await response.json();
+      if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
+      if (data.username && data.username !== requestedUsername) throw new Error('学生数据不匹配');
+      if (data.stale || ['error', 'unauthenticated', 'stale'].includes(data.status)) staleParts.add(part);
+      if (part === 'courses' && Array.isArray(data.courses || data.all_courses)) appState.boyaCourses = data.courses || data.all_courses;
+      if (part === 'selected' && Array.isArray(data.selected || data.selected_courses)) appState.boyaSelected = data.selected || data.selected_courses;
+      if (part === 'statistics' && data.statistics && typeof data.statistics === 'object') appState.boyaStatistics = data.statistics;
+      if (part === 'status' && data.status !== 'error') {
+      const statusRes = data;
+      appState.boyaStatus = data;
       const selToggle = document.getElementById("boyaAutoSelectToggle");
       const signToggle = document.getElementById("boyaAutoSignToggle");
       const campusSelect = document.getElementById("boyaCampusSelect");
@@ -657,20 +735,25 @@ async function fetchBoyaData(isManual = false) {
       if (signToggle && statusRes.boya_auto_sign !== undefined) signToggle.checked = !!statusRes.boya_auto_sign;
       if (campusSelect && statusRes.campus) campusSelect.value = statusRes.campus;
       window.BUAAUiControls?.syncSelect(campusSelect);
-    }
-
-    const daemon = document.getElementById("boyaDaemonStatus");
-    if (daemon) daemon.textContent = statusRes.boya_auto_select || statusRes.boya_auto_sign ? "博雅自动化已启用" : "博雅自动化已暂停";
-    const health = document.getElementById("boyaHealthText");
-    if (health) health.textContent = coursesRes.stale || selectedRes.stale || statsRes.stale ? "官方数据未完全同步，显示上次数据" : statusRes.health?.last_success ? "最近后台同步：" + statusRes.health.last_success : "页面已读取官方数据";
-    appState.boyaDataStale = !!(coursesRes.stale || selectedRes.stale || statsRes.stale);
-    renderBoyaStatistics(appState.boyaStatistics);
-    switchBoyaTab(appState.boyaTab);
-    if (isManual) showToast(coursesRes.stale || selectedRes.stale || statsRes.stale ? "博雅数据未完全同步，保留上次数据" : `博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, coursesRes.stale || selectedRes.stale || statsRes.stale ? "info" : "success");
-  } catch (e) {
-    console.error("fetchBoyaData error:", e);
-    if (isManual) showToast("博雅数据拉取异常", "error");
-  }
+      const daemon = document.getElementById('boyaDaemonStatus');
+      if (daemon) daemon.textContent = statusRes.boya_auto_select || statusRes.boya_auto_sign ? '博雅自动化已启用' : '博雅自动化已暂停';
+      }
+      appState.boyaDataStale = staleParts.size > 0;
+      renderBoyaStatistics(appState.boyaStatistics);
+      renderBoyaFeed();
+      rememberAccountView();
+    } catch {
+      staleParts.add(part);
+    } finally { clearTimeout(timeout); }
+  };
+  await Promise.allSettled(['courses', 'selected', 'status', 'statistics'].map(refresh));
+  if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
+  appState.boyaDataStale = staleParts.size > 0;
+  const health = document.getElementById('boyaHealthText');
+  if (health) health.textContent = staleParts.size ? '部分数据暂未同步，保留上次数据；后台任务独立运行' : appState.boyaStatus.health?.last_success ? '最近后台同步：' + appState.boyaStatus.health.last_success : '页面数据已读取；请核对自动化开关';
+  renderBoyaStatistics(appState.boyaStatistics);
+  rememberAccountView();
+  if (isManual) showToast(staleParts.size ? '部分数据同步失败，保留已读取数据' : `博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, staleParts.size ? 'info' : 'success');
 }
 
 // 考勤状态解析
@@ -1314,6 +1397,7 @@ function renderAccountsModal() {
           <div class="origin-user-id">学号: ${escapeHtml(acc.username)} · 模式: ${acc.mode === 'webvpn' ? 'WebVPN' : '直连'}</div>
         </div>
         <div>
+          <button class="origin-btn origin-btn-ghost" ${actionAttributes("wechat", acc.username)}>微信通知</button>
           <button class="origin-btn origin-btn-danger-ghost" ${actionAttributes("deleteAccount", acc.username)}>删除</button>
         </div>
       </div>
@@ -1322,16 +1406,22 @@ function renderAccountsModal() {
 }
 
 async function switchStudentAccount(username) {
+  rememberAccountView();
   const switchGeneration = ++viewGeneration;
   try {
     appState.activeUsername = username;
     appState.activeUser = appState.accounts.find(a => a.username === username);
-    appState.classes = [];
-    appState.boyaCourses = [];
-    appState.boyaSelected = [];
-    appState.boyaStatistics = {};
+    const cached = accountViewCache.get(username);
+    appState.classes = cached?.classes || [];
+    appState.boyaCourses = cached?.boyaCourses || [];
+    appState.boyaSelected = cached?.boyaSelected || [];
+    appState.boyaStatistics = cached?.boyaStatistics || {};
+    appState.boyaStatus = cached?.boyaStatus || {};
+    appState.boyaDataStale = true;
     renderBoyaFeed();
-    renderBoyaStatistics({});
+    renderBoyaStatistics(appState.boyaStatistics);
+    const health = document.getElementById('boyaHealthText');
+    if (health) health.textContent = cached ? '显示此学生上次数据，正在核对最新状态…' : '正在读取此学生的博雅数据…';
     updateUIElements();
     closeAccountCardsModal();
 
@@ -1353,8 +1443,15 @@ async function switchStudentAccount(username) {
     });
     const d = await res.json();
     if (viewGeneration !== switchGeneration || appState.activeUsername !== username) return;
+    if (d.status !== 'ok') throw new Error('学生切换未完成');
     if (d.status === "ok") {
-      if (d.classes && d.classes.length > 0) {
+      if (d.active_account) {
+        appState.activeUser = d.active_account;
+        const index=appState.accounts.findIndex(a=>a.username===username);
+        if(index>=0)appState.accounts[index]=d.active_account;
+        updateUIElements();
+      }
+      if (Array.isArray(d.classes)) {
         appState.classes = d.classes;
         renderClassesList(d.classes);
       }
@@ -1364,16 +1461,17 @@ async function switchStudentAccount(username) {
         appState.boyaStatistics = d.boya_statistics;
         renderBoyaStatistics(appState.boyaStatistics);
       }
-
-      await Promise.all([
+      renderBoyaFeed();
+      rememberAccountView();
+      showToast(`已切换至学生: ${appState.activeUser ? (appState.activeUser.name || username) : username}`, "success");
+      await Promise.allSettled([
         fetchClasses(),
         fetchBoyaData(false),
         fetchLogs(),
       ]);
-      showToast(`已成功切换至学生: ${appState.activeUser ? (appState.activeUser.name || username) : username}`, "success");
     }
   } catch (e) {
-    showToast("切换学生账号失败", "error");
+    if (viewStillCurrent(username, switchGeneration)) showToast("切换学生账号失败，请重试", "error");
   }
 }
 
@@ -1383,6 +1481,7 @@ async function deleteAccount(username) {
     const res = await apiFetch(`/api/accounts/${encodeURIComponent(username)}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     appState.accounts = appState.accounts.filter(a => a.username !== username);
+    accountViewCache.delete(username);
     if (appState.activeUsername === username) {
       viewGeneration++;
       appState.classes = []; appState.boyaCourses = []; appState.boyaSelected = []; appState.boyaStatistics = {};

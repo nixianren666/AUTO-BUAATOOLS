@@ -14,17 +14,17 @@
   })();
   </script>
 
-  <title>BUAA 课程签到 Pro - Origin v1.4.12</title>
+  <title>BUAA 课程签到 Pro - Origin v1.4.13</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.12">
-  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.12">
-  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.12">
-  <link rel="stylesheet" href="/static/css/td.css?v=1.4.12">
-  <link rel="stylesheet" href="/static/css/remote-phone.css?v=1.4.12">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.13">
+  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.13">
+  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.13">
+  <link rel="stylesheet" href="/static/css/td.css?v=1.4.13">
+  <link rel="stylesheet" href="/static/css/remote-phone.css?v=1.4.13">
 </head>
 <body class="origin-theme">
   <div id="startupStage" aria-label="正在启动 AUTO-BUAA" role="status" aria-live="polite">
@@ -154,13 +154,26 @@
     <form class="origin-modal-dialog" id="managementLoginForm">
       <div class="modal-header"><h3 id="managementLoginTitle" class="modal-title">登录应用管理</h3></div>
       <div class="modal-body">
-        <p class="modal-desc">请输入部署者设置的应用管理密码，与学校账号密码无关。登录后再阅读首次声明。</p>
+        <p class="modal-desc" id="managementLoginDesc">请输入应用管理密码，与学校账号密码无关。登录后再阅读首次声明。</p>
+        <div id="managementProofGroup" hidden>
+          <label class="disclaimer-input-label" for="managementProof">恢复码或初始化凭据</label>
+          <input class="origin-input" id="managementProof" type="password" autocomplete="off" maxlength="1024">
+        </div>
         <label class="disclaimer-input-label" for="managementPassword">应用管理密码</label>
         <input class="origin-input" id="managementPassword" type="password" autocomplete="current-password" maxlength="1024" required>
+        <div id="managementConfirmGroup" hidden>
+          <label class="disclaimer-input-label" for="managementConfirm">再次输入新管理密码</label>
+          <input class="origin-input" id="managementConfirm" type="password" autocomplete="new-password" maxlength="128">
+        </div>
+        <div id="managementRecoveryGroup" hidden>
+          <p class="modal-desc">请将恢复码保存至你自己的密码管理器或离线安全位置。它可以重置管理密码，只展示这一次；不要发送给他人。</p>
+          <textarea class="origin-input" id="managementRecoveryCode" readonly rows="3" aria-label="新的管理恢复码"></textarea>
+          <label><input id="managementRecoverySaved" type="checkbox"> 我已保存新的恢复码</label>
+        </div>
         <p id="managementLoginStatus" class="modal-desc" role="status" aria-live="polite"></p>
         <p class="modal-desc">关闭此网页不会停止服务器后台任务。</p>
       </div>
-      <div class="modal-footer"><button class="origin-btn origin-btn-primary" id="managementLoginSubmit" type="submit">登录管理</button></div>
+      <div class="modal-footer"><button class="origin-btn origin-btn-ghost" id="managementCancel" type="button" hidden>取消修改</button><button class="origin-btn origin-btn-ghost" id="managementForgot" type="button" hidden>忘记密码</button><button class="origin-btn origin-btn-primary" id="managementLoginSubmit" type="submit">登录管理</button></div>
     </form>
   </section>
 
@@ -176,7 +189,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.4.12</span>
+            <span class="origin-tag">v1.4.13</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -266,6 +279,7 @@
               <span class="glass-arrow">▾</span>
             </button>
             <div class="glass-popover hidden" id="glassPopover" onclick="event.stopPropagation()">
+              <button class="origin-btn origin-btn-ghost" id="managementChangeButton" type="button" onclick="changeManagementPassword()" hidden>管理密码与恢复码</button>
               <div class="glass-popover-header">
                 <span class="popover-title">玻璃与背景</span>
               </div>
@@ -788,7 +802,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.4.12</span>
+          <span class="origin-version">v1.4.13</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
@@ -846,16 +860,41 @@
     <div class="origin-toast-container" id="toastContainer"></div>
   </div>
 
-  <script src="/static/js/remote-phone.js?v=1.4.12"></script>
-  <script src="/static/js/render-lifecycle.js?v=1.4.12"></script>
-  <script src="/static/js/startup.js?v=1.4.12" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
-  <script src="/static/js/stitch-ambient.js?v=1.4.12"></script>
-  <script src="/static/js/ui-surfaces.js?v=1.4.12"></script>
-  <script src="/static/js/ui-controls.js?v=1.4.12"></script>
-  <script src="/static/js/ui-motion.js?v=1.4.12"></script>
-  <script src="/static/js/app.js?v=1.4.12"></script>
-  <script src="/static/js/updates.js?v=1.4.12"></script>
-  <script src="/static/js/td.js?v=1.4.12"></script>
-  <script src="/static/js/td-calendar.js?v=1.4.12"></script>
+  <section class="origin-modal-backdrop hidden" id="wechatModal" role="dialog" aria-modal="true" aria-labelledby="wechatTitle">
+    <div class="origin-modal-dialog">
+      <div class="modal-header"><h3 class="modal-title" id="wechatTitle">微信通知</h3><button class="origin-icon-btn" id="wechatClose" aria-label="关闭微信通知">✕</button></div>
+      <div class="modal-body">
+        <p class="modal-desc" id="wechatStudent"></p>
+        <p class="modal-desc">独立接收此学生的常规课堂、博雅和 TD 运行动态。通知发送至腾讯微信服务，不发送学校密码、照片和授权码；微信消息不能执行学校操作。</p>
+        <p class="modal-desc" id="wechatStatus" role="status" aria-live="polite">正在读取通道状态…</p>
+        <div id="wechatBindArea">
+          <label class="origin-checkbox-label"><input id="wechatConsent" type="checkbox"> 我同意将此学生的运行通知发送到本人绑定的微信</label>
+          <button class="origin-btn origin-btn-primary" id="wechatBind" type="button" disabled>生成微信绑定二维码</button>
+          <div id="wechatQrArea" hidden><img id="wechatQr" width="240" height="240" alt="当前学生的微信绑定二维码" style="display:block;max-width:100%;height:auto;margin:16px auto;border-radius:12px;background:white"><p class="modal-desc">请使用此学生本人的微信扫码确认。随后在微信中向机器人发送“开始接收”，建立接收会话。</p></div>
+          <form id="wechatVerifyForm" hidden><label class="modal-desc" for="wechatVerifyCode">请输入你手机微信中显示的配对数字；仅用于本次连接。</label><input class="origin-input" id="wechatVerifyCode" inputmode="numeric" pattern="[0-9]{1,16}" maxlength="16" autocomplete="off" required><button class="origin-btn origin-btn-primary" type="submit">确认配对数字</button></form>
+        </div>
+        <div id="wechatBoundArea" hidden>
+          <label class="ambient-preference">接收通知 <span class="origin-toggle"><input id="wechatEnabled" type="checkbox"><span class="origin-slider"></span></span></label>
+          <label class="ambient-preference">只接收结果与异常 <span class="origin-toggle"><input id="wechatImportant" type="checkbox"><span class="origin-slider"></span></span></label>
+          <p class="modal-desc">关闭“只接收结果与异常”可接收运行动态；相同短时日志合并。网络中断时最多暂存100条、10分钟，重启不补发历史；发送结果不明确时不会自动重发。</p>
+          <div class="modal-footer"><button class="origin-btn origin-btn-ghost" id="wechatSave">保存通知设置</button><button class="origin-btn origin-btn-primary" id="wechatTest">发送测试通知</button><button class="origin-btn origin-btn-danger-ghost" id="wechatUnbind">解绑此学生微信</button></div>
+          <p class="modal-desc" id="wechatRecent" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+        </div>
+        <p class="modal-desc">微信通道可能要求重新扫码或重新发送消息；接口接受不代表已送达，请以本人微信实际收到为准。绑定凭据仅保存在本应用私有目录。</p>
+      </div>
+    </div>
+  </section>
+  <script src="/static/js/remote-phone.js?v=1.4.13"></script>
+  <script src="/static/js/render-lifecycle.js?v=1.4.13"></script>
+  <script src="/static/js/startup.js?v=1.4.13" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
+  <script src="/static/js/stitch-ambient.js?v=1.4.13"></script>
+  <script src="/static/js/ui-surfaces.js?v=1.4.13"></script>
+  <script src="/static/js/ui-controls.js?v=1.4.13"></script>
+  <script src="/static/js/ui-motion.js?v=1.4.13"></script>
+  <script src="/static/js/app.js?v=1.4.13"></script>
+  <script src="/static/js/wechat.js?v=1.4.13"></script>
+  <script src="/static/js/updates.js?v=1.4.13"></script>
+  <script src="/static/js/td.js?v=1.4.13"></script>
+  <script src="/static/js/td-calendar.js?v=1.4.13"></script>
 </body>
 </html>
