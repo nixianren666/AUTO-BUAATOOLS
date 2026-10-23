@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import secrets
 from pathlib import Path
 import subprocess
 import sys
@@ -44,7 +45,26 @@ def main():
                         except (httpx.HTTPError,ValueError):pass
                         time.sleep(0.2)
                     else:raise RuntimeError("Native service did not start its compiled executable")
-                    client.headers["X-BUAA-CSRF"]=client.get("/api/session").json()["csrf"]
+                    session=client.get("/api/session")
+                    if sys.platform in ("linux", "darwin"):
+                        # A fresh headless service must now require its owner's
+                        # private initialization proof. Test that real flow,
+                        # rather than assuming the former anonymous bootstrap.
+                        assert session.status_code==401 and session.json()["setup_required"] is True
+                        assert client.get("/api/accounts").status_code==401
+                        proof=(config.parent/".management-setup-token").read_text().strip()
+                        fixture_password=secrets.token_urlsafe(24)
+                        setup=client.post("/api/management/setup",json={"password":fixture_password,"proof":proof})
+                        setup.raise_for_status()
+                        assert len(setup.json()["recovery_code"])>=40
+                        stored=(config.parent/".management-private.json").read_text()
+                        assert fixture_password not in stored and setup.json()["recovery_code"] not in stored
+                        csrf=setup.json()["csrf"]
+                        client.delete("/api/session",headers={"X-BUAA-CSRF":csrf}).raise_for_status()
+                        assert client.get("/api/accounts").status_code==401
+                        session=client.post("/api/session",json={"password":fixture_password})
+                    session.raise_for_status()
+                    client.headers["X-BUAA-CSRF"]=session.json()["csrf"]
                     assert client.get("/api/accounts").json()["accounts"]==[]
                     if sys.platform=="win32":
                         client.post("/api/exit",json={}).raise_for_status()
@@ -55,7 +75,7 @@ def main():
                 if sys.platform=="linux":subprocess.run(["systemctl","--user","stop","buaa-signin.service"],check=True)
                 assert autostart.set_autostart(False)
                 assert not autostart.get_autostart_status() and (path is None or not path.exists())
-    result={"passed":True,"platform":sys.platform,"compiled_service_started":True,"enabled_status_verified":True,"service_removed":True,"real_school_writes":0,"reboot_tested":False}
+    result={"passed":True,"platform":sys.platform,"compiled_service_started":True,"enabled_status_verified":True,"service_removed":True,"real_school_writes":0,"reboot_tested":False,"first_headless_setup_tested":sys.platform in ("linux","darwin")}
     output=Path(args.report_dir);output.mkdir(parents=True,exist_ok=True)
     (output/"native-service-summary.json").write_text(json.dumps(result,indent=2),encoding="utf-8")
     print(json.dumps(result))
