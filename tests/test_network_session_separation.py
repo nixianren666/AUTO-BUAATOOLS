@@ -64,6 +64,40 @@ class ClassroomReadFailures(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(self.client.session_id)
         self.assertEqual(len(self.requests), 1)
 
+    async def test_exact_no_schedule_envelope_is_empty_without_reauthentication(self):
+        await self.transport(lambda r: httpx.Response(200, json={'STATUS': '2'}))
+        self.assertEqual(await self.client.get_today_classes(), [])
+        self.assertEqual(self.client.session_id, 'synthetic-session')
+        self.assertEqual(self.client.user_id, 'synthetic-user')
+        self.assertEqual(len(self.requests), 1)
+        self.assertEqual(self.requests[0].method, 'GET')
+
+    async def test_no_schedule_status_does_not_hide_errors_or_contradictory_data(self):
+        for payload in ({'STATUS': '2', 'ERRMSG': 'synthetic unavailable'},
+                        {'STATUS': '2', 'result': [{'id': '1001'}]},
+                        {'STATUS': '2', 'result': None}, {'STATUS': 2},
+                        {'STATUS': '3'}, {'STATUS': '2', 'total': 1}):
+            with self.subTest(payload=payload):
+                await self.transport(lambda r: httpx.Response(200, json=payload))
+                with self.assertRaises(IclassReadError):
+                    await self.client.get_today_classes()
+                self.assertEqual(self.client.session_id, 'synthetic-session')
+
+    async def test_no_schedule_status_with_explicit_expiry_still_invalidates(self):
+        await self.transport(lambda r: httpx.Response(200, json={'STATUS': '2', 'ERRMSG': '会话已失效，请重新登录'}))
+        with self.assertRaises(IclassSessionExpired):
+            await self.client.get_today_classes()
+        self.assertIsNone(self.client.session_id)
+        self.assertEqual(len(self.requests), 1)
+
+    async def test_no_schedule_never_authorizes_cached_course_signin(self):
+        self.client.operation_user = 'fixture-network-student'
+        await self.transport(lambda r: httpx.Response(200, json={'STATUS': '2'}))
+        result = await self.client.perform_signin('1001')
+        self.assertFalse(result[0])
+        self.assertEqual(self.client.actual_sign_posts, 0)
+        self.assertTrue(all(r.method == 'GET' for r in self.requests))
+
     async def test_explicit_official_expiry_is_distinct_from_unknown_status(self):
         await self.transport(lambda r: httpx.Response(200, json={'STATUS': '-1', 'ERRMSG': '会话已失效，请重新登录'}))
         with self.assertRaises(IclassSessionExpired):
@@ -169,6 +203,31 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
         reconnect.assert_not_awaited()
         self.assertFalse(self.acc.regular_health['stale'])
         self.assertIsNone(self.acc.regular_health['error'])
+
+    async def test_no_schedule_read_replaces_previous_day_cache_and_clears_error(self):
+        self.acc.regular_health['stale'] = True
+        self.acc.client._client = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda r: httpx.Response(200, json={'STATUS': '2'})), trust_env=False)
+        with patch.object(backend, 'connect_single_account', AsyncMock()) as reconnect:
+            result = await backend.get_today_classes(username=self.acc.username)
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['classes'], [])
+        self.assertEqual(self.acc.last_classes, [])
+        self.assertFalse(self.acc.regular_health['stale'])
+        self.assertEqual(self.acc.boya_client.token, 'synthetic-boya-token')
+        reconnect.assert_not_awaited()
+
+    async def test_no_schedule_worker_clears_old_cache_without_signing_or_reauth(self):
+        self.acc.client._client = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda r: httpx.Response(200, json={'STATUS': '2'})), trust_env=False)
+        reconnect = AsyncMock()
+        scheduler = SigninScheduler(lambda: [], reconnect_account=reconnect)
+        with patch.object(self.acc.client, 'perform_signin', AsyncMock()) as signin:
+            await scheduler._check_account(self.item(), None)
+        reconnect.assert_not_awaited()
+        signin.assert_not_awaited()
+        self.assertEqual(self.acc.last_classes, [])
+        self.assertFalse(self.acc.regular_health['stale'])
 
     async def test_worker_route_failure_sends_neither_reauthentication_nor_signin(self):
         reconnect = AsyncMock(return_value=False)

@@ -390,6 +390,12 @@ class IclassClient:
                 data = resp.json()
                 if not isinstance(data, dict):
                     raise IclassReadError("课堂课表响应格式异常")
+                # The course-read endpoint uses this exact envelope for a day
+                # without a returned schedule (observed across both ports).
+                # Do not generalize non-success statuses, contradictory result
+                # rows or error messages into an empty successful read.
+                if data == {"STATUS": "2"}:
+                    return []
                 status = str(data.get("STATUS", ""))
                 if "STATUS" not in data or status not in ("0", "200", "success"):
                     message = data.get("ERRMSG")

@@ -85,7 +85,14 @@ def main():
                     assert browser_result["passed"]
                     checks.extend(browser_result["checks"])
                 finally:
-                    try:client.post("/api/exit",json={})
+                    try:
+                        # The browser explicitly logs out the shared fixture
+                        # session. Reauthenticate this fixture's owner before
+                        # asking its process to exit; never relax exit auth.
+                        login=client.post('/api/session',json={'password':fixture_password})
+                        if login.status_code==200:
+                            client.headers['X-BUAA-CSRF']=login.json()['csrf']
+                            client.post("/api/exit",json={}).raise_for_status()
                     except httpx.HTTPError:pass
                     try:proc.wait(timeout=10)
                     except subprocess.TimeoutExpired:

@@ -68,9 +68,14 @@ exports.verifyTDGate = async (page, check) => {
     for (const menu of ['navBtnRegular','navBtnBoya']) {
       await page.locator('#'+menu).click();
       await page.evaluate(()=>{window.gateOpens=0;window.gatePaints=0;window.gateSampling=true;window.gateOpened=e=>{if(e.detail?.id==='tdLicenseModal'&&e.detail.visible)window.gateOpens++;};document.addEventListener('buaa:surfacechange',window.gateOpened);const sample=()=>{if(document.getElementById('tdLicenseModal').getClientRects().length)window.gatePaints++;if(window.gateSampling)requestAnimationFrame(sample);};requestAnimationFrame(sample);});
-      const slow=async r=>{await new Promise(done=>setTimeout(done,450));await r.fulfill({json:{license:active}});};
+      let release, started;
+      const pending = new Promise(done=>started=done);
+      const response = new Promise(done=>release=done);
+      const slow=async r=>{started();await response;await r.fulfill({json:{license:active}});};
       await page.route('**/api/td/license/status?**',slow);await page.locator('#navBtnTD').click();
-      await page.waitForTimeout(180);assert.notEqual(await page.evaluate(()=>appState.currentMainView),'td');assert.equal(await page.locator('#tdLicenseModal').isVisible(),false);
+      await pending;
+      assert.notEqual(await page.evaluate(()=>appState.currentMainView),'td');assert.equal(await page.locator('#tdLicenseModal').isVisible(),false);
+      release();
       await page.waitForFunction(()=>appState.currentMainView==='td');await page.waitForTimeout(160);
       const seen=await page.evaluate(()=>{window.gateSampling=false;document.removeEventListener('buaa:surfacechange',window.gateOpened);return {opens:window.gateOpens,paints:window.gatePaints};});
       assert.deepEqual(seen,{opens:0,paints:0});await page.unroute('**/api/td/license/status?**',slow);
