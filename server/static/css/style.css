@@ -1720,3 +1720,25 @@ html, body {
   align-items: center;
   gap: 8px;
 }
+
+/* WeChat assistant: progress is driven by observed binding/context and owner receipt. */
+html:not([data-remote-phone]) #wechatModal .origin-modal-dialog { max-height:calc(100dvh - 40px); max-width:600px; overflow:hidden; }
+#wechatModal .modal-header { flex:0 0 auto; }
+#wechatModal .modal-body { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+#wechatModal .modal-body > * { flex-shrink:0; }
+#wechatModal .modal-footer { flex-wrap:wrap; padding:14px 0; }
+#wechatModal #wechatStudent { display:none; }
+#wechatModal .wechat-steps { list-style:none; padding:0; margin:16px 0 20px; display:grid; gap:10px; }
+#wechatModal .wechat-steps li { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid var(--border-color,rgba(255,255,255,.12)); border-radius:14px; background:rgba(255,255,255,.025); }
+#wechatModal .wechat-step-mark { display:grid; place-items:center; flex:0 0 26px; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.09); font-size:13px; font-weight:700; }
+#wechatModal .wechat-steps strong { font-size:14px; line-height:1.6; }
+#wechatModal .wechat-steps p { font-size:13px; line-height:1.7; margin:4px 0 8px; color:var(--text-secondary,#a1a1aa); }
+#wechatModal .wechat-steps li.is-current { border-color:rgba(56,189,248,.45); background:rgba(56,189,248,.055); }
+#wechatModal .wechat-steps li.is-complete,#wechatModal .wechat-steps li.is-complete p { color:#4ade80; }
+#wechatModal .wechat-steps li.is-complete { border-color:rgba(74,222,128,.25); }
+#wechatModal .wechat-steps li.is-complete .wechat-step-mark { background:rgba(74,222,128,.15); }
+#wechatModal .wechat-steps li > div { min-width:0; overflow-wrap:anywhere; }
+#wechatModal #wechatAccountSelect { width:100%; margin:6px 0; }
+#wechatModal #wechatCopyStart { min-height:44px; white-space:normal; }
+#wechatModal .wechat-steps .origin-checkbox-label { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; }
+#wechatModal .wechat-steps input { flex-shrink:0; }

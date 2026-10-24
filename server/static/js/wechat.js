@@ -1,7 +1,8 @@
 /* Account captured on opening; viewing another student never changes a binding. */
 (() => {
   'use strict';
-  let username='', generation=0, timer=null, busy=false, controller=null, canTest=false, pendingBinding='';
+  let username='', generation=0, timer=null, busy=false, controller=null, canTest=false, pendingBinding='', dirty=false;
+  const tests=new Map(),receipts=new Set();
   const el=id=>document.getElementById(id);
   const current=g=>g===generation && !el('wechatModal').classList.contains('hidden');
   const message=text=>{el('wechatStatus').textContent=text;};
@@ -14,11 +15,21 @@
     return data;
   };
   const statuses={sending:'正在发送',accepted:'微信接口已接受，待本人确认收信',submitted:'已提交微信，待本人确认收信',unconfirmed:'发送结果未确认，未自动重发',session_expired:'微信会话已失效，请重新绑定',expired:'通知已过期，未补发'};
+  function steps(data) {
+    const complete=[!!data.bound,!!data.bound&&!!data.ready,!!data.ready&&receipts.has(username)];
+    const ids=['wechatStepScan','wechatStepMessage','wechatStepReceipt'];
+    ids.forEach((id,i)=>{const node=el(id);node.classList.toggle('is-complete',complete[i]);node.classList.toggle('is-current',!complete[i]&&(i===0||complete[i-1]));node.querySelector('.wechat-step-mark').textContent=complete[i]?'✓':String(i+1);node.setAttribute('aria-label','第'+(i+1)+'步，'+(complete[i]?'已完成':'待完成'));});
+    el('wechatReceived').checked=complete[2];
+    el('wechatReceived').disabled=!data.ready||!(data.recent||[]).some(r=>r.id===tests.get(username)&&['accepted','submitted'].includes(r.state));
+  }
   async function refresh(g=generation) {
     const data=await request('status',null,g);
     if (data.username!==username) throw new Error('学生通道不匹配');
     el('wechatBindArea').hidden=data.bound;el('wechatBoundArea').hidden=!data.bound;
-    if (!busy) {el('wechatEnabled').checked=data.enabled;el('wechatImportant').checked=data.important_only;}
+    if (!busy&&!dirty) {el('wechatEnabled').checked=data.enabled;el('wechatImportant').checked=data.important_only;el('wechatCourseReminders').checked=!!data.course_reminders;}
+    if(!data.bound){tests.delete(username);receipts.delete(username);}
+    steps(data);
+    el('wechatCourseStatus').textContent=!data.course_reminders?'课前提醒已关闭。':!data.enabled?'通知已暂停，暂不发送课前提醒。':!data.ready?'完成第2步后，才能读取课表并发送提醒。':data.course_sync==='ok'?'课表已同步；有课时在课前15分钟窗口内提醒。':data.course_sync==='unavailable'?'课表暂未同步，本轮不发送提醒；请核对账号认证和网络。':'正在等待读取课表，未读取到课程前不会发送提醒。';
     message(data.storage_error?'私有存储不可用，请检查部署目录。':data.session_expired?'微信登录状态失效，请解绑后重新扫码。':!data.bound?'尚未绑定微信。':!data.enabled?'此学生的微信通知已暂停。':data.connection_error?'微信通道暂时连接失败；学校后台任务独立运行。':!data.ready?'已绑定：请先在微信中向机器人发送“开始接收”。':'此学生的通知通道已就绪，等待运行日志。');
     const seen=new Set();
     el('wechatRecent').textContent=(data.recent||[]).filter(r=>!seen.has(r.id)&&seen.add(r.id)).slice(0,5).map(r=>r.time.replace('T',' ')+' · '+r.id+' · '+(statuses[r.state]||'待核对')).join('\n');
@@ -47,13 +58,18 @@
   function watch(g) {
     timer=setTimeout(async()=>{if(!current(g))return;try{if(!busy&&!pendingBinding)await refresh(g);}catch(error){if(current(g))message(error.message);}if(current(g))watch(g);},4000);
   }
-  window.BUAAWechat={open:async user=>{
+  window.BUAAWechat={openCurrent:()=>{
+    const user=appState.activeUsername||appState.accounts[0]?.username;
+    if(user)void window.BUAAWechat.open(user);else{openAccountCardsModal();showToast('请先添加学生，再绑定微信助手。','info');}
+  },open:async user=>{
     if (!appState.accounts.some(a=>a.username===user)) return;
-    generation++;clearTimeout(timer);controller?.abort();controller=new AbortController();busy=false;canTest=false;username=user;
+    generation++;clearTimeout(timer);controller?.abort();controller=new AbortController();busy=false;canTest=false;dirty=false;username=user;
     el('wechatSave').disabled=el('wechatUnbind').disabled=false;el('wechatTest').disabled=true;
     closeAccountCardsModal();
     if (!setUISurface('wechatModal',true))return;
     el('wechatStudent').textContent='当前学生：'+(appState.accounts.find(a=>a.username===user)?.name||user);
+    el('wechatAccountSelect').replaceChildren(...appState.accounts.map(a=>{const option=document.createElement('option');option.value=a.username;option.textContent=a.name||a.username;return option;}));el('wechatAccountSelect').value=user;
+    steps({});el('wechatBoundArea').hidden=true;el('wechatBindArea').hidden=true;
     pendingBinding='';el('wechatVerifyForm').hidden=true;el('wechatVerifyCode').value='';
     el('wechatConsent').checked=false;el('wechatBind').disabled=true;el('wechatQrArea').hidden=true;el('wechatQr').removeAttribute('src');
     const g=generation;
@@ -61,6 +77,10 @@
   },close};
   document.addEventListener('DOMContentLoaded',()=>{
     el('wechatClose').onclick=close;
+    el('wechatAccountSelect').onchange=event=>void window.BUAAWechat.open(event.target.value);
+    el('wechatCopyStart').onclick=async()=>{try{await navigator.clipboard.writeText('开始接收');message('已复制“开始接收”。请粘贴到微信里刚绑定的机器人聊天并发送。');}catch(error){message('请在微信里刚绑定的机器人聊天中手动输入并发送：开始接收');}};
+    for(const id of ['wechatEnabled','wechatImportant','wechatCourseReminders'])el(id).onchange=()=>{dirty=true;};
+    el('wechatReceived').onchange=()=>{const done=el('wechatReceived').checked&&!el('wechatReceived').disabled;if(done)receipts.add(username);else receipts.delete(username);const step=el('wechatStepReceipt');step.classList.toggle('is-complete',done);step.classList.toggle('is-current',!done);step.querySelector('.wechat-step-mark').textContent=done?'✓':'3';step.setAttribute('aria-label','第3步，'+(done?'已完成':'待完成'));if(done)message('你已确认实际收信，此学生的微信助手已连接。');};
     el('wechatVerifyForm').onsubmit=event=>{event.preventDefault();if(!pendingBinding||busy)return;const code=el('wechatVerifyCode').value;el('wechatVerifyCode').value='';el('wechatVerifyForm').hidden=true;void action(g=>pollBinding(pendingBinding,g,code));};
     el('wechatConsent').onchange=()=>{el('wechatBind').disabled=busy||!el('wechatConsent').checked;};
     el('wechatBind').onclick=()=>action(async g=>{
@@ -69,11 +89,11 @@
       el('wechatQr').src='/api/wechat/qrcode?username='+encodeURIComponent(username)+'&binding_id='+encodeURIComponent(data.binding_id);
       el('wechatQrArea').hidden=false;await pollBinding(data.binding_id,g);
     });
-    el('wechatSave').onclick=()=>action(async g=>{await request('settings',{enabled:el('wechatEnabled').checked,important_only:el('wechatImportant').checked},g);busy=false;await refresh(g);});
-    el('wechatTest').onclick=()=>action(async g=>{const data=await request('test',{},g);message('测试已排队，编号 '+data.test_id+'。请在微信实际确认是否收到。');});
+    el('wechatSave').onclick=()=>action(async g=>{await request('settings',{enabled:el('wechatEnabled').checked,important_only:el('wechatImportant').checked,course_reminders:el('wechatCourseReminders').checked},g);dirty=false;busy=false;await refresh(g);});
+    el('wechatTest').onclick=()=>action(async g=>{const data=await request('test',{},g);tests.set(username,data.test_id);receipts.delete(username);el('wechatReceived').checked=false;el('wechatReceived').disabled=true;message('测试已排队，编号 '+data.test_id+'。请在微信实际确认是否收到，再勾选第3步。');});
     el('wechatUnbind').onclick=()=>action(async g=>{
       if(!confirm('解绑此学生的微信并清空待发通知？其他学生保持不变。'))return;
-      await request('unbind',{},g);busy=false;await refresh(g);
+      await request('unbind',{},g);tests.delete(username);receipts.delete(username);dirty=false;busy=false;await refresh(g);
     });
     el('wechatModal').addEventListener('click',e=>{if(e.target===el('wechatModal'))close();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current(generation)){e.preventDefault();close();}});

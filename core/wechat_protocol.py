@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 import re
 
 import httpx
+from core.version import VERSION
 
 BASE_URL = 'https://ilinkai.weixin.qq.com'
 CHANNEL_VERSION = '2.4.10'
@@ -50,7 +51,7 @@ class WechatProtocol:
                 'X-WECHAT-UIN':base64.b64encode(str(secrets.randbits(32)).encode()).decode()})
         if token:
             headers['Authorization'] = 'Bearer ' + token
-            body = dict(body or {}, base_info={'channel_version':CHANNEL_VERSION, 'bot_agent':'AUTO-BUAATOOLS/1.4.13'})
+            body = dict(body or {}, base_info={'channel_version':CHANNEL_VERSION, 'bot_agent':'AUTO-BUAATOOLS/'+VERSION})
         try:
             async with self.client.stream('POST' if body is not None else 'GET', base + '/ilink/bot/' + endpoint,
                 json=body, params=params, headers=headers, timeout=httpx.Timeout(38 if poll else 15, connect=10)) as result:

@@ -1662,4 +1662,32 @@ async def serve_favicon():
 from server.td_routes import install as install_td
 remove_td_account = install_td(app, CONFIG_FILE, resolve_account, accounts, add_log)
 from server.wechat import install as install_wechat
-wechat_notifications = install_wechat(app, CONFIG_FILE, accounts)
+
+async def wechat_course_snapshot(username):
+    """Independent read-only feed. Never enables attendance or depends on active UI."""
+    from core.domain import parse_dt
+    import copy
+    acc=accounts.get(username)
+    if not acc or acc.removed or acc.maintenance or acc.auth_requires_input:return None
+    current=china_now();health=acc.regular_health
+    refreshed=parse_dt(health.get('last_success'))
+    if health.get('stale') or not refreshed or refreshed.date()!=current.date() or not 0<=(current-refreshed).total_seconds()<=60:
+        if not acc.client.is_authenticated():
+            if not acc.password or not await connect_single_account(acc):return None
+        epoch=acc.auth_epoch
+        try:
+            classes=await acc.client.get_today_classes()
+        except IclassSessionExpired:
+            # Only explicit expiry may reconnect; transient network errors do not.
+            if acc.password:await connect_single_account(acc)
+            return None
+        except Exception:
+            acc.regular_health={**acc.regular_health,'stale':True}
+            return None
+        if accounts.get(username) is not acc or acc.removed or acc.maintenance or acc.auth_epoch!=epoch:return None
+        acc.last_classes=classes;acc.last_refresh_time=china_now().isoformat(timespec='seconds')
+        acc.regular_health={'stale':False,'last_success':acc.last_refresh_time,'error':None}
+    if accounts.get(username) is not acc or acc.removed or acc.maintenance:return None
+    return {'classes':copy.deepcopy(acc.last_classes),'semester':copy.deepcopy((acc.boya_statistics or {}).get('semesterInfo') or {})}
+
+wechat_notifications = install_wechat(app, CONFIG_FILE, accounts, course_reader=wechat_course_snapshot)

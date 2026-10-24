@@ -70,5 +70,12 @@ class WechatAPIBoundary(unittest.TestCase):
         self.assertEqual(calls,[None,'123456'])
         self.assertNotIn('123456',str(self.engine.pending))
 
+    def test_reminder_option_is_strict_and_never_changes_other_student(self):
+        self.login()
+        base={'enabled':True,'important_only':False,'username':'A'}
+        for invalid in (1,'true',[],{}):
+            self.assertEqual(self.client.post('/api/wechat/settings',json=dict(base,course_reminders=invalid)).status_code,422)
+        self.assertFalse(self.engine.status('B')['course_reminders'])
+
 
 if __name__=='__main__':unittest.main()

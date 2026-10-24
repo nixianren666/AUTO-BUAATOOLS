@@ -12,7 +12,7 @@ exports.verifyWechat=async(page,check)=>{
     if(url.pathname.endsWith('/status')&&!url.pathname.includes('/bind/'))result={...state,username:user};
     else if(url.pathname.endsWith('/bind'))result={status:'wait',binding_id:'a'.repeat(32)};
     else if(url.pathname.endsWith('/bind/status')){result={status:needsDigits&&!body.verify_code?'need_verifycode':confirmed?'confirmed':'wait'};if(result.status==='confirmed')state.bound=true;}
-    else if(url.pathname.endsWith('/settings')){Object.assign(state,{enabled:body.enabled,important_only:body.important_only});if(settingsDelay){const wait=new Promise(resolve=>setTimeout(resolve,settingsDelay));pending.add(wait);await wait;pending.delete(wait);}}
+    else if(url.pathname.endsWith('/settings')){Object.assign(state,{enabled:body.enabled,important_only:body.important_only,course_reminders:body.course_reminders});if(settingsDelay){const wait=new Promise(resolve=>setTimeout(resolve,settingsDelay));pending.add(wait);await wait;pending.delete(wait);}}
     else if(url.pathname.endsWith('/test')){state.recent=[{id:'abc123',state:'accepted',time:'10:00'}];result={status:'queued',test_id:'abc123'};}
     else if(url.pathname.endsWith('/unbind'))state.bound=state.ready=false;
     else if(url.pathname.endsWith('/qrcode'))return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a/ksAAAAASUVORK5CYII=','base64')});
@@ -32,6 +32,9 @@ exports.verifyWechat=async(page,check)=>{
       confirmed=true;await page.locator('#wechatBoundArea').waitFor({state:'visible'});
       assert.equal(await page.locator('#wechatTest').isDisabled(),true);
       assert.match(await page.locator('#wechatStatus').textContent(),/开始接收/);
+      assert.equal(await page.locator('#wechatStepScan').evaluate(e=>e.classList.contains('is-complete')),true);
+      assert.equal(await page.locator('#wechatStepMessage').evaluate(e=>e.classList.contains('is-complete')),false);
+      assert.equal(await page.locator('#wechatReceived').isDisabled(),true);
     });
     await check('wechat-test-is-bound-to-captured-student-and-never-claims-delivery',async()=>{
       states['fixture-account-1'].ready=true;
@@ -42,10 +45,16 @@ exports.verifyWechat=async(page,check)=>{
       await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('abc123'));
       assert.equal(writes.at(-1).user,'fixture-account-1');
       assert.match(await page.locator('#wechatStatus').textContent(),/实际确认/);
+      assert.equal(await page.locator('#wechatStepMessage').evaluate(e=>e.classList.contains('is-complete')),true);
+      assert.equal(await page.locator('#wechatStepReceipt').evaluate(e=>e.classList.contains('is-complete')),false);
+      await page.waitForFunction(()=>!document.getElementById('wechatReceived').disabled);
+      await page.locator('#wechatReceived').check();
+      assert.equal(await page.locator('#wechatStepReceipt').evaluate(e=>e.classList.contains('is-complete')),true);
       await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-2'));
       await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('尚未绑定'));
       assert.equal(await page.locator('#wechatBoundArea').isVisible(),false);
       assert.equal(await page.locator('#wechatRecent').textContent(),'');
+      assert.equal(await page.locator('#wechatReceived').isChecked(),false);
     });
     await check('wechat-pairing-digits-are-manual-owner-input-and-not-retained',async()=>{
       confirmed=false;needsDigits=true;
@@ -69,6 +78,28 @@ exports.verifyWechat=async(page,check)=>{
       assert.equal(await page.locator('#wechatSave').isDisabled(),false);
       assert.equal(await page.locator('#wechatUnbind').isDisabled(),false);settingsDelay=0;
     });
+    await check('wechat-sidebar-opens-current-student-with-independent-account-selector',async()=>{
+      await page.locator('#wechatClose').click();await page.evaluate(()=>{appState.activeUsername='fixture-account-1';});
+      await page.locator('#navBtnWechat').click();await page.locator('#wechatBoundArea').waitFor({state:'visible'});
+      assert.equal(await page.locator('#wechatAccountSelect').inputValue(),'fixture-account-1');
+      await page.locator('#wechatAccountSelect').selectOption('fixture-account-2');
+      await page.waitForFunction(()=>document.getElementById('wechatStudent').textContent.includes(appState.accounts.find(a=>a.username==='fixture-account-2').name));
+      assert.equal(await page.evaluate(()=>appState.activeUsername),'fixture-account-1');
+      await page.waitForFunction(()=>!document.getElementById('wechatTest').disabled);
+    });
+    await check('wechat-reminder-preference-is-explicit-and-unsaved-input-survives-refresh',async()=>{
+      await page.locator('#wechatCourseReminders').check();await page.waitForTimeout(4300);
+      assert.equal(await page.locator('#wechatCourseReminders').isChecked(),true);
+      await page.locator('#wechatSave').click();
+      await page.waitForFunction(()=>!document.getElementById('wechatSave').disabled);
+      assert.equal(states['fixture-account-2'].course_reminders,true);
+      assert.equal(writes.at(-1).user,'fixture-account-2');
+    });
+    await check('wechat-completed-stages-have-green-text-checkmarks-and-current-instruction',async()=>{
+      const stages=await page.locator('#wechatStepScan,#wechatStepMessage').evaluateAll(nodes=>nodes.map(n=>({complete:n.classList.contains('is-complete'),mark:n.querySelector('.wechat-step-mark').textContent,color:getComputedStyle(n).color})));
+      for(const stage of stages){assert.equal(stage.complete,true);assert.equal(stage.mark,'✓');assert.equal(stage.color,'rgb(74, 222, 128)');}
+      assert.match(await page.locator('#wechatStepMessage').textContent(),/扫码后还差这一步/);
+    });
     await check('wechat-new-modal-keeps-phone-fields-and-controls-inside-viewport',async()=>{
       const original=page.viewportSize();
       try{for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]){
@@ -79,6 +110,7 @@ exports.verifyWechat=async(page,check)=>{
         });
         assert.ok(boxes.left>=-1&&boxes.right<=viewport.width+1,JSON.stringify(boxes));
         assert.ok(boxes.scroll<=boxes.width+1,JSON.stringify(boxes));
+        const header=await page.locator('#wechatModal .modal-header').boundingBox();assert.ok(header.y>=0&&header.y+header.height<=viewport.height);
         await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-1'));
         await page.locator('#wechatSave').waitFor({state:'visible'});
       }}finally{await page.setViewportSize(original);}

@@ -8,9 +8,9 @@ from core.wechat import WechatNotifications
 from core.wechat_protocol import WechatError
 
 
-def install(app, config_path, accounts):
+def install(app, config_path, accounts, course_reader=None):
     engine=WechatNotifications(config_path.with_name('.wechat-private'),
-        lambda username: username in accounts and not accounts[username].removed)
+        lambda username: username in accounts and not accounts[username].removed, course_reader=course_reader)
 
     def account(username):
         if username not in accounts or accounts[username].removed:
@@ -30,6 +30,7 @@ def install(app, config_path, accounts):
     class Settings(Student):
         enabled: bool = Field(strict=True)
         important_only: bool = Field(strict=True)
+        course_reminders: bool | None = Field(default=None,strict=True)
 
     @app.on_event('startup')
     async def start():
@@ -70,7 +71,7 @@ def install(app, config_path, accounts):
     @app.post('/api/wechat/settings')
     async def settings(body: Settings):
         account(body.username)
-        await safely(engine.configure(body.username,body.enabled,body.important_only))
+        await safely(engine.configure(body.username,body.enabled,body.important_only,body.course_reminders))
         return {'status':'ok'}
 
     @app.post('/api/wechat/unbind')
