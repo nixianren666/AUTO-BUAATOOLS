@@ -1,0 +1,1873 @@
+{
+  "passed": true,
+  "version": "1.4.14",
+  "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+  "run_id": 40087259162,
+  "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.14",
+  "assets": 15,
+  "platforms": {
+    "Windows-x64": {
+      "source": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 240.66,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.34,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.22,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.97,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.2,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.55,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 14.75,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 3.28,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 129,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "win32",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": false
+      },
+      "packaging": {
+        "passed": true,
+        "installation": "fresh-and-upgrade",
+        "payload_matches_portable": true,
+        "compiled_installed_app_verified": true,
+        "uninstall_preserves_user_files": true,
+        "installed_autostart_removed": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null
+    },
+    "macOS-arm64": {
+      "source": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 264.1,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.15,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.06,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.43,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.14,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.47,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 7.01,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 1.04,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "4af0d0397969792517a187bb985cad0061e7cb4563892eea645b963531b02f79",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 124,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.4.14",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null
+    },
+    "macOS-x86_64": {
+      "source": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 483.25,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.63,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.24,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.07,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.24,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.34,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 8.83,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 1.5,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "f2f430c5fdafc215b41519d31f6a5d82519b0d38dde3f885b29b77ef01747b77",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 124,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.4.14",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null
+    },
+    "Linux-x86_64": {
+      "source": {
+        "tests": 440,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 262.07,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.43,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.1,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.69,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.19,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.82,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 7.19,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 0.98,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "604f9166003db8868cb1f3f57f39a86c465068fbcb75f4fabed1a1a5d523735a",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 124,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "linux",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": null,
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": {
+        "passed": true,
+        "checks": [
+          "docker-real-password-browser-thirteen-contracts-including-phone",
+          "container-recreation-preserves-config-private-vault-td-data",
+          "new-process-first-document-once",
+          "host-autostart-write-denied",
+          "non-root-no-capabilities-zero-external-connect-attempts"
+        ],
+        "real_school_writes": 0,
+        "blocked_non_loopback_attempts": 0,
+        "external_network": "CI-only Python audit forbids external app connections; browser blocks third-party resources",
+        "host_rebooted": false
+      }
+    }
+  },
+  "compiled_integrity": {
+    "passed": true,
+    "version": "1.4.14",
+    "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+    "python_minor": "3.12",
+    "application_modules": [
+      "core/__init__.py",
+      "core/autostart.py",
+      "core/boya_actions.py",
+      "core/boya_client.py",
+      "core/boya_crypto.py",
+      "core/boya_scheduler.py",
+      "core/cas.py",
+      "core/cas_transport.py",
+      "core/course_reminders.py",
+      "core/domain.py",
+      "core/iclass.py",
+      "core/management_store.py",
+      "core/operations.py",
+      "core/profile.py",
+      "core/regular_policy.py",
+      "core/render_lifecycle.py",
+      "core/scheduler.py",
+      "core/smoke.py",
+      "core/td_client.py",
+      "core/td_license.py",
+      "core/td_license_public.py",
+      "core/td_policy.py",
+      "core/td_scheduler.py",
+      "core/td_store.py",
+      "core/updates.py",
+      "core/vault.py",
+      "core/version.py",
+      "core/webvpn.py",
+      "core/wechat.py",
+      "core/wechat_protocol.py",
+      "server/__init__.py",
+      "server/app.py",
+      "server/management.py",
+      "server/presentation.py",
+      "server/td_routes.py",
+      "server/update_routes.py",
+      "server/wechat.py"
+    ],
+    "entry_script_equal_source": true,
+    "static_assets": {
+      "server/static/css/remote-phone.css": "f0988050d16781661ec3fedb5ceeb52df4648ecf70ba403bd544075c8b36f730",
+      "server/static/css/startup.css": "6296774fdcd05adfba96927a7dcaacce6fc0728f37f59b222a4193d447e0802d",
+      "server/static/css/stitch-glass.css": "0cc87bd8e901fe0a6271e0509acad40eed1a11c9a2ecdf7848a929d954fe2145",
+      "server/static/css/style.css": "5d96e81f17619f791394eec756f80832af7fd109433ac1c90f6314daf0f6cb41",
+      "server/static/css/td.css": "80eb644a2398df8b37b4aaab2d9b7da94972ac2c8645c8033122699f60b9b9ba",
+      "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+      "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+      "server/static/images/buaa-emblem.svg": "46018a6e4b04bb12a1e93935b9bb528e995be2c99356b7550a1106649df9466c",
+      "server/static/images/buaa-wordmark.svg": "0640709a990ca5d9705a1a11eb24dc66478336106240dcded16a4756e2e06efc",
+      "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+      "server/static/images/BUAA_LOGO_SOURCE.json": "d0e29ba0a2ac1b40445afd1de52f8bbe5b1c4956ba7f0bc44681aa35d8fabc01",
+      "server/static/index.html": "46a5ac8d87d4d17fd6b31321860ac258b762a20256a210a10b39df13b490c3fa",
+      "server/static/js/app.js": "09bcd729e448f3da5a683a43ed50ff3c4d566e50b2faac012b8d94842d7c240f",
+      "server/static/js/remote-phone.js": "b6fc04cd654160fedbb1ad2d369af3d21cc3883891306c582e625ff211ca9dd7",
+      "server/static/js/render-lifecycle.js": "76c3b2909d8aecc311c4eb38b2caacce5f64af4cb4c1cefb824f49913a98c03e",
+      "server/static/js/startup.js": "da386a3be758b0f2e88820e7aed6a405db5516ec2101aa0c237f18d6254dac00",
+      "server/static/js/stitch-ambient.js": "86a799cb9eb0af3389017cde2cbe5ff959d8423d47428e3126a4b993a5c609a8",
+      "server/static/js/td-calendar.js": "88c647cbeb0d12a2324f51d978f045d02f2173b156b4a1934835f01482f2966c",
+      "server/static/js/td.js": "4a34ecf7a5696738909c0e003e9e4796c1c7fda6d09f789408d3184b6a9d2395",
+      "server/static/js/ui-controls.js": "83ef3764fce9e9ce234a03c0d64cf00105061f285972c37ac672e6da571dc8b4",
+      "server/static/js/ui-motion.js": "4c3b0b5b3735083bca13aede627b6f1755c9086dfe2bd118f5668b4261b7259f",
+      "server/static/js/ui-surfaces.js": "fe4cd1ef9156ead8965b66bd590faebaaf1074a6121b94cd6f03ed2960cdd48f",
+      "server/static/js/updates.js": "bfae81f5068d7eb6aa2a795983b62e1b71a09ee4967297688c161298b08181ad",
+      "server/static/js/wechat.js": "cd6f7b5ff6c27d2314a32b9814850a96b5597636eb10d24bb9d5110f7020b839"
+    },
+    "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91"
+  },
+  "windows_computer_use": {
+    "passed": true,
+    "version": "1.4.14",
+    "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+    "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+    "method": "Computer Use @oai/sky actual Windows window; returned accessibility objects and screenshots; isolated built-in synthetic profile",
+    "checks": [
+      "native-final-version-and-original-glass-homepage",
+      "native-sidebar-assistant-opens-three-step-dialog",
+      "native-mandatory-start-message-and-personal-receipt-explained",
+      "native-no-consent-qr-disabled-and-unready-test-receipt-disabled",
+      "native-assistant-student2-selection-keeps-main-student1",
+      "native-fixed-title-close-and-scrollable-glass-body",
+      "native-TD-unlicensed-card-blocks-entry-and-Escape",
+      "native-TD-return-button-restores-regular-classroom",
+      "native-Boya-course-pool-and-selected-count-load",
+      "owned-synthetic-process-exited-by-application-API"
+    ],
+    "native_wechat_green_bound_steps_tested": false,
+    "wechat_green_bound_steps_covered_by_compiled_browser_fixture": true,
+    "real_wechat_sent": false,
+    "real_school_writes": 0,
+    "own_fixture_exited": true,
+    "physical_phone": false
+  },
+  "phone_touch_compiled": {
+    "passed": true,
+    "checks": [
+      "phone-headless-classification-and-device-boundaries",
+      "phone-regular-320-390-430-portrait-and-landscape-fit",
+      "phone-original-menu-labels-focus-backdrop-and-no-requests",
+      "phone-boya-search-tabs-and-filters-retain-semantics",
+      "phone-accounts-login-and-manual-dialog-actions-reachable",
+      "phone-td-locked-gate-remains-locked-and-can-return",
+      "phone-td-rules-calendar-gallery-and-photo-editor-fit",
+      "phone-td-once-confirmed-request-keeps-account-csrf-and-grey-state",
+      "phone-logs-glass-update-and-rotation-keep-controls-available",
+      "phone-actual-desktop-tablet-and-native-contexts-stay-normal",
+      "phone-desktop-and-tablet-geometry-equals-unadapted-page",
+      "phone-startup-preserves-timeline-and-lands-on-visible-header-logo",
+      "compiled-phone-sidebar-assistant-touch",
+      "compiled-phone-three-green-steps-truthful-touch",
+      "compiled-phone-assistant-keyboard-header-fit"
+    ],
+    "method": "Chromium mobile touch emulation (Locator.tap); synthetic WeChat state only",
+    "physical_phone": false,
+    "real_school_writes": 0,
+    "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+    "executable_sha256": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+    "source_test_sha256": "f4e3de03f5eb4b8d3ff3041fa75192adeeba4aa9d8fc083a9b122db1dd4e52fd"
+  },
+  "server": {
+    "application_only": true,
+    "preservation_checks": {
+      "same_host_boot": true,
+      "same_kernel_parameters": true,
+      "other_container_ids_unchanged": true,
+      "ssh_vpn_monitor_active": true,
+      "unrelated_network_auth_files_unchanged": true,
+      "application_healthy": true,
+      "exact_new_image": true,
+      "only_one_application_container": true,
+      "restart_policy": true,
+      "read_only_rootfs": true,
+      "non_root": true,
+      "cpu_memory_pid_caps_unchanged": true,
+      "original_external_volume": true,
+      "exact_official_runtime_source": true,
+      "protected_config_photos_vault_license_unchanged": true,
+      "original_password_file_unchanged": true,
+      "retired_installation_directories_absent": true,
+      "no_new_matching_critical_kernel_events": true,
+      "no_application_restart_loop": true,
+      "health_version": true,
+      "anonymous_api_denied": true,
+      "saved_password_plaintext_equal_in_memory": true,
+      "all_nonpassword_configuration_unchanged": true,
+      "TD_profiles_images_and_groups_preserved": true,
+      "TD_license_accounts_expiries_used_codes_and_binding_preserved": true,
+      "reinstall_staging_removed": true,
+      "no_temporary_acceptance_container": true,
+      "canonical_auth_trusts_only_existing_application_proxy": true,
+      "only_image_and_explicit_proxy_setting_changed_in_compose": true
+    },
+    "direct_browser_checks": [
+      "real-server-glass-management-card",
+      "legacy-management-password-kept-without-invented-recovery",
+      "password-field-retains-login-semantics",
+      "real-server-notice-loads-without-acceptance-or-school-access",
+      "real-server-cookie-bootstrap-reuse",
+      "real-server-refresh-no-splash-or-password-reprompt",
+      "real-server-headless-capability-display",
+      "wechat-binding-requires-explicit-per-student-consent",
+      "new-notification-controls-delivered-with-accessibility",
+      "real-server-phone-css-script-and-original-account-bound-controls",
+      "real-server-phone-terms-actions-fit-without-accepting",
+      "real-server-phone-refresh-reuses-cookie-no-splash",
+      "own-session-logout-keeps-application-running"
+    ],
+    "existing_HTTPS_proxy_browser_checks": [
+      "real-server-glass-management-card",
+      "legacy-management-password-kept-without-invented-recovery",
+      "password-field-retains-login-semantics",
+      "real-server-notice-loads-without-acceptance-or-school-access",
+      "real-server-cookie-bootstrap-reuse",
+      "real-server-refresh-no-splash-or-password-reprompt",
+      "real-server-headless-capability-display",
+      "wechat-binding-requires-explicit-per-student-consent",
+      "new-notification-controls-delivered-with-accessibility",
+      "real-server-phone-css-script-and-original-account-bound-controls",
+      "real-server-phone-terms-actions-fit-without-accepting",
+      "real-server-phone-refresh-reuses-cookie-no-splash",
+      "own-session-logout-keeps-application-running"
+    ],
+    "canonical_auth_and_exact_existing_proxy_trust": true,
+    "latest_accounts_photos_licenses_password_preserved": true,
+    "host_rebooted": false,
+    "host_network_or_other_services_changed": false,
+    "resource_caps_changed": false
+  },
+  "updates": {
+    "passed": true,
+    "real_school_writes": 0,
+    "checks": [
+      {
+        "version": "1.3.9",
+        "platform": "Linux-x86_64",
+        "actual_compiled": true,
+        "official_archive_sha256": "5070c5cb201d0ed2d00d7215113c9137fe2b8215745d4ead9bcc5fe7d178390b",
+        "executable_sha256": "bc0639da1df0e4fffff22ee544d6c0bd8ce7e0b061f9286aa4dd75b1b091a2e3",
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.3.9",
+          "latest_version": "1.4.14",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.14",
+          "checked_at": 1792844132,
+          "automatic_interval_seconds": 86400,
+          "status": "update_available",
+          "message": "发现新版本 v1.4.14",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        },
+        "source_report": "post-publish-linux-update.json"
+      },
+      {
+        "version": "1.4.13",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.4.13",
+          "latest_version": "1.4.14",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.14",
+          "checked_at": 1792844020,
+          "automatic_interval_seconds": 86400,
+          "status": "update_available",
+          "message": "发现新版本 v1.4.14",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        },
+        "platform": "Windows-x64",
+        "source_report": "post-publish-windows-direct-unavailable.json"
+      },
+      {
+        "version": "1.4.14",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.4.14",
+          "latest_version": "1.4.14",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.14",
+          "checked_at": 1792844029,
+          "automatic_interval_seconds": 86400,
+          "status": "up_to_date",
+          "message": "当前已是最新版本",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        },
+        "platform": "Windows-x64",
+        "source_report": "post-publish-windows-direct-unavailable.json"
+      }
+    ],
+    "status": "verified",
+    "scope": "One successful unmodified released binary observation per version; platform recorded per check, no claim every platform/version network path succeeded",
+    "retained_unavailable_observations": [
+      {
+        "version": "1.3.9",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.3.9",
+          "latest_version": null,
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases",
+          "checked_at": 1792844010,
+          "automatic_interval_seconds": 86400,
+          "status": "unavailable",
+          "message": "暂时无法检查更新，请确认网络后重试",
+          "cached": false,
+          "retry_after_seconds": 600,
+          "expected_live_version_verified": false
+        },
+        "platform": "Windows-x64",
+        "source_report": "post-publish-windows-direct-unavailable.json"
+      }
+    ],
+    "unmodified_released_clients": true,
+    "all_owned_processes_exited": true
+  },
+  "old_releases": {
+    "passed": true,
+    "checks": [
+      {
+        "id": 420440621,
+        "tag": "v1.4.11",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 422226357,
+        "tag": "v1.4.13",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 421561760,
+        "tag": "v1.4.12",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 419936476,
+        "tag": "v1.4.10",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 416690979,
+        "tag": "v1.3.9",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 415982295,
+        "tag": "v1.3.8",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 412406275,
+        "tag": "v1.2.7",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388930110,
+        "tag": "v1.2.6",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388402178,
+        "tag": "v1.2.5",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 387973739,
+        "tag": "v1.2.2",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 386902450,
+        "tag": "v1.2.0",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      }
+    ]
+  },
+  "local": {
+    "passed": true,
+    "version": "1.4.14",
+    "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+    "formally_published": false,
+    "files": {
+      "BUAA-Signin.exe": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+      "BUAA-Signin-v1.4.14-portable.exe": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+      "dist/BUAA-Signin.exe": "80440e03dc9dd1a9db3530bb96c9fcb6910c100587b480842414d79af6fa6d91",
+      "BUAA-Signin-Setup-v1.4.14.exe": "53a2f3dcd18c00f11334632263c4386d57ace0baaa801a726cdb17b62e371145",
+      "dist_installer/BUAA-Signin-Setup-v1.4.14.exe": "53a2f3dcd18c00f11334632263c4386d57ace0baaa801a726cdb17b62e371145"
+    },
+    "pending_locked_files": [],
+    "configuration_preserved_during_replacement": true,
+    "configuration_copied": false,
+    "existing_user_processes_terminated": false,
+    "issuer_unchanged": true
+  },
+  "privacy_passed": true,
+  "preupload_requirements_audit": {
+    "passed": true,
+    "version": "1.4.14",
+    "commit": "68b560258dee6a334036aabb2b0132c2be52f4ac",
+    "checks": [
+      {
+        "requirement": "README首屏自动TD（Beta）及微信助手突出",
+        "evidence": "canonical README.md and synthetic assistant image; final source/archive integrity"
+      },
+      {
+        "requirement": "侧栏微信助手、学生独立选择、保留风格",
+        "evidence": "117 browser contracts; actual final native window and compiled touch checks"
+      },
+      {
+        "requirement": "明显三步：扫码、发送开始接收、本人确认收信；绿字对勾",
+        "evidence": "binding/context/user-checkbox boundaries verified; API accepted never means received"
+      },
+      {
+        "requirement": "可选独立课前约15分钟提醒、课程教师时间地点校历周",
+        "evidence": "17 actual embedded reminder contracts each platform; deadline/idempotence/failure/independent-reader coverage"
+      },
+      {
+        "requirement": "全部学生后台独立，查看学生不决定任务归属，博雅缓存保留",
+        "evidence": "prior1413 completed audit plus current440 source/117 browser/installed service regression; new reminder reader ignores active student"
+      },
+      {
+        "requirement": "TD队列/安全窗/配对/共享预算/不确定不重放保持",
+        "evidence": "102 actual embedded TD contracts per platform; no real school writes"
+      },
+      {
+        "requirement": "原SSO/网络退避/人工验证码暂停与空课日窄修复保持",
+        "evidence": "30 embedded network contracts and full source regressions; no real CAPTCHA solved"
+      },
+      {
+        "requirement": "无头管理初始化及恢复、原服务器密码保持",
+        "evidence": "source/compiled7 setup and13 management flows; live IP and trusted proxy login/logout; .env hash unchanged"
+      },
+      {
+        "requirement": "手机专用布局、平板/桌面原排布与玻璃风格保持",
+        "evidence": "117 browser checks and15 final compiled touch checks plus screenshots; not physical Safari"
+      },
+      {
+        "requirement": "服务器清理重装已完成，不重复破坏数据；最新版仅应用更新",
+        "evidence": "prior clean reinstall handoff; current new program/profile rollback backup, existing volume/account/photo/license/password preservation audit"
+      },
+      {
+        "requirement": "各客户端、实际内嵌代码、安装服务容器及隐私/源码一致",
+        "evidence": "four same-commit CI jobs, release-gate/final-integrity/artifact-privacy"
+      },
+      {
+        "requirement": "发布前核对全部旧对话需求与新增消息",
+        "evidence": "prior complete conversation audit REQUIREMENTS_AUDIT_20261024.md, current V1414_PENDING and this explicit new-requirements audit"
+      },
+      {
+        "requirement": "额度剩余45%停止；本窗口用户继续例外，重置后恢复",
+        "evidence": "private progress current-window exception tied to reset1792839769"
+      }
+    ],
+    "previous_completed_work_not_replayed": true,
+    "all_in_scope_prepublication_gates_passed": true,
+    "new_real_wechat_reminder_receipt_verified": false,
+    "prior_v1413_actual_receipt_confirmed": true,
+    "school_real_writes": 0,
+    "remaining_external_conditions": [
+      "Reliable read-only TD count API and current complete official autumn rules/temporary closures",
+      "Actual user Mac third-party TUN root cause and real school acceptance",
+      "Physical phone Safari and user multi-platform reboot/long-term hardware stability",
+      "Owner independent-media encrypted private-key backup",
+      "GitHub contributor sidebar cache"
+    ],
+    "post_publication_required": [
+      "15 assets and Latest digest verification",
+      "Actual139/1413/1414 anonymous update detection",
+      "Prior9 formal+1pre+1draft preserved",
+      "Final handoff owner-only commit/privacy/push and clean Git verification"
+    ]
+  },
+  "wechat": {
+    "prior_v1413_user_confirmed_actual_test_receipt": true,
+    "new_reminder_real_receipt_verified": false,
+    "new_embedded_reminder_contracts_per_platform": 17,
+    "no_agent_execution_or_school_commands": true
+  },
+  "real_school_business_writes": 0
+}
