@@ -28,7 +28,10 @@ def main():
         # Re-install must also preserve preexisting data.
         subprocess.run(argv,check=True,timeout=120)
         assert config.exists() and unrelated.exists()
-        subprocess.run([sys.executable,str(Path(__file__).with_name("verify_compiled.py")),"--executable",str(installed),"--report-dir",str(Path(args.report_dir)/"installed"),"--native"],check=True,timeout=240)
+        # The child permits up to600s for the full browser suite and100s for
+        # native verification. Give it time to finish its authenticated cleanup;
+        # a shorter parent deadline kills the driver while its owned EXE is open.
+        subprocess.run([sys.executable,str(Path(__file__).with_name("verify_compiled.py")),"--executable",str(installed),"--report-dir",str(Path(args.report_dir)/"installed"),"--native"],check=True,timeout=900)
         registration_tested=False
         if os.environ.get('GITHUB_ACTIONS')=='true':
             import winreg
