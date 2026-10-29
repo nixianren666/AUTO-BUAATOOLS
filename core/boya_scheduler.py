@@ -175,14 +175,14 @@ class BoyaScheduler:
         self._workers = None
         self._warnings = {}
 
-    def _warn_course(self, acc, cid, action, message):
+    def _warn_course(self, acc, cid, action, message, level="warning"):
         key=(acc.username,cid,action)
         if self._warnings.get(key)==message:
             return
         if len(self._warnings)>=512:
             self._warnings.pop(next(iter(self._warnings)))
         self._warnings[key]=message
-        self.add_log("warning",message,username=acc.username,user_name=acc.name,category="boya")
+        self.add_log(level,message,username=acc.username,user_name=acc.name,category="boya")
 
     def start(self, interval_seconds=60):
         with self._lifecycle:
@@ -349,7 +349,12 @@ class BoyaScheduler:
                 if result.get("pending_verification"):
                     break
             except (BoyaApiError, BoyaSessionExpired) as exc:
-                self._warn_course(acc,course_id(course),"select","本门选课暂未执行：" + str(exc))
+                if isinstance(exc,BoyaApiError) and exc.code=="target_filled":
+                    self._warnings.pop((acc.username,course_id(course),"select"),None)
+                    self._warn_course(acc,"category:"+get_course_category(course),"select-normal",
+                        "本类别已完成或已有足够预约，已按设置停止额外抢选。",level="info")
+                else:
+                    self._warn_course(acc,course_id(course),"select","本门选课暂未执行：" + str(exc))
             except Exception as exc:
                 self._warn_course(acc,course_id(course),"select","本门选课异常：" + type(exc).__name__)
 

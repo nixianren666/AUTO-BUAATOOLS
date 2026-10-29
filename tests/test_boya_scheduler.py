@@ -27,6 +27,21 @@ class DummyBoyaAccount:
         self.boya_health = {}
 
 class TestBoyaScheduler(unittest.TestCase):
+    def test_target_filled_is_deduplicated_normal_state_but_real_failures_still_warn(self):
+        from core.boya_client import BoyaApiError, BoyaSessionExpired
+        acc=DummyBoyaAccount();acc.boya_all_courses=[valid_course(10020,"德育"),valid_course(10021,"德育")]
+        acc.boya_client.semester_info={"semesterStartDate":"2026-08-31","semesterEndDate":"2027-01-03"}
+        logs=[];scheduler=BoyaScheduler(lambda:[acc],lambda level,message,**kw:logs.append((level,message,kw)))
+        scheduler.clock=lambda:datetime(2026,10,29,9)
+        with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=BoyaApiError('target_filled','本类别已完成或已有足够预约')):
+            scheduler._check_auto_select(acc,scheduler.clock());scheduler._check_auto_select(acc,scheduler.clock())
+        self.assertEqual(len(logs),1);self.assertEqual(logs[0][0],'info')
+        self.assertNotIn('BoyaError',logs[0][1]);self.assertEqual(logs[0][2]['username'],acc.username)
+        for failure in (BoyaApiError('unavailable','名额已满'),BoyaSessionExpired('需要重新认证')):
+            with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=failure):
+                scheduler._check_auto_select(acc,scheduler.clock())
+        self.assertTrue(all(level=='warning' for level,_,_ in logs[1:]));self.assertEqual(len(logs),5)
+
     def setUp(self):
         ledger = operations.OperationLedger()
         self.ledger_patch = patch("core.operations.ledger", ledger)
