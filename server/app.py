@@ -164,6 +164,7 @@ def add_log(
     username: Optional[str] = None,
     user_name: Optional[str] = None,
     category: str = "regular",
+    notify: bool = True,
 ):
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
     entry = {
@@ -178,7 +179,7 @@ def add_log(
     if len(logs_list) > 1000:
         logs_list.pop(0)
     notifications = globals().get('wechat_notifications')
-    if notifications:
+    if notifications and notify:
         notifications.offer(entry)
 
 

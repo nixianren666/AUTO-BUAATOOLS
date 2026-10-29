@@ -78,6 +78,12 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
     with account_lock(account):
         if not active():
             raise BoyaApiError("cancelled", "账号或任务已停止")
+        if action == "drop":
+            # Persist intent before any school request, including a stale/no-op
+            # drop. A timeout or restart must never allow an automatic regrab.
+            operations.ledger.exclude_auto_select(account.username,cid)
+        if action == "select" and automatic and operations.ledger.auto_select_excluded(account.username,cid):
+            raise BoyaApiError("user_declined", "此课程曾被退选或从官方已选中移除，不再自动抢选；需要时请自行手动选择")
         client = account.boya_client
         if not client.is_authenticated() and (renew is None or not renew(account)):
             raise BoyaSessionExpired("请重新认证")
@@ -89,6 +95,8 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             selected = client.query_chosen_courses()
         account.boya_selected_courses = selected
         reconcile_official(account, selected)
+        if action == "select" and automatic and operations.ledger.auto_select_excluded(account.username,cid):
+            raise BoyaApiError("user_declined", "此课程曾被退选或从官方已选中移除，不再自动抢选；需要时请自行手动选择")
         pool = account.boya_all_courses or []
         course = next((c for c in selected if course_id(c) == cid), None)
         def group(api, kind=""):
@@ -96,6 +104,10 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
         if action == "select" and course is not None:
             operations.ledger.settle_group(group("choseCourse"))
             return {"status": "success", "submitted": False, "officially_confirmed": True}
+        if action == "select" and not automatic and operations.ledger.auto_select_excluded(account.username,cid):
+            # A new explicit user choice plus fresh official absence can retire
+            # old confirmed claims, never pending/uncertain writes or budgets.
+            operations.ledger.forget_group_confirmed(group("choseCourse"))
         if action == "drop" and course is None:
             return {"status": "success", "submitted": False, "officially_confirmed": True}
         if action == "sign" and course is None:
@@ -153,6 +165,8 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             if action == "sign":
                 return attendance_allowed(course, sign_type, now())
             if action == "select":
+                if automatic and operations.ledger.auto_select_excluded(account.username,cid):
+                    raise BoyaApiError("user_declined", "此课程已停止自动抢选，保留用户退课意图")
                 return in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()) and (not automatic or is_auto_select_candidate(course, now(), getattr(account, "campus", "北京")))
             return drop_allowed(course, now())
         previous_guard = client.request_guard

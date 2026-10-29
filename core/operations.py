@@ -18,6 +18,8 @@ class OperationLedger:
         self.db.execute("CREATE TABLE IF NOT EXISTS operation_groups (key TEXT PRIMARY KEY, group_key TEXT)")
         self.db.execute("CREATE INDEX IF NOT EXISTS group_lookup ON operation_groups(group_key)")
         self.db.execute("CREATE TABLE IF NOT EXISTS reservations (user_key TEXT, cid INTEGER, data TEXT, PRIMARY KEY(user_key,cid))")
+        self.db.execute("CREATE TABLE IF NOT EXISTS boya_auto_exclusions (user_key TEXT, cid INTEGER, reason TEXT, PRIMARY KEY(user_key,cid))")
+        self.db.execute("CREATE TABLE IF NOT EXISTS boya_selected_snapshots (scope_key TEXT, cid INTEGER, PRIMARY KEY(scope_key,cid))")
         self.db.commit()
         self._last_prune = time.monotonic()
 
@@ -125,6 +127,40 @@ class OperationLedger:
         with self.lock:
             self.db.execute("DELETE FROM reservations WHERE user_key=? AND cid=?",(self.key(user,"reservation","",""),cid))
             self.db.commit()
+
+    def exclude_auto_select(self, user, cid, reason="manual_drop"):
+        """User intent is monotonic: fresh capacity or a restart cannot undo it."""
+        with self.lock:
+            try:
+                self.db.execute("INSERT OR IGNORE INTO boya_auto_exclusions VALUES (?,?,?)",(self.key(user,"boya-auto-exclusion","",""),int(cid),reason))
+                self.db.commit()
+            except BaseException:
+                self.db.rollback();raise
+
+    def auto_select_excluded(self, user, cid):
+        with self.lock:
+            return self.db.execute("SELECT 1 FROM boya_auto_exclusions WHERE user_key=? AND cid=?",(self.key(user,"boya-auto-exclusion","",""),int(cid))).fetchone() is not None
+
+    def observe_selected(self, user, scope, ids):
+        """Only a fully validated official list may replace the same query scope.
+
+        Disappearance does not prove why a course was removed. It conservatively
+        forbids auto re-enrollment; explicit manual selection remains available.
+        """
+        ids=set(ids);scope_key=self.key(user,"boya-selected-snapshot","",scope)
+        owner=self.key(user,"boya-auto-exclusion","","")
+        with self.lock:
+            self.db.execute("BEGIN IMMEDIATE")
+            try:
+                previous={r[0] for r in self.db.execute("SELECT cid FROM boya_selected_snapshots WHERE scope_key=?",(scope_key,))}
+                if previous==ids:
+                    self.db.commit();return
+                self.db.executemany("INSERT OR IGNORE INTO boya_auto_exclusions VALUES (?,?,?)",[(owner,cid,"official_removed") for cid in previous-ids])
+                self.db.execute("DELETE FROM boya_selected_snapshots WHERE scope_key=?",(scope_key,))
+                self.db.executemany("INSERT INTO boya_selected_snapshots VALUES (?,?)",[(scope_key,cid) for cid in ids])
+                self.db.commit()
+            except BaseException:
+                self.db.rollback();raise
 
 ledger = OperationLedger()
 

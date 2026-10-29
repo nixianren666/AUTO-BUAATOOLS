@@ -37,10 +37,14 @@ class TestBoyaScheduler(unittest.TestCase):
             scheduler._check_auto_select(acc,scheduler.clock());scheduler._check_auto_select(acc,scheduler.clock())
         self.assertEqual(len(logs),1);self.assertEqual(logs[0][0],'info')
         self.assertNotIn('BoyaError',logs[0][1]);self.assertEqual(logs[0][2]['username'],acc.username)
+        self.assertIs(logs[0][2]['notify'],False)
+        with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=BoyaApiError('user_declined','用户已放弃本门课程')):
+            scheduler._check_auto_select(acc,scheduler.clock());scheduler._check_auto_select(acc,scheduler.clock())
+        self.assertEqual(len(logs),3);self.assertTrue(all(x[0]=='info' and x[2]['notify'] is False for x in logs))
         for failure in (BoyaApiError('unavailable','名额已满'),BoyaSessionExpired('需要重新认证')):
             with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=failure):
                 scheduler._check_auto_select(acc,scheduler.clock())
-        self.assertTrue(all(level=='warning' for level,_,_ in logs[1:]));self.assertEqual(len(logs),5)
+        self.assertTrue(all(level=='warning' for level,_,_ in logs[3:]));self.assertEqual(len(logs),7)
 
     def setUp(self):
         ledger = operations.OperationLedger()

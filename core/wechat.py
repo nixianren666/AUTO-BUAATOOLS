@@ -140,7 +140,7 @@ class WechatNotifications:
 
     def offer(self, entry):
         # Called by arbitrary school scheduler threads: never perform I/O here.
-        if not entry.get('username') or self.closed:return
+        if not entry.get('username') or self.closed or entry.get('notify') is False:return
         binding=self.bindings.get(entry['username'])
         if not binding or not binding.get('enabled'):return
         safe={k:str(entry.get(k,''))[:2048] for k in ('username','level','category','message','time')}

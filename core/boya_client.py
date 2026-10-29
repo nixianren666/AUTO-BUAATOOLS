@@ -351,12 +351,17 @@ class BoyaClient:
             raise BoyaApiError("protocol_error", "缺少官方已选课程数据")
         result = []
         for item in data["courseList"]:
+            if not isinstance(item,dict) or not isinstance(item.get("courseInfo") or {},dict):
+                raise BoyaApiError("protocol_error", "已选课程条目格式异常")
             info = item.get("courseInfo") or {}
             cid = course_id({"courseInfo": info, "courseId": item.get("courseId")})
             if cid is None:
                 raise BoyaApiError("protocol_error", "已选课程缺少本体ID")
             merged = {**info, **item, "id": cid, "courseId": cid, "chosenCourseId": item.get("id"), "selected": True}
             result.append(merged)
+        if self.operation_user:
+            from core import operations
+            operations.ledger.observe_selected(self.operation_user, [str(start_date),str(end_date)], {course_id(c) for c in result})
         return result
 
     def query_statistics(self) -> Dict[str, Any]:
