@@ -36,7 +36,7 @@ def seed(backend):
         account.client.user_info = {"schoolid": username, "name": account.name}
         account.client.user_id = "fixture-user-" + str(index)
         account.client.session_id = "fixture-session-" + str(index)
-        classes = [{"id": "100" + str(index), "courseSchedId": "100" + str(index), "courseName": "模拟常规课堂 " + str(index), "classBeginTime": text(timedelta(minutes=5)), "classEndTime": text(timedelta(minutes=65)), "signStatus": 0, "classroomName": "模拟教室", "teacherName": "模拟教师"}]
+        classes = [{"id": "100" + str(index), "courseSchedId": "100" + str(index), "courseId":"9001", "courseName": "模拟常规课堂 " + str(index), "classBeginTime": text(timedelta(minutes=5)), "classEndTime": text(timedelta(minutes=65)), "signStatus": 0, "classroomName": "模拟教室", "teacherName": "模拟教师"}]
         chosen = [dict(pool[0]),dict(pool[1])]
         def regular(request, classes=classes):
             if "get_timestamp" in request.url.path:

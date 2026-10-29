@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
+from core.boya_auto_rules import permanently_excluded
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,7 @@ def capacity_values(course):
     return current, maximum
 
 def is_auto_select_candidate(course, now, campus="北京", require_auto_sign=True):
+    if permanently_excluded(course):return False
     if not course_id(course) or not course_matches_campus(course, campus):
         return False
     if get_course_category(course) not in REQUIREMENTS or not autonomous(course, require_windows=True):
@@ -354,7 +356,7 @@ class BoyaScheduler:
                     self._warnings.pop((acc.username,course_id(course),"select"),None)
                     self._warn_course(acc,"category:"+get_course_category(course),"select-normal",
                         "本类别已完成或已有足够预约，已按设置停止额外抢选。",level="info",notify=False)
-                elif isinstance(exc,BoyaApiError) and exc.code=="user_declined":
+                elif isinstance(exc,BoyaApiError) and exc.code in ("user_declined","permanently_excluded"):
                     self._warn_course(acc,course_id(course),"select-declined",exc.message,level="info",notify=False)
                 else:
                     self._warn_course(acc,course_id(course),"select","本门选课暂未执行：" + str(exc))

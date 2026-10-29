@@ -182,7 +182,13 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
                 for _ in range(3):
                     result = await backend.get_today_classes(username=self.acc.username)
                     self.assertTrue(result['stale'])
-                    self.assertEqual(result['classes'], self.cache)
+                    self.assertEqual(
+                        [{key: value for key, value in row.items() if key != 'auto_course'}
+                         for row in result['classes']], self.cache)
+                    self.assertEqual(result['classes'][0]['auto_course'], {
+                        'supported': False, 'paused': False,
+                        'semester_known': False, 'storage_error': False})
+                    self.assertEqual(self.acc.last_classes, self.cache)
                     self.assertTrue(self.acc.regular_health['stale'])
                     self.assertEqual(self.acc.boya_client.token, 'synthetic-boya-token')
         reconnect.assert_not_awaited()

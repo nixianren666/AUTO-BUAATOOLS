@@ -431,6 +431,7 @@ class IclassClient:
                             "id": c_sched_id,
                             "courseSchedId": c_sched_id,
                             "courseId": c_id,
+                            "courseIdentityKnown": type(item.get("courseId")) in (str,int) and bool(str(item.get("courseId")).strip()) and str(item.get("courseId"))!='0',
                             "courseName": str(item.get("courseName") or "未知课程"),
                             "classBeginTime": begin_time,
                             "classEndTime": end_time,

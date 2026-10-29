@@ -23,6 +23,7 @@ from typing import Literal, Annotated
 import tempfile
 from core.version import VERSION
 from core import operations
+from core.regular_course_policy import decorate as decorate_regular_classes, set_pause as set_regular_course_pause, subject_id as regular_subject_id
 from core.domain import now as china_now, course_id, course_times, sign_config, autonomous, attendance_allowed, drop_allowed, within_semester, semester_bounds, REQUIREMENTS
 from core.boya_actions import perform_boya_action, merge_selected, account_lock
 from server.management import install as install_management
@@ -181,6 +182,31 @@ def add_log(
     notifications = globals().get('wechat_notifications')
     if notifications and notify:
         notifications.offer(entry)
+
+def note_regular_refresh(acc,classes=None,error=None):
+    """Deduplicate notices only; never caches reads or changes scheduler cadence."""
+    import hashlib
+    previous=getattr(acc,'regular_refresh_notice',None)
+    day=china_now().date().isoformat()
+    if error:
+        signature=('error',day,error)
+        if previous==signature:return
+        acc.regular_refresh_notice=signature
+        add_log('error',f'【{acc.name}】获取常规课程课表失败: {error}，保留上次成功数据',username=acc.username,user_name=acc.name,category='regular')
+        return
+    rows=[]
+    for c in classes or []:
+        rows.append([str(c.get('courseSchedId') or c.get('id') or ''),*[str(c.get(k) or '') for k in ('courseId','courseName','classBeginTime','classEndTime','classroom','classroomName','roomName','teacherName','teacher')],str(c.get('signStatus'))])
+    fingerprint=hashlib.sha256(json.dumps(sorted(rows),ensure_ascii=False).encode()).hexdigest()
+    signature=('ok',day,fingerprint)
+    if previous==signature:return
+    acc.regular_refresh_notice=signature
+    count=len(classes or [])
+    if previous and previous[0]=='error':message=f'常规课表同步已恢复，共 {count} 门课。'
+    elif not count:message='今日常规课程暂无排课或无需签到。'
+    elif previous and previous[:2]==('ok',day):message=f'今日课表有更新，共 {count} 门课。'
+    else:message=f'今日课表已同步，共 {count} 门课。'
+    add_log('info',f'【{acc.name}】'+message,username=acc.username,user_name=acc.name,category='regular')
 
 
 class AccountState:
@@ -431,6 +457,34 @@ class ModeRequest(BaseModel):
 class SigninRequest(BaseModel):
     course_id: str = Field(pattern=r"^[1-9][0-9]*$")
     username: Optional[str] = None
+
+class RegularCoursePolicyRequest(BaseModel):
+    username: str = Field(min_length=1,max_length=128,strict=True)
+    course_sched_id: str = Field(pattern=r"^[1-9][0-9]*$",strict=True)
+    paused: StrictBool
+
+@app.get('/api/classes/auto-policy')
+async def get_regular_course_policy(username: Optional[str] = None):
+    acc=resolve_account(username)
+    if not acc:raise HTTPException(404,'指定学生不存在')
+    return {'username':acc.username,'classes':decorate_regular_classes(acc,acc.last_classes or [])}
+
+@app.post('/api/classes/auto-policy')
+async def update_regular_course_policy(req: RegularCoursePolicyRequest):
+    from fastapi.responses import JSONResponse
+    acc=resolve_account(req.username)
+    if not acc:raise HTTPException(404,'指定学生不存在')
+    course=next((c for c in (acc.last_classes or []) if str(c.get('courseSchedId') or c.get('id'))==req.course_sched_id),None)
+    if not course or not regular_subject_id(course):raise HTTPException(409,'课程标识尚未同步，暂不能按整门课设置')
+    try:
+        set_regular_course_pause(acc,course,req.paused)
+    except ValueError as exc:
+        return JSONResponse(status_code=503,content={'detail':str(exc),'username':acc.username,'classes':decorate_regular_classes(acc,acc.last_classes or [])})
+    if req.paused:
+        for key in list(scheduler.planned_targets):
+            if key[0]==acc.username and any(str(c.get('courseSchedId') or c.get('id'))==key[1] and regular_subject_id(c)==regular_subject_id(course) for c in acc.last_classes or []):scheduler.planned_targets.pop(key,None)
+    add_log('info','已暂停本学期这门课的自动签到；其他课程和手动签到保持。' if req.paused else '已恢复这门课参与自动签到，仍受学生/总开关与原时间窗约束。',username=acc.username,notify=False)
+    return {'status':'ok','username':acc.username,'classes':decorate_regular_classes(acc,acc.last_classes or [])}
 
 
 class AutoCheckinRequest(BaseModel):
@@ -694,7 +748,7 @@ async def switch_account(req: SwitchAccountRequest):
     return {
         "status": "ok",
         "active_account": target_acc.to_dict(is_active=True),
-        "classes": target_acc.last_classes or [],
+        "classes": decorate_regular_classes(target_acc,target_acc.last_classes or []),
         "boya_selected": enrich_selected_courses(target_acc.boya_selected_courses or [], target_acc.boya_all_courses or []),
         "boya_courses": enrich_pool(target_acc.boya_all_courses or []),
         "boya_statistics": compute_semester_statistics(target_acc.boya_selected_courses or [], target_acc.boya_statistics or {}),
@@ -944,7 +998,7 @@ async def get_today_classes(username: Optional[str] = None):
         return {
             "status": "stale",
             "stale": True,
-            "classes": curr.last_classes or [],
+            "classes": decorate_regular_classes(curr,curr.last_classes or []),
             "username": curr.username,
             "name": curr.name,
             "offline": True,
@@ -955,11 +1009,8 @@ async def get_today_classes(username: Optional[str] = None):
         curr.last_classes = classes
         curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
         curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
-        if classes:
-            add_log("info", f"【{curr.name}】今日课表刷新完成，共 {len(classes)} 门课。", username=curr.username, user_name=curr.name, category="regular")
-        else:
-            add_log("info", f"【{curr.name}】今日常规课程暂无排课或无需签到。", username=curr.username, user_name=curr.name, category="regular")
-        return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
+        note_regular_refresh(curr,classes)
+        return {"status": "success", "classes": decorate_regular_classes(curr,classes), "username": curr.username, "name": curr.name}
     except Exception as e:
         logger.debug(f"Fetch classes error: {type(e).__name__}")
         # A tunnel/DNS/read failure is not evidence of expired authentication.
@@ -972,12 +1023,13 @@ async def get_today_classes(username: Optional[str] = None):
                     curr.last_classes = classes
                     curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
                     curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
-                    return {"status": "success", "classes": classes, "username": curr.username, "name": curr.name}
+                    note_regular_refresh(curr,classes)
+                    return {"status": "success", "classes": decorate_regular_classes(curr,classes), "username": curr.username, "name": curr.name}
             except Exception:
                 pass
-        add_log("error", f"【{curr.name}】获取常规课程课表失败: {type(e).__name__}", username=curr.username, user_name=curr.name, category="regular")
+        note_regular_refresh(curr,error=type(e).__name__)
         curr.regular_health = {**curr.regular_health, "stale": True, "error": type(e).__name__}
-        return {"status": "stale", "stale": True, "classes": curr.last_classes or [], "username": curr.username, "name": curr.name, "message": "课表未同步，显示上次成功数据"}
+        return {"status": "stale", "stale": True, "classes": decorate_regular_classes(curr,curr.last_classes or []), "username": curr.username, "name": curr.name, "message": "课表未同步，显示上次成功数据"}
 
 
 
@@ -1085,12 +1137,15 @@ def enrich_selected_courses(selected_list, pool_list):
     return result
 
 def enrich_pool(courses):
+    from core.boya_auto_rules import permanently_excluded
     from core.boya_scheduler import capacity_values, capacity_available, get_course_category
     result=[]
     for raw in courses:
         c=dict(raw)
         current,maximum=capacity_values(c)
         c["category_key"] = get_course_category(c)
+        c['automatic_selection_excluded']=permanently_excluded(c)
+        c['automatic_selection_exclusion_reason']='“耕趣农场”系列永久不参与自动抢选；手动选课不受此规则影响' if permanently_excluded(c) else ''
         valid=lambda value: not isinstance(value,bool) and str(value).isdigit()
         c.update({"capacity_current":int(current) if valid(current) else None,"capacity_maximum":int(maximum) if valid(maximum) and int(maximum)>0 else None,"capacity_available":capacity_available(c),"autonomous_config_valid":autonomous(c,require_windows=True)})
         result.append(c)

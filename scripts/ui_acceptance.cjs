@@ -55,6 +55,7 @@ const fs = require('node:fs');
       assert.equal(await page.evaluate(() => document.body.scrollWidth <= innerWidth + 2),true);
       await page.setViewportSize({width:1280,height:840});
     });
+    await require('./regular_course_policy_acceptance.cjs').verify(page,browser,url,check);
     await check('boya-tab-matches-displayed-data', async () => {
       await page.locator('#navBtnBoya').click();
       await page.waitForFunction(() => appState.boyaCourses.length === 4);

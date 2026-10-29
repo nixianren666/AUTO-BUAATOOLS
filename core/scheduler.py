@@ -131,6 +131,12 @@ class SigninScheduler:
         if not cid.isdigit() or int(cid) <= 0:
             return
         key = (item["username"], cid, current.date().isoformat())
+        from core.regular_course_policy import allowed as course_auto_allowed
+        account_allowed=allowed
+        allowed=lambda:account_allowed() and course_auto_allowed(item.get('account'),course,self.clock(),item['username'])
+        if not allowed():
+            self.planned_targets.pop(key,None)
+            return
         if str(course.get("signStatus")) == "1":
             self.signed_courses.add(key)
             return

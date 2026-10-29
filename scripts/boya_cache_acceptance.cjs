@@ -18,6 +18,9 @@ exports.verifyBoyaCache=async(page,check)=>{
       catch(error){throw new Error(error.message+' '+JSON.stringify(await page.evaluate(()=>({user:appState.activeUsername,pool:appState.boyaCourses.length,selected:appState.boyaSelected.length,reads:[...boyaReads.keys()],toast:document.querySelector('#toastContainer')?.textContent}))));}
       assert.equal(await page.locator('#countBoyaAll').textContent(),'4');
       assert.equal(await page.locator('#countBoyaSelected').textContent(),'2');
+      // A prior visit may make the cache visible before the switch API returns.
+      // Independently wait for the deliberately held refresh to start.
+      await page.waitForFunction(()=>boyaReads.size>0);
       assert.equal(await page.evaluate(()=>boyaReads.size>0),true);
     }finally{release();await Promise.all([...pending]);await page.unroute(pattern,handler);}
     await page.waitForFunction(()=>boyaReads.size===0);

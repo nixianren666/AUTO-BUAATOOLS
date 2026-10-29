@@ -1257,6 +1257,11 @@ html, body {
   padding-top: 4px;
 }
 
+.regular-course-policy {display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border-light,rgba(255,255,255,.1));}
+.regular-policy-caption {font-size:12px;color:var(--text-muted);flex:1 1 170px;overflow-wrap:anywhere;}
+.regular-course-policy .origin-btn {min-height:44px;white-space:normal;max-width:100%;}
+.regular-course-policy [aria-pressed="true"] {color:var(--text-secondary);}
+
 /* Empty State Card */
 .origin-empty-state {
   grid-column: 1 / -1;

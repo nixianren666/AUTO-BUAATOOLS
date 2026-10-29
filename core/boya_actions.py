@@ -124,6 +124,9 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             if not capacity_available(course) or not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()):
                 raise BoyaApiError("unavailable", "名额未知/已满或不在官方选课窗口")
             if automatic:
+                from core.boya_auto_rules import permanently_excluded
+                if permanently_excluded(course):
+                    raise BoyaApiError("permanently_excluded", "本课程属于永久排除的“耕趣农场”系列，不参与自动抢选")
                 info = client.semester_info or client.current_semester()
                 if not within_semester(course, info) or not is_auto_select_candidate(course, now(), getattr(account, "campus", "北京")):
                     raise BoyaApiError("unsafe_auto", "不满足本学期线上自主考勤抢选契约")
@@ -165,6 +168,9 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             if action == "sign":
                 return attendance_allowed(course, sign_type, now())
             if action == "select":
+                if automatic:
+                    from core.boya_auto_rules import permanently_excluded
+                    if permanently_excluded(course):raise BoyaApiError("permanently_excluded", "本课程属于永久排除的“耕趣农场”系列，不参与自动抢选")
                 if automatic and operations.ledger.auto_select_excluded(account.username,cid):
                     raise BoyaApiError("user_declined", "此课程已停止自动抢选，保留用户退课意图")
                 return in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()) and (not automatic or is_auto_select_candidate(course, now(), getattr(account, "campus", "北京")))

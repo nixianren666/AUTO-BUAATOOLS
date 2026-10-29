@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.4.14 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.4.15 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -225,9 +225,9 @@ async function apiFetch(input, options = {}) {
   }
   if (!response.ok) {
     if (response.status === 401) managementSession = null;
-    if (url.pathname.startsWith('/api/td/') || url.pathname.startsWith('/api/wechat/')) {
+    if (url.pathname.startsWith('/api/td/') || url.pathname.startsWith('/api/wechat/') || url.pathname==='/api/classes/auto-policy') {
       const failure = await response.json().catch(() => ({}));
-      throw new Error(typeof failure.detail === 'string' ? failure.detail : 'TD 参数或请求无效，请核对设置');
+      const error=new Error(typeof failure.detail === 'string' ? failure.detail : '参数或请求无效，请核对设置');error.data=failure;throw error;
     }
     throw new Error("应用请求未完成（" + response.status + "）");
   }
@@ -244,7 +244,7 @@ document.addEventListener("click", event => {
   if (!target || target.disabled) return;
   const action = target.dataset.action;
   const id = target.dataset.id;
-  const handlers = { wechat: () => window.BUAAWechat?.open(id), regularSign: () => manualSignIn(id), select: () => selectBoyaCourse(id), drop: () => dropBoyaCourse(id), sign: () => boyaSign(id, 1), signout: () => boyaSign(id, 2), switchAccount: () => switchStudentAccount(id), deleteAccount: () => deleteAccount(id) };
+  const handlers = { regularAutoPolicy:()=>toggleRegularCoursePolicy(id), wechat: () => window.BUAAWechat?.open(id), regularSign: () => manualSignIn(id), select: () => selectBoyaCourse(id), drop: () => dropBoyaCourse(id), sign: () => boyaSign(id, 1), signout: () => boyaSign(id, 2), switchAccount: () => switchStudentAccount(id), deleteAccount: () => deleteAccount(id) };
   if (handlers[action]) { event.preventDefault(); event.stopPropagation(); handlers[action](); }
 });
 
@@ -520,16 +520,49 @@ async function fetchClasses(isSilent = false) {
       appState.classes = data.classes;
       renderClassesList(data.classes);
     }
+    return data;
   } catch (e) {
     if (!isSilent) console.error("fetchClasses error:", e);
   }
 }
 
-function refreshCurrentStudentClasses() {
+async function refreshCurrentStudentClasses() {
+  const owner=appState.activeUsername,gen=viewGeneration;
   showToast("正在拉取今日最新课堂日程...", "info");
-  fetchClasses();
+  const data=await fetchClasses(true);
+  if(!viewStillCurrent(owner,gen))return;
+  if(data?.status==='success'&&!data.stale&&!data.offline)showToast('课表已同步，未变化的内容不会重复记日志。','success');
+  else showToast('课表暂未同步，保留最近成功数据。','info');
 }
 
+const regularPolicyPending=new Set();
+async function toggleRegularCoursePolicy(schedId){
+  const owner=appState.activeUsername,gen=viewGeneration;
+  const course=appState.classes.find(c=>String(c.courseSchedId||c.id)===String(schedId));
+  if(!course?.auto_course?.supported)return;
+  const key=owner+':'+course.courseId;if(regularPolicyPending.has(key))return;
+  const paused=!course.auto_course.paused;regularPolicyPending.add(key);renderClassesList(appState.classes);
+  try{
+    const data=await(await apiFetch('/api/classes/auto-policy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:owner,course_sched_id:String(schedId),paused})})).json();
+    if(!viewStillCurrent(owner,gen))return;
+    if(data.username!==owner)throw new Error('学生课程设置不匹配');
+    appState.classes=data.classes;showToast(paused?'这门课本学期已暂停自动签到，仍可手动签到。':'这门课已恢复参与自动签到，总开关仍需开启。','success');
+  }catch(error){
+    if(!viewStillCurrent(owner,gen))return;
+    if(error.data?.username===owner&&Array.isArray(error.data.classes))appState.classes=error.data.classes;
+    else try{const state=await(await apiFetch('/api/classes/auto-policy')).json();if(viewStillCurrent(owner,gen)&&state.username===owner)appState.classes=state.classes;}catch{}
+    if(viewStillCurrent(owner,gen))showToast(error.message||'课程设置未能保存，请核对当前状态后重试。','error');
+  }finally{
+    regularPolicyPending.delete(key);
+    if(appState.activeUsername===owner){
+      renderClassesList(appState.classes);
+      if(!viewStillCurrent(owner,gen)){
+        const currentGen=viewGeneration;
+        void apiFetch('/api/classes/auto-policy').then(r=>r.json()).then(state=>{if(viewStillCurrent(owner,currentGen)&&state.username===owner){appState.classes=state.classes;renderClassesList(appState.classes);}}).catch(()=>{});
+      }
+    }
+  }
+}
 function renderClassesList(classes) {
   const container = document.getElementById("classesFeed");
   if (!container) return;
@@ -578,6 +611,8 @@ function renderClassesList(classes) {
     const room = c.classroom || c.roomName || "校内教室";
     const teacher = c.teacherName || c.teacher || "任课教师";
     const schedId = c.courseSchedId || c.id || "";
+    const policy=c.auto_course||{},pendingPolicy=regularPolicyPending.has(appState.activeUsername+':'+c.courseId);
+    const policyHint=policy.storage_error?'设置存储异常：本次运行保持暂停，重启前请处理':!policy.supported?(policy.paused?'整门课程标识待同步，自动签到保守暂停':'整门课程标识待同步'):policy.paused&&!policy.semester_known?'学期尚未核实，暂不自动恢复':policy.paused?'本学期整门课已暂停，手动签到不受影响':!(appState.globalAutoCheckin&&appState.activeUser?.auto_checkin)?'本学期此课允许自动签到；学生或总开关已暂停':'本学期整门课 · 仅当前学生';
 
     return `
       <div class="feed-card ${isSigned ? 'status-signed' : 'status-pending'}">
@@ -608,6 +643,10 @@ function renderClassesList(classes) {
           </div>
         </div>
 
+        <div class="regular-course-policy">
+          <div class="regular-policy-caption">${escapeHtml(policyHint)}</div>
+          <button class="origin-btn origin-btn-secondary" ${actionAttributes('regularAutoPolicy',schedId)} aria-pressed="${!!policy.paused}" aria-label="暂停本学期此课自动签到" title="仅影响当前学生、本学期整门课；手动签到保留" ${!policy.supported||pendingPolicy?'disabled':''}>${pendingPolicy?'正在保存…':policy.paused?'此课自动签到：已暂停':'此课自动签到：开'}</button>
+        </div>
         <div class="feed-card-footer">
           <span style="font-size:12px;color:var(--text-muted);">课前优先，下课前限次补签</span>
           ${isSigned ? `
@@ -1038,6 +1077,7 @@ function renderBoyaFeed() {
                 ${hasAutonomousSign ? '🛰️ 自主考勤配置完整' : '🏫 需现场核验/配置待确认'}
               </span>
               <span class="feed-badge badge-purple">${escapeHtml(category)}</span>
+              ${c.automatic_selection_excluded?`<span class="feed-badge badge-amber" title="${escapeHtml(c.automatic_selection_exclusion_reason||'此系列不参与自动抢选')}">永久不自动抢选</span>`:''}
               ${!isSelected ? `<span class="quota-text ${isFull ? 'full' : ''}">名额: ${current ?? "未知"}/${capacity ?? "未知"}${capacity !== null && current !== null ? ' (余'+Math.max(0,capacity-current)+')' : ''}</span>` : ''}
             </div>
           </div>

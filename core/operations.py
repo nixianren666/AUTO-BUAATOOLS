@@ -20,6 +20,7 @@ class OperationLedger:
         self.db.execute("CREATE TABLE IF NOT EXISTS reservations (user_key TEXT, cid INTEGER, data TEXT, PRIMARY KEY(user_key,cid))")
         self.db.execute("CREATE TABLE IF NOT EXISTS boya_auto_exclusions (user_key TEXT, cid INTEGER, reason TEXT, PRIMARY KEY(user_key,cid))")
         self.db.execute("CREATE TABLE IF NOT EXISTS boya_selected_snapshots (scope_key TEXT, cid INTEGER, PRIMARY KEY(scope_key,cid))")
+        self.db.execute("CREATE TABLE IF NOT EXISTS regular_course_policies (user_key TEXT, cid TEXT, data TEXT, PRIMARY KEY(user_key,cid))")
         self.db.commit()
         self._last_prune = time.monotonic()
 
@@ -158,6 +159,30 @@ class OperationLedger:
                 self.db.executemany("INSERT OR IGNORE INTO boya_auto_exclusions VALUES (?,?,?)",[(owner,cid,"official_removed") for cid in previous-ids])
                 self.db.execute("DELETE FROM boya_selected_snapshots WHERE scope_key=?",(scope_key,))
                 self.db.executemany("INSERT INTO boya_selected_snapshots VALUES (?,?)",[(scope_key,cid) for cid in ids])
+                self.db.commit()
+            except BaseException:
+                self.db.rollback();raise
+
+    def regular_course_policy(self, user, cid):
+        with self.lock:
+            row=self.db.execute("SELECT data FROM regular_course_policies WHERE user_key=? AND cid=?",(self.key(user,"regular-course-policy","",""),cid)).fetchone()
+            return json.loads(row[0]) if row else None
+
+    def regular_course_policies(self, user):
+        with self.lock:
+            rows=self.db.execute("SELECT data FROM regular_course_policies WHERE user_key=?",(self.key(user,"regular-course-policy","",""),)).fetchall()
+            return [json.loads(row[0]) for row in rows]
+
+    def set_regular_course_policy(self, user, cid, data):
+        owner=self.key(user,"regular-course-policy","","")
+        with self.lock:
+            try:
+                if data is None:self.db.execute("DELETE FROM regular_course_policies WHERE user_key=? AND cid=?",(owner,cid))
+                else:
+                    count=self.db.execute("SELECT count(*) FROM regular_course_policies WHERE user_key=?",(owner,)).fetchone()[0]
+                    existing=self.db.execute("SELECT 1 FROM regular_course_policies WHERE user_key=? AND cid=?",(owner,cid)).fetchone()
+                    if count>=512 and not existing:raise ValueError("课程设置数量已达上限，请先恢复不再需要暂停的课程")
+                    self.db.execute("INSERT OR REPLACE INTO regular_course_policies VALUES (?,?,?)",(owner,cid,json.dumps(data)))
                 self.db.commit()
             except BaseException:
                 self.db.rollback();raise
