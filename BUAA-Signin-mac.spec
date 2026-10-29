@@ -97,8 +97,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleDisplayName': 'BUAA 课程独立签到助手',
         'CFBundleName': 'BUAA-Signin',
-        'CFBundleShortVersionString': '1.4.14',
-        'CFBundleVersion': '1.4.14',
+        'CFBundleShortVersionString': '1.4.15',
+        'CFBundleVersion': '1.4.15',
         'NSHighResolutionCapable': 'True',
         'LSUIElement': '0',
     },

@@ -88,7 +88,13 @@ class WechatNotifications:
         job=asyncio.create_task(asyncio.to_thread(self._write,bindings))
         try:await asyncio.shield(job)
         except asyncio.CancelledError:
-            try:await job
+            # A committed write must also become the process's current state,
+            # even if an HTTP caller or polling worker was cancelled meanwhile.
+            try:
+                await job
+                self.bindings=bindings;self.storage_error=False
+            except Exception:
+                self.storage_error=True
             finally:raise
         except Exception:
             self.storage_error=True
@@ -96,10 +102,19 @@ class WechatNotifications:
         self.bindings=bindings;self.storage_error=False
 
     async def start(self):
+        if self.drain_task and not self.drain_task.done():return
+        if self.tasks or self.drain_task or self.reminder_task:await self.stop()
+        # A lifecycle restart has the same at-most-once boundary as a new process.
+        self.queues.clear();self.results.clear();self.health.clear();self.seen.clear();self.reminder_health.clear()
+        while True:
+            try:self.incoming.get_nowait()
+            except queue.Empty:break
         self.closed=False
         if isinstance(self.protocol,WechatProtocol) and self.protocol.client.is_closed:
             self.protocol=WechatProtocol()
-        try:self.bindings=await asyncio.to_thread(self._read)
+        try:
+            self.bindings=await asyncio.to_thread(self._read)
+            self.storage_error=False
         except Exception:self.storage_error=True;self.bindings={}
         for username in self.bindings:
             if self.account_exists(username):self.launch(username)
@@ -108,8 +123,9 @@ class WechatNotifications:
 
     def launch(self, username):
         self.queues.setdefault(username,deque(maxlen=100))
-        if username in self.tasks:return
-        self.tasks[username]=[asyncio.create_task(self.poll(username)),asyncio.create_task(self.sender(username))]
+        old=self.tasks.get(username,[])
+        workers=(self.poll,self.sender)
+        self.tasks[username]=[old[i] if i<len(old) and not old[i].done() else asyncio.create_task(worker(username)) for i,worker in enumerate(workers)]
 
     async def stop(self):
         self.closed=True
@@ -149,8 +165,18 @@ class WechatNotifications:
         return f'{level} · {category}\n{datetime.datetime.now().strftime("%m-%d")} {stamp}\n{message}{guidance}'
 
     async def drain(self):
+        supervise_at=0
         while not self.closed:
             now=time.monotonic()
+            if now>=supervise_at:
+                for username in list(self.bindings):
+                    if self.account_exists(username):
+                        for index,task in enumerate(self.tasks.get(username,[])):
+                            if task.done() and not task.cancelled():
+                                task.exception() # Retrieve safely; never log provider payloads.
+                                self.health.setdefault(username,{})['poll_fault' if index==0 else 'send_fault']=True
+                        self.launch(username)
+                supervise_at=now+5
             for username, pending in list(self.queues.items()):
                 while pending and now-pending[0][0]>600:
                     self.record(username,pending.popleft()[1],'expired')
@@ -245,12 +271,17 @@ class WechatNotifications:
 
     def status(self, username):
         binding=self.bindings.get(username,{})
+        health=self.health.get(username,{})
         return {'bound':bool(binding),'enabled':bool(binding.get('enabled')),'important_only':bool(binding.get('important_only')),
             'course_reminders':bool(binding.get('course_reminders',False)),
             'course_sync':self.reminder_health.get(username,{}).get('state','waiting'),
             'ready':bool(binding.get('context')),'storage_error':self.storage_error,
             'session_expired':binding.get('paused_until',0)>time.time(),
-            'connection_error':bool(self.health.get(username,{}).get('error')),
+            'connection_error':bool(health.get('error') or health.get('send_error') or health.get('poll_fault') or health.get('send_fault')),
+            'send_error':bool(health.get('send_error')),'send_error_code':health.get('send_error_code'),
+            'send_error_kind':health.get('send_error_kind'),'last_send':health.get('last_send'),
+            'last_inbound':binding.get('context_received_at'),
+            'worker_error':bool(health.get('poll_fault') or health.get('send_fault') or any(t.done() for t in self.tasks.get(username,[]))),
             'last_poll':self.health.get(username,{}).get('last_poll'),
             'queued':len(self.queues.get(username,[])),'recent':list(self.results.get(username,[]))}
 
@@ -283,10 +314,10 @@ class WechatNotifications:
         delay=1
         while not self.closed and username in self.bindings and self.account_exists(username):
             binding=copy.deepcopy(self.bindings[username])
+            binding['poll_timeout_ms']=self.health.get(username,{}).get('poll_timeout_ms')
             if binding.get('paused_until',0)>time.time():await asyncio.sleep(5);continue
             try:
                 data=await self.protocol.updates(binding)
-                self.health[username]={'last_poll':datetime.datetime.now().isoformat(timespec='seconds'),'error':False}
                 async with self.lock:
                     if self.bindings.get(username,{}).get('generation')!=binding['generation'] or not self.account_exists(username):return
                     updated=copy.deepcopy(self.bindings);target=updated[username]
@@ -298,16 +329,21 @@ class WechatNotifications:
                         if (msg.get('from_user_id')==binding['peer'] and msg.get('to_user_id')==binding['bot']
                             and msg.get('message_type')==1 and isinstance(msg.get('context_token'),str) and 0<len(msg['context_token'])<8192):
                             target['context']=msg['context_token']
+                            target['context_received_at']=time.time()
                     cursor=data.get('get_updates_buf')
                     if isinstance(cursor,str) and 0<len(cursor)<65536:target['cursor']=cursor
-                    if target!=self.bindings[username]:await self.save(updated)
+                    if target!=self.bindings[username] or self.storage_error:await self.save(updated)
+                    self.health.setdefault(username,{}).update(last_poll=datetime.datetime.now().isoformat(timespec='seconds'),error=False,poll_fault=False)
+                    hint=data.get('longpolling_timeout_ms')
+                    if type(hint) is int and 0<hint<=120000:self.health[username]['poll_timeout_ms']=hint
                 delay=1
                 await asyncio.sleep(1) # Also bounds a provider returning immediate empty polls.
             except WechatError as exc:
+                if self.bindings.get(username,{}).get('generation')!=binding['generation']:return
                 self.health[username]=dict(self.health.get(username,{}),error=True)
                 if exc.code==-14:
                     async with self.lock:
-                        if username in self.bindings:
+                        if self.bindings.get(username,{}).get('generation')==binding['generation']:
                             updated=copy.deepcopy(self.bindings);updated[username]['paused_until']=time.time()+3600
                             updated[username]['context']=''
                             try:await self.save(updated)
@@ -315,6 +351,11 @@ class WechatNotifications:
                 await asyncio.sleep(delay);delay=min(delay*2,60)
             except (ValueError,OSError):
                 self.storage_error=True;await asyncio.sleep(30)
+            except Exception:
+                # An unexpected transport/response failure must not kill the worker.
+                if self.bindings.get(username,{}).get('generation')!=binding['generation']:return
+                self.health.setdefault(username,{}).update(poll_fault=True)
+                await asyncio.sleep(delay);delay=min(delay*2,60)
 
     async def sender(self, username):
         while not self.closed and username in self.bindings and self.account_exists(username):
@@ -337,13 +378,18 @@ class WechatNotifications:
                 try:
                     response=await self.protocol.send(copy.deepcopy(current),text,identifier)
                     self.record(username,identifier,'accepted' if response.get('ret')==0 else 'submitted')
+                    self.health.setdefault(username,{}).update(send_error=False,send_fault=False,send_error_code=None,send_error_kind=None,last_send=datetime.datetime.now().isoformat(timespec='seconds'))
                 except WechatError as exc:
-                    self.record(username,identifier,'session_expired' if exc.code==-14 else 'unconfirmed')
+                    self.record(username,identifier,'session_expired' if exc.code==-14 else 'rejected' if exc.kind=='business' and exc.code is not None else 'unconfirmed')
+                    self.health.setdefault(username,{}).update(send_error=True,send_error_code=exc.code,send_error_kind=exc.kind)
                     if exc.code==-14:
                         async with self.lock:
                             updated=copy.deepcopy(self.bindings);updated[username]['context']='';updated[username]['paused_until']=time.time()+3600
                             try:await self.save(updated)
                             except ValueError:pass
+                except Exception:
+                    self.record(username,identifier,'unconfirmed')
+                    self.health.setdefault(username,{}).update(send_error=True,send_fault=True,send_error_code=None,send_error_kind='internal')
             await asyncio.sleep(1)
 
     async def reminder_loop(self):

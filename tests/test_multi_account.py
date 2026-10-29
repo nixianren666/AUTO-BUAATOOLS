@@ -14,16 +14,17 @@ from core.scheduler import SigninScheduler
 
 
 class DummyClient:
-    def __init__(self, should_succeed=True, fail_times=0):
+    def __init__(self, should_succeed=True, fail_times=0, clock=china_now):
         self.should_succeed = should_succeed
         self.fail_times = fail_times
         self.call_count = 0
+        self.clock = clock
 
     def is_authenticated(self):
         return True
 
     async def get_today_classes(self):
-        now = china_now()
+        now = self.clock()
         # 构造一个 5 分钟后开始的课程 (处于 [start - 10m, start] 窗口内)
         start_time = (now + timedelta(minutes=5)).strftime("%H:%M")
         end_time = (now + timedelta(minutes=50)).strftime("%H:%M")
@@ -136,12 +137,16 @@ class TestMultiAccount(unittest.TestCase):
         def on_log(level, msg, username=None, user_name=None):
             logs_received.append((level, msg, username, user_name))
 
-        dummy = DummyClient(should_succeed=True, fail_times=2)  # 前2次失败，第3次成功
+        # Use a daytime fixture: real wall time + 5m can cross midnight and
+        # correctly fall outside the scheduler's current-day course scope.
+        fixed_now = datetime(2026, 10, 29, 9, 0)
+        dummy = DummyClient(should_succeed=True, fail_times=2, clock=lambda: fixed_now)  # 前2次失败，第3次成功
 
         def get_accounts():
             return [{"username": "test_stu", "name": "测试生", "client": dummy}]
 
         scheduler = SigninScheduler(get_active_accounts=get_accounts, on_event_log=on_log)
+        scheduler.clock = lambda: fixed_now
 
         loop = asyncio.new_event_loop()
         try:
@@ -152,17 +157,17 @@ class TestMultiAccount(unittest.TestCase):
             self.assertIn(key, scheduler.planned_targets)
 
             # 模拟到达计划打卡时间 -> 触发第 1 次尝试 (失败)
-            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = fixed_now - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 1)
 
             # 模拟到达第 2 次重试时间 -> 触发第 2 次尝试 (失败)
-            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = fixed_now - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 2)
 
             # 模拟到达第 3 次重试时间 -> 触发第 3 次尝试 (成功)
-            scheduler.planned_targets[key] = china_now() - timedelta(seconds=1)
+            scheduler.planned_targets[key] = fixed_now - timedelta(seconds=1)
             loop.run_until_complete(scheduler._check_and_sign_all())
             self.assertEqual(dummy.call_count, 3)
 

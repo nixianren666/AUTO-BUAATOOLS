@@ -100,6 +100,23 @@ exports.verifyWechat=async(page,check)=>{
       for(const stage of stages){assert.equal(stage.complete,true);assert.equal(stage.mark,'✓');assert.equal(stage.color,'rgb(74, 222, 128)');}
       assert.match(await page.locator('#wechatStepMessage').textContent(),/扫码后还差这一步/);
     });
+    await check('wechat-send-rejection-stays-visible-through-successful-status-polls',async()=>{
+      const state=states['fixture-account-1'];Object.assign(state,{send_error:true,send_error_code:-2,send_error_kind:'business',connection_error:false});
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-1'));
+      await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('错误码 -2'));
+      await page.waitForTimeout(4300);assert.match(await page.locator('#wechatStatus').textContent(),/错误码 -2/);
+      assert.equal(await page.locator('#wechatStepReceipt').evaluate(e=>e.classList.contains('is-complete')),false);
+      assert.equal(await page.locator('#wechatReceived').isDisabled(),true);
+      assert.equal(await page.locator('#wechatTest').isDisabled(),false);state.send_error=false;
+    });
+    await check('wechat-worker-fault-is-not-ready-and-other-student-is-independent',async()=>{
+      states['fixture-account-1'].worker_error=true;
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-1'));
+      await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('正在恢复'));
+      await page.locator('#wechatAccountSelect').selectOption('fixture-account-2');
+      await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('接收连接正常'));
+      assert.doesNotMatch(await page.locator('#wechatStatus').textContent(),/正在恢复/);states['fixture-account-1'].worker_error=false;
+    });
     await check('wechat-new-modal-keeps-phone-fields-and-controls-inside-viewport',async()=>{
       const original=page.viewportSize();
       try{for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]){

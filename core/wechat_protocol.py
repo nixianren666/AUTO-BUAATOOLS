@@ -16,8 +16,9 @@ CHANNEL_VERSION = '2.4.10'
 
 
 class WechatError(Exception):
-    def __init__(self, code=None):
+    def __init__(self, code=None, kind='business'):
         self.code = code
+        self.kind = kind
         super().__init__('微信通道暂不可用' if code != -14 else '微信登录状态已失效，请重新绑定')
 
 
@@ -43,7 +44,7 @@ class WechatProtocol:
     async def close(self):
         await self.client.aclose()
 
-    async def request(self, endpoint, *, base=BASE_URL, token=None, body=None, params=None, poll=False):
+    async def request(self, endpoint, *, base=BASE_URL, token=None, body=None, params=None, poll=False, timeout_ms=None):
         base = trusted_base(base)
         headers = {'iLink-App-Id': 'bot', 'iLink-App-ClientVersion': str((2 << 16) | (4 << 8) | 10)}
         if body is not None:
@@ -53,8 +54,10 @@ class WechatProtocol:
             headers['Authorization'] = 'Bearer ' + token
             body = dict(body or {}, base_info={'channel_version':CHANNEL_VERSION, 'bot_agent':'AUTO-BUAATOOLS/'+VERSION})
         try:
+            seconds=38 if poll else 15
+            if poll and type(timeout_ms) is int and 0<timeout_ms<=120000:seconds=timeout_ms/1000+3
             async with self.client.stream('POST' if body is not None else 'GET', base + '/ilink/bot/' + endpoint,
-                json=body, params=params, headers=headers, timeout=httpx.Timeout(38 if poll else 15, connect=10)) as result:
+                json=body, params=params, headers=headers, timeout=httpx.Timeout(seconds, connect=10)) as result:
                 result.raise_for_status()
                 content = bytearray()
                 async for chunk in result.aiter_bytes():
@@ -64,12 +67,18 @@ class WechatProtocol:
             import json
             data = json.loads(content)
             if not isinstance(data, dict): raise WechatError()
-            for field in ('ret','errcode'):
-                if data.get(field) not in (None, 0):
-                    raise WechatError(-14 if data[field] == -14 else None)
+            codes=[data.get(field) for field in ('ret','errcode') if data.get(field) not in (None,0)]
+            if codes:
+                # Preserve bounded numeric diagnostics, never provider text or tokens.
+                code=-14 if -14 in codes else next((x for x in reversed(codes) if type(x) is int and abs(x)<1000000),None)
+                raise WechatError(code)
             return data
-        except (httpx.HTTPError, ValueError, TypeError) as exc:
-            raise WechatError() from None
+        except httpx.HTTPStatusError as exc:
+            raise WechatError(exc.response.status_code,kind='http') from None
+        except httpx.HTTPError:
+            raise WechatError(kind='transport') from None
+        except (ValueError, TypeError):
+            raise WechatError(kind='payload') from None
 
     async def qrcode(self):
         return await self.request('get_bot_qrcode', params={'bot_type':'3'}, body={'local_token_list':[]})
@@ -81,7 +90,7 @@ class WechatProtocol:
 
     async def updates(self, binding):
         return await self.request('getupdates', base=binding['base'], token=binding['token'],
-            body={'get_updates_buf':binding.get('cursor','')}, poll=True)
+            body={'get_updates_buf':binding.get('cursor','')}, poll=True, timeout_ms=binding.get('poll_timeout_ms'))
 
     async def send(self, binding, text, client_id):
         if not binding.get('context'): raise WechatError()

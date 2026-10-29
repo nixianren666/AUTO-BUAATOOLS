@@ -678,8 +678,12 @@ async def switch_account(req: SwitchAccountRequest):
     if req.username not in accounts:
         raise HTTPException(status_code=404, detail="Account not found")
 
+    previous_username=active_username
     active_username = req.username
-    sync_config()
+    try:sync_config()
+    except Exception:
+        active_username=previous_username
+        raise HTTPException(503,'学生视图切换保存失败，已保留原学生，请检查磁盘后重试') from None
     target_acc = accounts[active_username]
     add_log("info", f"当前操作视图已切换至学生: 【{target_acc.name} ({target_acc.username})】", username=target_acc.username, user_name=target_acc.name)
     # 若目标账号尚未完成鉴权且保存了密码，在切换时立即触发自动后台连接

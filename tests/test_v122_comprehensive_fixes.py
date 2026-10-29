@@ -169,7 +169,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
         from core.scheduler import SigninScheduler
 
         call_log = []
-        now = china_now()
+        now = datetime(2026, 10, 29, 9, 0)
         class_time = (now + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
 
         class MockIclassClient:
@@ -201,6 +201,7 @@ class TestV122ComprehensiveFixes(unittest.TestCase):
             get_active_accounts=lambda: [test_acc],
             on_event_log=lambda *a, **k: None,
         )
+        scheduler.clock = lambda: now
 
         asyncio.run(scheduler.tick())
         sched_key = ("23370002", "2479439", scheduler.clock().date().isoformat())

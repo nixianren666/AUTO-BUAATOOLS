@@ -14,13 +14,14 @@
     if (!current(g)) throw new Error('通道视图已关闭');
     return data;
   };
-  const statuses={sending:'正在发送',accepted:'微信接口已接受，待本人确认收信',submitted:'已提交微信，待本人确认收信',unconfirmed:'发送结果未确认，未自动重发',session_expired:'微信会话已失效，请重新绑定',expired:'通知已过期，未补发'};
+  const statuses={sending:'正在发送',accepted:'微信接口已接受，待本人确认收信',submitted:'已提交微信，待本人确认收信',rejected:'微信拒绝通知，请查看通道提示',unconfirmed:'发送结果未确认，未自动重发',session_expired:'微信登录已失效，请重新绑定',expired:'通知已过期，未补发'};
   function steps(data) {
-    const complete=[!!data.bound,!!data.bound&&!!data.ready,!!data.ready&&receipts.has(username)];
+    const blocked=!!(data.send_error||data.worker_error||data.session_expired||data.storage_error);
+    const complete=[!!data.bound,!!data.bound&&!!data.ready,!!data.ready&&!blocked&&receipts.has(username)];
     const ids=['wechatStepScan','wechatStepMessage','wechatStepReceipt'];
     ids.forEach((id,i)=>{const node=el(id);node.classList.toggle('is-complete',complete[i]);node.classList.toggle('is-current',!complete[i]&&(i===0||complete[i-1]));node.querySelector('.wechat-step-mark').textContent=complete[i]?'✓':String(i+1);node.setAttribute('aria-label','第'+(i+1)+'步，'+(complete[i]?'已完成':'待完成'));});
     el('wechatReceived').checked=complete[2];
-    el('wechatReceived').disabled=!data.ready||!(data.recent||[]).some(r=>r.id===tests.get(username)&&['accepted','submitted'].includes(r.state));
+    el('wechatReceived').disabled=!data.ready||blocked||!(data.recent||[]).some(r=>r.id===tests.get(username)&&['accepted','submitted'].includes(r.state));
   }
   async function refresh(g=generation) {
     const data=await request('status',null,g);
@@ -30,7 +31,8 @@
     if(!data.bound){tests.delete(username);receipts.delete(username);}
     steps(data);
     el('wechatCourseStatus').textContent=!data.course_reminders?'课前提醒已关闭。':!data.enabled?'通知已暂停，暂不发送课前提醒。':!data.ready?'完成第2步后，才能读取课表并发送提醒。':data.course_sync==='ok'?'课表已同步；有课时在课前15分钟窗口内提醒。':data.course_sync==='unavailable'?'课表暂未同步，本轮不发送提醒；请核对账号认证和网络。':'正在等待读取课表，未读取到课程前不会发送提醒。';
-    message(data.storage_error?'私有存储不可用，请检查部署目录。':data.session_expired?'微信登录状态失效，请解绑后重新扫码。':!data.bound?'尚未绑定微信。':!data.enabled?'此学生的微信通知已暂停。':data.connection_error?'微信通道暂时连接失败；学校后台任务独立运行。':!data.ready?'已绑定：请先在微信中向机器人发送“开始接收”。':'此学生的通知通道已就绪，等待运行日志。');
+    const sendIssue=data.send_error_kind==='business'?'微信拒绝了最近一次通知'+(Number.isInteger(data.send_error_code)?'（错误码 '+data.send_error_code+'）':'')+'。请到微信向机器人发送“开始接收”，再发送测试并核对实收；也可能受微信限流或其他策略影响，不会自动重发旧通知。':'最近一次发送未能确认，不能视为已就绪。请检查网络，发送测试并核对微信实收；旧通知不会自动重放。';
+    message(data.storage_error?'私有存储不可用，请检查部署目录。':data.session_expired?'微信登录状态失效，请解绑后重新扫码。':!data.bound?'尚未绑定微信。':!data.enabled?'此学生的微信通知已暂停。':data.send_error?sendIssue:data.worker_error?'微信后台任务正在恢复；其他学生与学校任务独立运行。':data.connection_error?'微信接收通道暂时连接失败；学校后台任务独立运行。':!data.ready?'已绑定：请先在微信中向机器人发送“开始接收”。':'微信接收连接正常；通知是否送达请以本人微信实收为准。');
     const seen=new Set();
     el('wechatRecent').textContent=(data.recent||[]).filter(r=>!seen.has(r.id)&&seen.add(r.id)).slice(0,5).map(r=>r.time.replace('T',' ')+' · '+r.id+' · '+(statuses[r.state]||'待核对')).join('\n');
     canTest=!!data.enabled&&!!data.ready&&!data.session_expired&&!data.storage_error;

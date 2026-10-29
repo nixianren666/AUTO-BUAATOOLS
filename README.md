@@ -19,14 +19,14 @@
 
 **不用一直盯着软件：绑定微信助手，把运行结果、失败提醒和课前提醒送到自己的微信。**
 
-[![Version](https://img.shields.io/badge/version-1.4.14-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.15-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8b5cf6)](#下载与安装)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/nixianren666/AUTO-BUAATOOLS/total?label=downloads&color=38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)
 
 [**⬇️ 下载客户端**](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) · [💬 绑定微信助手](#微信助手) · [🖼️ 界面与功能](#界面展示) · [🛡️ 操作安全](#怎么减少漏选错选和重复操作)
 
-源码版本 **v1.4.14**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
+源码版本 **v1.4.15**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
 
 [⚠️ 使用前必读](#免责声明) · [🔐 账号隐私](#账号与隐私如何保护) · [🚀 三步上手](#第一次使用三步完成设置) · [⚙️ 后台部署](#源码与后台部署) · [💬 常见问题](#常见问题)
 
@@ -143,6 +143,14 @@ AUTO-BUAA 是面向北航学生的**开源自动签到与博雅自动抢课工�
 *实际界面的合成账号演示；绿色步骤表示已经完成，蓝色步骤指向当前需要做的操作。*
 
 **步骤完成即标绿并显示 ✓，未完成的下一步保持醒目。** 每位学生可以独立暂停、修改通知偏好或解绑；同一微信不能同时绑定不同学生。
+
+### 推送突然停止时怎么处理？
+
+**接收连接正常不等于消息已送达。** 请先查看微信助手的发送结果和错误提示；明确拒绝、发送结果未确认、登录失效分别处理。普通业务错误不能一律当作登录失效或要求重新扫码。
+
+微信可能要求新的会话上下文。可在微信给机器人主动发送「开始接收」，再点击应用里的发送测试并核对实际收信。错误码 `-2` 并不唯一代表上下文过期，也可能涉及频率或其他策略；本应用不会伪造自动保活消息，也不保证无需微信互动即可永久推送。旧的、不确定或过期通知不会自动重放。
+
+切换前台学生、关闭微信助手窗口或断开浏览器，不应停止其他学生的后台通知。应用/服务器进程必须继续运行；后台任务发生异常时会显示故障并恢复后续任务，一个学生的通道故障不应阻塞其他学生。
 
 ### 🔔 课前提醒里有什么？
 

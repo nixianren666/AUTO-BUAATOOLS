@@ -49,6 +49,21 @@ class PrivateStorageContracts(unittest.IsolatedAsyncioTestCase):
             release.set()
             with self.assertRaises(asyncio.CancelledError):await save
         self.assertTrue(finished.is_set());self.assertEqual(self.engine._read(),{'A':self.binding})
+        self.assertEqual(self.engine.bindings,{'A':self.binding})
+        self.assertFalse(self.engine.storage_error)
+
+    async def test_cancelled_failed_write_keeps_memory_and_exposes_storage_failure(self):
+        started=threading.Event();release=threading.Event()
+        original={'A':self.binding};self.engine.bindings=original
+        def failed(bindings):
+            started.set();release.wait(timeout=3);raise OSError('synthetic disk full')
+        with patch.object(self.engine,'_write',side_effect=failed):
+            save=asyncio.create_task(self.engine.save({}))
+            self.assertTrue(await asyncio.to_thread(started.wait,2))
+            save.cancel();release.set()
+            with self.assertRaises(asyncio.CancelledError):await save
+        self.assertIs(self.engine.bindings,original)
+        self.assertTrue(self.engine.storage_error)
 
     async def test_failed_unbind_stops_in_memory_and_reports_unpersisted_state(self):
         await self.engine.save({'A':self.binding})

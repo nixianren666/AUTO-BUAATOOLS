@@ -10,7 +10,7 @@ from core.boya_scheduler import BoyaScheduler
 class TestV126RefreshAndHeartbeat(unittest.TestCase):
     def test_post_signin_immediate_schedule_refresh(self):
         """测试常规签到成功后立即向教务端重新获取最新课表并刷新内存与时间戳"""
-        now = china_now()
+        now = datetime.datetime(2026, 10, 29, 9, 0)
         future_time_str = (now + datetime.timedelta(minutes=5)).strftime("%H:%M")
         refreshed_classes = [
             {"courseSchedId": "101", "courseName": "航空航天概论", "signStatus": 1, "classBeginTime": future_time_str}
@@ -42,8 +42,9 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         }
 
         scheduler = SigninScheduler(get_active_accounts=lambda: [active_account])
+        scheduler.clock = lambda: now
         # 将计划时间设为过去，立即触发签到
-        scheduler.planned_targets[("20240001", "101", scheduler.clock().date().isoformat())] = china_now() - datetime.timedelta(seconds=5)
+        scheduler.planned_targets[("20240001", "101", scheduler.clock().date().isoformat())] = now - datetime.timedelta(seconds=5)
 
         # 触发巡检
         asyncio.run(scheduler._check_and_sign_all())
