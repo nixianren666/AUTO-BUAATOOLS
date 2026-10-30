@@ -74,6 +74,11 @@ class OperationLedger:
         with self.lock:
             return self.db.execute("SELECT state, attempts, updated FROM operations WHERE key=?", (key,)).fetchone()
 
+    def group_states(self, group):
+        """Read-only hint; only claim() may authorize a school write."""
+        with self.lock:
+            return {row[0] for row in self.db.execute("SELECT state FROM operations JOIN operation_groups USING(key) WHERE group_key=?",(group,))}
+
     def failed_before_send(self, key):
         """Only transport errors guaranteeing no application request was sent."""
         with self.lock:

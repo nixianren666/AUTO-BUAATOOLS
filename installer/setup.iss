@@ -3,7 +3,7 @@
 
 #define MyAppName "BUAA 课程独立签到助手"
 #define MyAppEnglishName "BUAA-Signin"
-#define MyAppVersion "1.4.15"
+#define MyAppVersion "1.4.16"
 #define MyAppPublisher "nixianren666"
 #define MyAppURL "https://github.com/nixianren666/AUTO-BUAATOOLS"
 #define MyAppExeName "BUAA-Signin.exe"
@@ -27,7 +27,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=
 OutputDir=..\dist_installer
-OutputBaseFilename=BUAA-Signin-Setup-v1.4.15
+OutputBaseFilename=BUAA-Signin-Setup-v1.4.16
 SetupIconFile=..\app_icon.ico
 
 ; 压缩配置 (采用超高 LZMA2 压缩)

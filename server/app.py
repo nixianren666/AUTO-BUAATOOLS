@@ -1102,7 +1102,7 @@ async def get_boya_status(username: Optional[str] = None):
         "last_refresh_time": getattr(curr, "boya_last_refresh_time", ""),
         "courses_count": len(curr.boya_all_courses) if getattr(curr, "boya_all_courses", None) is not None else 0,
         "selected_count": len(curr.boya_selected_courses) if getattr(curr, "boya_selected_courses", None) is not None else 0,
-        "health": curr.boya_health,
+        "health": boya_scheduler.health_snapshot(curr),
         "targets": curr.boya_targets,
         "statistics": curr.boya_statistics if getattr(curr, "boya_statistics", None) is not None else {},
     }

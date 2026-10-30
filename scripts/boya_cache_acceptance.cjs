@@ -56,4 +56,41 @@ exports.verifyBoyaCache=async(page,check)=>{
     }finally{await page.unroute(pattern);}
     await page.evaluate(()=>fetchBoyaData());
   });
+  await check('boya-successful-cached-api-does-not-conceal-background-network-outage',async()=>{
+    const pattern='**/api/boya/status*';
+    await page.route(pattern,async route=>{
+      const response=await route.fetch(), data=await response.json();
+      await route.fulfill({response,json:{...data,health:{stale:true,error:'ReadTimeout',last_success:'2026-10-30T09:00:00',next_sync_in_seconds:120}}});
+    });
+    try{
+      await page.evaluate(()=>fetchBoyaData());
+      assert.match(await page.locator('#boyaHealthText').textContent(),/后台同步暂未完成/);
+      assert.equal(await page.locator('#countBoyaAll').textContent(),'4');
+    }finally{await page.unroute(pattern);}
+  });
+  await check('boya-background-recovery-restores-health-caption-without-clearing-course-cache',async()=>{
+    const pattern='**/api/boya/status*';
+    await page.route(pattern,async route=>{
+      const response=await route.fetch(), data=await response.json();
+      await route.fulfill({response,json:{...data,health:{stale:false,last_success:'2026-10-30T09:02:00'}}});
+    });
+    try{
+      await page.evaluate(()=>fetchBoyaData());
+      assert.match(await page.locator('#boyaHealthText').textContent(),/最近后台同步：2026-10-30T09:02:00/);
+      assert.equal(await page.locator('#countBoyaAll').textContent(),'4');
+    }finally{await page.unroute(pattern);}
+  });
+  await check('boya-pending-write-is-visible-even-after-successful-data-sync',async()=>{
+    const pattern='**/api/boya/status*';
+    await page.route(pattern,async route=>{
+      const response=await route.fetch(), data=await response.json();
+      await route.fulfill({response,json:{...data,health:{stale:false,pending_verification:true,last_success:'2026-10-30T09:02:00'}}});
+    });
+    try{
+      await page.evaluate(()=>fetchBoyaData());
+      assert.match(await page.locator('#boyaHealthText').textContent(),/提交结果待官方核对/);
+      assert.equal(await page.locator('#countBoyaAll').textContent(),'4');
+    }finally{await page.unroute(pattern);}
+    await page.evaluate(()=>fetchBoyaData());
+  });
 };

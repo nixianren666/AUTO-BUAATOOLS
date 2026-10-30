@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.4.15 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.4.16 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -789,7 +789,8 @@ async function refreshBoyaParts(requestedUsername, requestedGeneration, isManual
   if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
   appState.boyaDataStale = staleParts.size > 0;
   const health = document.getElementById('boyaHealthText');
-  if (health) health.textContent = staleParts.size ? '部分数据暂未同步，保留上次数据；后台任务独立运行' : appState.boyaStatus.health?.last_success ? '最近后台同步：' + appState.boyaStatus.health.last_success : '页面数据已读取；请核对自动化开关';
+  const backgroundHealth = appState.boyaStatus.health || {};
+  if (health) health.textContent = staleParts.size ? '部分数据暂未同步，保留上次数据；后台任务独立运行' : backgroundHealth.pending_verification ? '有博雅提交结果待官方核对，防重保护中；请核对日志与官方记录' : backgroundHealth.stale ? '后台同步暂未完成，保留上次数据；请核对日志中的退避或待确认提示' : backgroundHealth.last_success ? '最近后台同步：' + backgroundHealth.last_success : '页面数据已读取；请核对自动化开关';
   renderBoyaStatistics(appState.boyaStatistics);
   rememberAccountView();
   if (isManual) showToast(staleParts.size ? '部分数据同步失败，保留已读取数据' : `博雅数据同步完成，共载入 ${appState.boyaCourses.length} 门课程`, staleParts.size ? 'info' : 'success');

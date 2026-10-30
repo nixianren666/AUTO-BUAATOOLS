@@ -265,5 +265,8 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             account.boya_last_refresh_time = now().isoformat(timespec="seconds")
         except Exception as exc:
             result["pending_verification"] = True
+            import httpx
+            if isinstance(exc, httpx.HTTPError):
+                result["verification_network_error"] = type(exc).__name__
             account.boya_health = {"stale": True, "pending_verification": True, "error": type(exc).__name__}
         return result

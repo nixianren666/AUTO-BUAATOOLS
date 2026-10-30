@@ -117,6 +117,39 @@ exports.verifyWechat=async(page,check)=>{
       await page.waitForFunction(()=>document.getElementById('wechatStatus').textContent.includes('接收连接正常'));
       assert.doesNotMatch(await page.locator('#wechatStatus').textContent(),/正在恢复/);states['fixture-account-1'].worker_error=false;
     });
+    await check('wechat-course-read-success-does-not-hide-rejected-reminder-and-send-backoff',async()=>{
+      Object.assign(states['fixture-account-1'],{course_reminders:true,course_sync:'ok',send_error:true,send_error_kind:'business',send_error_code:-2,send_retry_in_seconds:120,
+        reminder_recent:[{course_start:'2026-10-30T14:00:00+08:00',state:'rejected',error_code:-2,time:'2026-10-30T13:45:00'}]});
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-1'));
+      await page.waitForFunction(()=>document.getElementById('wechatReminderRecent').textContent.includes('错误码 -2'));
+      assert.match(await page.locator('#wechatCourseStatus').textContent(),/微信通知未成功确认/);
+      assert.match(await page.locator('#wechatStatus').textContent(),/120 秒/);
+      assert.match(await page.locator('#wechatReminderRecent').textContent(),/微信拒绝通知/);
+    });
+    await check('wechat-reminder-history-distinguishes-legacy-interruption-and-provider-acceptance',async()=>{
+      Object.assign(states['fixture-account-1'],{send_error:false,send_retry_in_seconds:0,reminder_recent:[
+        {course_start:'2026-10-30T14:00:00+08:00',state:'registered_only'},
+        {course_start:'2026-10-30T09:50:00+08:00',state:'not_replayed'},
+        {course_start:'2026-10-30T08:00:00+08:00',state:'accepted'}]});
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-1'));
+      await page.waitForFunction(()=>document.getElementById('wechatReminderRecent').textContent.includes('旧版仅登记'));
+      const text=await page.locator('#wechatReminderRecent').textContent();
+      assert.match(text,/进程中断，未自动重发/);assert.match(text,/待本人确认收信/);assert.doesNotMatch(text,/已送达/);
+    });
+    await check('wechat-reminder-results-never-leak-to-another-student-view',async()=>{
+      await page.locator('#wechatAccountSelect').selectOption('fixture-account-2');
+      await page.waitForFunction(()=>document.getElementById('wechatReminderRecent').textContent==='');
+      assert.doesNotMatch(await page.locator('#wechatStatus').textContent(),/120 秒/);
+    });
+    await check('wechat-reminder-capacity-and-worker-recovery-are-actionable-not-ready-claims',async()=>{
+      Object.assign(states['fixture-account-2'],{course_reminders:true,course_sync:'capacity'});
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-2'));
+      await page.waitForFunction(()=>document.getElementById('wechatCourseStatus').textContent.includes('已达上限'));
+      states['fixture-account-2'].reminder_worker_error=true;
+      await page.locator('#wechatClose').click();await page.evaluate(()=>BUAAWechat.open('fixture-account-2'));
+      await page.waitForFunction(()=>document.getElementById('wechatCourseStatus').textContent.includes('后台正在恢复'));
+      Object.assign(states['fixture-account-2'],{reminder_worker_error:false,course_sync:'ok'});
+    });
     await check('wechat-new-modal-keeps-phone-fields-and-controls-inside-viewport',async()=>{
       const original=page.viewportSize();
       try{for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]){

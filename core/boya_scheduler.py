@@ -176,6 +176,77 @@ class BoyaScheduler:
         self.fail_counters = {}
         self._workers = None
         self._warnings = {}
+        self._network = {}
+
+    def _network_failure(self, acc, exc, cid=None, action=None, notify=True):
+        """One incident per student, independent of course and foreground view.
+
+        A successful cached tick is not recovery. Two complete fresh syncs at
+        least 60 seconds apart close an incident; read/write budgets stay intact.
+        """
+        stamp = time.monotonic()
+        incident = self._network.get(acc.username)
+        first = incident is None
+        if first:
+            incident = {"failures": 0, "stable": 0, "stable_at": None}
+            self._network[acc.username] = incident
+        incident["failures"] = min(incident["failures"] + 1, 5)
+        incident["stable"] = 0
+        incident["stable_at"] = None
+        delay = min(300, 30 * 2 ** (incident["failures"] - 1))
+        if getattr(acc,"boya_auto_sign",False):
+            from core.boya_actions import merge_selected
+            from core.domain import attendance_allowed
+            if any(attendance_allowed(merge_selected(c,acc.boya_all_courses or []),kind,self.clock())
+                    for c in (acc.boya_selected_courses or []) for kind in (1,2)):
+                # Do not carry a long pool-outage cooldown into a short, already
+                # open attendance window. Durable claims still forbid replays.
+                delay = min(delay,30)
+        incident["retry_at"] = stamp + delay
+        phase = "read" if isinstance(exc,str) else getattr(exc, "boya_phase", "unknown")
+        error = exc if isinstance(exc,str) else type(exc).__name__
+        incident.update(error=error,phase=phase)
+        acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": True,
+            "error": error, "network_phase": phase,
+            "next_sync_in_seconds": delay}
+        if phase == "write_uncertain":
+            self._warn_course(acc, cid, action, "博雅提交结果待确认：网络响应中断，可能已被学校接收；保留防重记录，仅同步核对，不重发。")
+        elif first and notify:
+            description = "读取暂时中断" if phase == "read" else ("连接未建立，未提交" if phase == "not_sent" else "网络请求暂时中断，请核对官方结果")
+            self.add_log("warning", "博雅" + description + "（" + error + "）；保留上次数据，自动退避后核对。同类网络故障合并提醒。",
+                username=acc.username, user_name=acc.name, category="boya")
+
+    def _network_recovered(self, acc):
+        incident = self._network.get(acc.username)
+        if incident is None:
+            return True
+        stamp = time.monotonic()
+        if incident["stable_at"] is None or stamp - incident["stable_at"] >= 60:
+            incident["stable"] += 1
+            incident["stable_at"] = stamp
+        if incident["stable"] < 2:
+            return False
+        self._network.pop(acc.username, None)
+        self.add_log("info", "博雅同步已恢复，已连续两次完成官方课池与已选核对。", username=acc.username,
+            user_name=acc.name, category="boya", notify=False)
+        return True
+
+    def health_snapshot(self, acc):
+        from core import operations
+        health = dict(getattr(acc,"boya_health",{}))
+        pending = bool(getattr(acc,"boya_pending_courses",{}))
+        for course in (acc.boya_selected_courses or []):
+            state = str(course.get("checkin"))
+            for kind,confirmed in ((1,("1","5","6","9","10","11")),(2,("1","7","8","9","10","11"))):
+                if state not in confirmed:
+                    group = operations.ledger.key(acc.username,"signCourseByUser:"+str(kind),course_id(course),"group")
+                    pending = pending or bool(operations.ledger.group_states(group) & {"pending","uncertain","success"})
+        health["pending_verification"] = pending
+        incident = self._network.get(acc.username)
+        if incident:
+            health.update(stale=True,error=incident["error"],network_phase=incident["phase"],
+                next_sync_in_seconds=max(0,math.ceil(incident["retry_at"]-time.monotonic())))
+        return health
 
     def _warn_course(self, acc, cid, action, message, level="warning", notify=True):
         key=(acc.username,cid,action)
@@ -211,6 +282,7 @@ class BoyaScheduler:
         self.add_log("info", "已暂停博雅后续提交；在途请求会完成并复核。", category="boya")
 
     def remove_account(self, username):
+        self._network.pop(username, None)
         for mapping in (self.last_sync_times, self.last_pool_sync_times, self.last_inspect_log_times):
             mapping.pop(username, None)
         self.logged_pool_summary.discard(username)
@@ -301,21 +373,28 @@ class BoyaScheduler:
             return not getattr(acc, "removed", False) and not getattr(acc, "maintenance", False) and (event is None or (self.running and not event.is_set()))
         if not active():
             return
+        incident = self._network.get(acc.username)
+        if incident and time.monotonic() < incident["retry_at"]:
+            acc.boya_health = {**getattr(acc, "boya_health", {}), "next_sync_in_seconds": max(0, math.ceil(incident["retry_at"] - time.monotonic()))}
+            return
         try:
             with account_lock(acc):
                 if not acc.boya_client.is_authenticated() and not self._renew_session(acc):
                     raise BoyaSessionExpired("请重新认证或输入验证码")
                 stamp = time.monotonic()
-                if acc.username not in self.last_sync_times or stamp-self.last_sync_times[acc.username] >= 60:
+                synced_selected = synced_pool = False
+                probe_incident = incident and (incident["stable_at"] is None or stamp - incident["stable_at"] >= 60)
+                if probe_incident or acc.username not in self.last_sync_times or stamp-self.last_sync_times[acc.username] >= 60:
                     acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
                     reconcile_official(acc, acc.boya_selected_courses)
                     self.last_sync_times[acc.username] = time.monotonic()
+                    synced_selected = True
                     acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
-                if acc.username not in self.last_pool_sync_times or stamp-self.last_pool_sync_times[acc.username] >= 60:
+                if probe_incident or acc.username not in self.last_pool_sync_times or stamp-self.last_pool_sync_times[acc.username] >= 60:
                     acc.boya_all_courses = acc.boya_client.query_courses()
                     self.last_pool_sync_times[acc.username] = time.monotonic()
+                    synced_pool = True
                     acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
-                acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": False, "error": None, "next_sync_in_seconds": max(0, round(60-(time.monotonic()-self.last_sync_times[acc.username])))}
             if acc.username not in self.logged_pool_summary:
                 self.logged_pool_summary.add(acc.username)
                 excluded = sum(not autonomous(c, require_windows=True) for c in (acc.boya_all_courses or []))
@@ -323,8 +402,16 @@ class BoyaScheduler:
                 self.add_log("info", message, username=acc.username, user_name=acc.name, category="boya")
             if active() and getattr(acc, "boya_auto_select", False):
                 self._check_auto_select(acc, self.clock(), active)
-            if active() and getattr(acc, "boya_auto_sign", False):
+            incident = self._network.get(acc.username)
+            if active() and getattr(acc, "boya_auto_sign", False) and not (incident and time.monotonic() < incident["retry_at"]):
                 self._check_auto_sign(acc, self.clock(), active)
+            incident = self._network.get(acc.username)
+            if not (incident and time.monotonic() < incident["retry_at"]):
+                recovered = self._network_recovered(acc) if synced_selected and synced_pool else incident is None
+                if recovered:
+                    acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": False, "error": None, "network_phase": None, "next_sync_in_seconds": max(0, round(60-(time.monotonic()-self.last_sync_times[acc.username])))}
+        except httpx.HTTPError as exc:
+            self._network_failure(acc, exc)
         except Exception as exc:
             error = type(exc).__name__
             previous = getattr(acc, "boya_health", {}).get("error")
@@ -333,6 +420,7 @@ class BoyaScheduler:
                 self.add_log("warning", "博雅同步/守护暂不可用：" + error, username=acc.username, user_name=acc.name, category="boya")
 
     def _check_auto_select(self, acc, now, active=lambda: True):
+        from core import operations
         from core.boya_actions import perform_boya_action
         info = acc.boya_client.semester_info
         start, end = semester_bounds(info or {})
@@ -344,13 +432,33 @@ class BoyaScheduler:
         for course in candidates:
             if not active() or not getattr(acc, "boya_auto_select", False):
                 break
+            # Cached knowledge can only reject a candidate. Every permitted
+            # action still performs the existing fresh official preflight.
+            cid = course_id(course)
+            reservations = list(acc.boya_selected_courses or []) + list(getattr(acc, "boya_pending_courses", {}).values())
+            if cid in {course_id(c) for c in reservations}:
+                continue
+            if operations.ledger.auto_select_excluded(acc.username, cid):
+                self._warn_course(acc,cid,"select-declined","此课程已停止自动抢选，保留用户退课意图。",level="info",notify=False)
+                continue
+            current_demands = get_user_category_demands(reservations, start, end, getattr(acc, "boya_targets", None))
+            category = get_course_category(course)
+            if current_demands.get(category, {}).get("remaining", 0) <= 0:
+                self._warn_course(acc,"category:"+category,"select-normal","本类别已完成或已有足够预约，已按设置停止额外抢选。",level="info",notify=False)
+                continue
             try:
                 result = perform_boya_action(acc, "select", course_id(course), automatic=True, guard=lambda: active() and acc.boya_auto_select, renew=self._renew_session, ordinary=self.ordinary_courses)
                 if result.get("submitted"):
                     self._warnings.pop((acc.username,course_id(course),"select"),None)
                     self.add_log("success", "博雅选课请求已被学校接受。", username=acc.username, user_name=acc.name, category="boya")
                 if result.get("pending_verification"):
+                    self._warn_course(acc,course_id(course),"select-pending","博雅选课请求尚待官方结果核对，保留在途预约与防重记录，不重复提交。")
+                    if result.get("verification_network_error"):
+                        self._network_failure(acc,result["verification_network_error"],notify=False)
                     break
+            except httpx.HTTPError as exc:
+                self._network_failure(acc, exc, cid, "select-network")
+                break
             except (BoyaApiError, BoyaSessionExpired) as exc:
                 if isinstance(exc,BoyaApiError) and exc.code=="target_filled":
                     self._warnings.pop((acc.username,course_id(course),"select"),None)
@@ -364,6 +472,7 @@ class BoyaScheduler:
                 self._warn_course(acc,course_id(course),"select","本门选课异常：" + type(exc).__name__)
 
     def _check_auto_sign(self, acc, now, active=lambda: True):
+        from core import operations
         from core.boya_actions import perform_boya_action, merge_selected
         from core.domain import attendance_allowed
         for raw in list(acc.boya_selected_courses or []):
@@ -373,12 +482,21 @@ class BoyaScheduler:
                 course = merge_selected(raw, acc.boya_all_courses or [])
                 if not attendance_allowed(course, sign_type, self.clock()):
                     continue
+                group = operations.ledger.key(acc.username,"signCourseByUser:"+str(sign_type),course_id(course),"group")
+                if operations.ledger.group_states(group) & {"pending","uncertain","success"}:
+                    continue
                 try:
                     result = perform_boya_action(acc, "sign", course_id(course), sign_type=sign_type, automatic=True, guard=lambda: active() and acc.boya_auto_sign, renew=self._renew_session)
                     if result.get("submitted"):
                         self._warnings.pop((acc.username,course_id(course),"sign"+str(sign_type)),None)
                         self.add_log("success", "博雅考勤请求已被学校接受，最终考核以官方结果为准。", username=acc.username, user_name=acc.name, category="boya")
                     if result.get("pending_verification"):
+                        self._warn_course(acc,course_id(course),"sign-pending"+str(sign_type),"博雅考勤请求尚待官方结果核对，保留防重记录，不重复提交。")
+                        if result.get("verification_network_error"):
+                            self._network_failure(acc,result["verification_network_error"],notify=False)
                         return
+                except httpx.HTTPError as exc:
+                    self._network_failure(acc, exc, course_id(course), "sign-network"+str(sign_type))
+                    return
                 except Exception as exc:
                     self._warn_course(acc,course_id(course),"sign"+str(sign_type),"本门考勤暂未完成：" + type(exc).__name__)

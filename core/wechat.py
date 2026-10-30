@@ -19,6 +19,9 @@ from core.domain import now as china_now, CHINA
 from core.course_reminders import upcoming
 from core.wechat_protocol import BASE_URL, WechatError, WechatProtocol, trusted_base
 
+DELIVERY_STATES = {'queued','sending','accepted','submitted','rejected','unconfirmed',
+    'session_expired','expired','queue_full','disabled','not_replayed','storage_blocked'}
+
 
 class WechatNotifications:
     def __init__(self, path, account_exists, protocol=None, course_reader=None):
@@ -42,6 +45,7 @@ class WechatNotifications:
         self.reminder_task = None
         self.reminder_limit = asyncio.Semaphore(4)
         self.reminder_health = {}
+        self.reminder_fault = False
         self.clock = china_now
 
     def _read(self):
@@ -63,7 +67,17 @@ class WechatNotifications:
             if type(binding.get('course_reminders',False)) is not bool:raise ValueError('微信私有文件损坏')
             claims=binding.get('course_notices',{})
             if not isinstance(claims,dict) or len(claims)>512:raise ValueError('微信私有文件损坏')
-            if any(not re.fullmatch('[a-f0-9]{64}',k) or type(v) not in (int,float) or not math.isfinite(v) or v<0 for k,v in claims.items()):raise ValueError('微信私有文件损坏')
+            if any(not re.fullmatch('[a-f0-9]{64}',k) or type(v) not in (int,float) or not math.isfinite(v) or not 0<=v<=253402214400 for k,v in claims.items()):raise ValueError('微信私有文件损坏')
+            deliveries=binding.get('course_deliveries',{})
+            if not isinstance(deliveries,dict) or len(deliveries)>512:raise ValueError('微信私有文件损坏')
+            for key,row in deliveries.items():
+                if (not re.fullmatch('[a-f0-9]{64}',key) or not isinstance(row,dict) or row.get('state') not in DELIVERY_STATES
+                    or not isinstance(row.get('time'),str) or len(row['time'])>40
+                    or (row.get('error_code') is not None and (type(row['error_code']) is not int or abs(row['error_code'])>=1000000))
+                    or row.get('error_kind') not in (None,'business','http','transport','payload','internal')):raise ValueError('微信私有文件损坏')
+            # An older compatible runtime can prune claims without knowing this
+            # optional diagnostic map. Retire orphaned diagnostics on upgrade.
+            if deliveries:binding['course_deliveries']={k:v for k,v in deliveries.items() if k in claims}
             pause=binding.get('paused_until')
             if type(pause) not in (float,int) or not math.isfinite(pause) or pause<0:raise ValueError('微信私有文件损坏')
         return data['bindings']
@@ -106,6 +120,7 @@ class WechatNotifications:
         if self.tasks or self.drain_task or self.reminder_task:await self.stop()
         # A lifecycle restart has the same at-most-once boundary as a new process.
         self.queues.clear();self.results.clear();self.health.clear();self.seen.clear();self.reminder_health.clear()
+        self.reminder_fault=False
         while True:
             try:self.incoming.get_nowait()
             except queue.Empty:break
@@ -116,6 +131,15 @@ class WechatNotifications:
             self.bindings=await asyncio.to_thread(self._read)
             self.storage_error=False
         except Exception:self.storage_error=True;self.bindings={}
+        updated=copy.deepcopy(self.bindings)
+        interrupted=False
+        for binding in updated.values():
+            for row in binding.get('course_deliveries',{}).values():
+                if row['state'] in ('queued','sending'):
+                    row.update(state='not_replayed',time=self.clock().isoformat(timespec='seconds'));interrupted=True
+        if interrupted:
+            try:await self.save(updated)
+            except ValueError:self.bindings=updated
         for username in self.bindings:
             if self.account_exists(username):self.launch(username)
         self.drain_task=asyncio.create_task(self.drain())
@@ -162,13 +186,16 @@ class WechatNotifications:
         guidance='\n请打开应用核对结果和提示；微信消息不会替你重试学校操作。' if entry['level'] in ('error','warning') else ''
         stamp=entry.get('time','')
         stamp=stamp if re.fullmatch(r'\d{2}:\d{2}:\d{2}',stamp) else '--:--:--'
-        return f'{level} · {category}\n{datetime.datetime.now().strftime("%m-%d")} {stamp}\n{message}{guidance}'
+        return f'{level} · {category}\n{china_now().strftime("%m-%d")} {stamp}\n{message}{guidance}'
 
     async def drain(self):
         supervise_at=0
         while not self.closed:
             now=time.monotonic()
             if now>=supervise_at:
+                if self.course_reader and (self.reminder_task is None or self.reminder_task.done()):
+                    if self.reminder_task and not self.reminder_task.cancelled():self.reminder_task.exception()
+                    self.reminder_fault=True;self.reminder_task=asyncio.create_task(self.reminder_loop())
                 for username in list(self.bindings):
                     if self.account_exists(username):
                         for index,task in enumerate(self.tasks.get(username,[])):
@@ -178,8 +205,9 @@ class WechatNotifications:
                         self.launch(username)
                 supervise_at=now+5
             for username, pending in list(self.queues.items()):
-                while pending and now-pending[0][0]>600:
-                    self.record(username,pending.popleft()[1],'expired')
+                expired=[entry for entry in pending if now-entry[0]>600]
+                for entry in expired:pending.remove(entry);self.record(username,entry[1],'expired')
+                for entry in expired:await self.delivery(username,entry,'expired')
             for _ in range(100):
                 try:entry=self.incoming.get_nowait()
                 except queue.Empty:break
@@ -192,7 +220,7 @@ class WechatNotifications:
                 if now-self.seen.get(identity,-1e10)<60:continue
                 self.seen[identity]=now
                 if len(self.seen)>4096:self.seen={k:v for k,v in self.seen.items() if now-v<60}
-                self.queues.setdefault(username,deque(maxlen=100)).append((now,secrets.token_hex(16),self.text(entry),binding['generation']))
+                await self.enqueue(username,(now,secrets.token_hex(16),self.text(entry),binding['generation']))
             await asyncio.sleep(.25)
 
     async def begin(self, username):
@@ -272,8 +300,14 @@ class WechatNotifications:
     def status(self, username):
         binding=self.bindings.get(username,{})
         health=self.health.get(username,{})
+        reminders=[{'course_start':datetime.datetime.fromtimestamp(expires,CHINA).isoformat(timespec='minutes'),
+            **binding.get('course_deliveries',{}).get(key,{'state':'registered_only','time':''})}
+            for key,expires in sorted(binding.get('course_notices',{}).items(),key=lambda item:item[1],reverse=True)[:10]]
         return {'bound':bool(binding),'enabled':bool(binding.get('enabled')),'important_only':bool(binding.get('important_only')),
             'course_reminders':bool(binding.get('course_reminders',False)),
+            'reminder_worker_error':self.reminder_fault,
+            'reminder_recent':reminders,
+            'send_retry_in_seconds':max(0,math.ceil(health.get('send_retry_at',0)-time.monotonic())),
             'course_sync':self.reminder_health.get(username,{}).get('state','waiting'),
             'ready':bool(binding.get('context')),'storage_error':self.storage_error,
             'session_expired':binding.get('paused_until',0)>time.time(),
@@ -286,29 +320,80 @@ class WechatNotifications:
             'queued':len(self.queues.get(username,[])),'recent':list(self.results.get(username,[]))}
 
     async def configure(self, username, enabled, important_only, course_reminders=None):
+        removed=[]
         async with self.gates.setdefault(username,asyncio.Lock()), self.lock:
             if username not in self.bindings:raise ValueError('请先绑定微信')
             updated=copy.deepcopy(self.bindings)
             updated[username].update(enabled=enabled,important_only=important_only)
             if course_reminders is not None:updated[username]['course_reminders']=course_reminders
             await self.save(updated)
-            if not enabled:self.queues.get(username,deque()).clear()
+            if not enabled:
+                removed=list(self.queues.get(username,[]));self.queues.get(username,deque()).clear()
             elif course_reminders is False:
+                removed=[entry for entry in self.queues.get(username,[]) if len(entry)>4]
                 self.queues[username]=deque((entry for entry in self.queues.get(username,[]) if len(entry)==4),maxlen=100)
+        for entry in removed:
+            self.record(username,entry[1],'disabled');await self.delivery(username,entry,'disabled')
 
     async def test(self, username):
         binding=self.bindings.get(username)
         if not binding or not binding.get('enabled'):raise ValueError('请先绑定并开启微信通知')
         if not binding.get('context'):raise ValueError('请先在绑定的微信中向机器人发送“开始接收”')
         identifier=secrets.token_hex(16)
-        self.queues.setdefault(username,deque(maxlen=100)).append((time.monotonic(),identifier,
+        # A new explicit test may check the channel without replaying old events.
+        self.health.setdefault(username,{})['send_retry_at']=0
+        await self.enqueue(username,(time.monotonic(),identifier,
             '🔔 AUTO-BUAA 微信通知测试\n这是当前学生的独立通道。\n看到这条消息后，请在应用中核对测试编号：'+identifier[-6:]+
             '\n此测试没有执行任何学校签到或抢课操作。',binding['generation']))
         return {'test_id':identifier[-6:],'status':'queued'}
 
     def record(self, username, identifier, state):
-        self.results.setdefault(username,deque(maxlen=20)).appendleft({'id':identifier[-6:],'state':state,
+        rows=self.results.setdefault(username,deque(maxlen=20))
+        for row in list(rows):
+            if row['id']==identifier[-6:]:rows.remove(row)
+        rows.appendleft({'id':identifier[-6:],'state':state,
             'time':datetime.datetime.now().isoformat(timespec='seconds')})
+
+    async def delivery(self, username, entry, state, code=None, kind=None):
+        if len(entry)<6:return True
+        async with self.lock:
+            binding=self.bindings.get(username)
+            if not binding or binding['generation']!=entry[3]:return False
+            updated=copy.deepcopy(self.bindings)
+            updated[username].setdefault('course_deliveries',{})[entry[5]]={
+                'state':state,'time':self.clock().isoformat(timespec='seconds'),
+                'error_code':code,'error_kind':kind}
+            try:await self.save(updated);return True
+            except ValueError:
+                if state=='sending':updated[username]['course_deliveries'][entry[5]]['state']='storage_blocked'
+                # Preserve known diagnostics in memory for the next successful
+                # storage recovery; never resume sends while storage_error is set.
+                self.bindings=updated
+                return False
+
+    async def enqueue(self, username, entry):
+        # Queue mutations contain no await: they are atomic on this event loop.
+        # Never wait for a student's network-send gate in the shared log drain.
+        current=self.bindings.get(username)
+        if not current or current['generation']!=entry[3] or not current.get('enabled') or not self.account_exists(username) or (len(entry)>4 and not current.get('course_reminders')):
+            self.record(username,entry[1],'disabled');await self.delivery(username,entry,'disabled');return
+        pending=self.queues.setdefault(username,deque(maxlen=100));dropped=None
+        if len(pending)>=100:
+            ordinary=next((candidate for candidate in pending if len(candidate)==4),None)
+            dropped=ordinary or (entry if len(entry)==4 or entry[4]>=pending[-1][4] else pending[-1])
+            if dropped is not entry:pending.remove(dropped)
+            self.record(username,dropped[1],'queue_full')
+        if dropped is not entry:
+            if len(entry)>4:
+                index=next((i for i,candidate in enumerate(pending) if len(candidate)==4 or candidate[4]>entry[4]),len(pending))
+                pending.insert(index,entry)
+            else:pending.append(entry)
+        if dropped is not None:await self.delivery(username,dropped,'queue_full')
+
+    def send_backoff(self, username):
+        health=self.health.setdefault(username,{})
+        failures=min(health.get('send_failures',0)+1,5)
+        health.update(send_failures=failures,send_retry_at=time.monotonic()+min(300,30*2**(failures-1)))
 
     async def poll(self, username):
         delay=1
@@ -330,6 +415,7 @@ class WechatNotifications:
                             and msg.get('message_type')==1 and isinstance(msg.get('context_token'),str) and 0<len(msg['context_token'])<8192):
                             target['context']=msg['context_token']
                             target['context_received_at']=time.time()
+                            self.health.setdefault(username,{}).update(send_retry_at=0,send_failures=0)
                     cursor=data.get('get_updates_buf')
                     if isinstance(cursor,str) and 0<len(cursor)<65536:target['cursor']=cursor
                     if target!=self.bindings[username] or self.storage_error:await self.save(updated)
@@ -361,27 +447,37 @@ class WechatNotifications:
         while not self.closed and username in self.bindings and self.account_exists(username):
             pending=self.queues.get(username)
             binding=self.bindings[username]
-            if not pending or not binding.get('context') or not binding.get('enabled') or self.storage_error or binding.get('paused_until',0)>time.time():
+            if not pending or not binding.get('context') or not binding.get('enabled') or self.storage_error or binding.get('paused_until',0)>time.time() or self.health.get(username,{}).get('send_retry_at',0)>time.monotonic():
                 await asyncio.sleep(.5);continue
             entry=pending.popleft();created,identifier,text,generation=entry[:4]
             deadline=entry[4] if len(entry)>4 else None
             if time.monotonic()-created>600 or generation!=binding['generation']:
-                self.record(username,identifier,'expired');continue
+                self.record(username,identifier,'expired');await self.delivery(username,entry,'expired');continue
             # Removal/disable commits acquire this same gate, so no later send
             # may start after they return. Unknown sends are never replayed.
             async with self.gates.setdefault(username,asyncio.Lock()):
                 current=self.bindings.get(username)
                 if not current or not current['enabled'] or current['generation']!=generation or not self.account_exists(username):continue
                 if deadline is not None and (not current.get('course_reminders') or self.clock().replace(tzinfo=CHINA).timestamp()>=deadline):
-                    self.record(username,identifier,'expired');continue
+                    self.record(username,identifier,'expired');await self.delivery(username,entry,'expired');continue
                 self.record(username,identifier,'sending')
+                if not await self.delivery(username,entry,'sending'):
+                    self.record(username,identifier,'unconfirmed');continue
+                current=self.bindings.get(username)
+                if not current or current['generation']!=generation or not current.get('context') or current.get('paused_until',0)>time.time():
+                    self.record(username,identifier,'expired');await self.delivery(username,entry,'expired');continue
+                if deadline is not None and self.clock().replace(tzinfo=CHINA).timestamp()>=deadline:
+                    self.record(username,identifier,'expired');await self.delivery(username,entry,'expired');continue
                 try:
                     response=await self.protocol.send(copy.deepcopy(current),text,identifier)
-                    self.record(username,identifier,'accepted' if response.get('ret')==0 else 'submitted')
-                    self.health.setdefault(username,{}).update(send_error=False,send_fault=False,send_error_code=None,send_error_kind=None,last_send=datetime.datetime.now().isoformat(timespec='seconds'))
+                    state='accepted' if response.get('ret')==0 else 'submitted'
+                    self.record(username,identifier,state);await self.delivery(username,entry,state)
+                    self.health.setdefault(username,{}).update(send_error=False,send_fault=False,send_error_code=None,send_error_kind=None,send_failures=0,send_retry_at=0,last_send=datetime.datetime.now().isoformat(timespec='seconds'))
                 except WechatError as exc:
-                    self.record(username,identifier,'session_expired' if exc.code==-14 else 'rejected' if exc.kind=='business' and exc.code is not None else 'unconfirmed')
+                    state='session_expired' if exc.code==-14 else 'rejected' if exc.kind=='business' and exc.code is not None else 'unconfirmed'
+                    self.record(username,identifier,state);await self.delivery(username,entry,state,exc.code,exc.kind)
                     self.health.setdefault(username,{}).update(send_error=True,send_error_code=exc.code,send_error_kind=exc.kind)
+                    self.send_backoff(username)
                     if exc.code==-14:
                         async with self.lock:
                             updated=copy.deepcopy(self.bindings);updated[username]['context']='';updated[username]['paused_until']=time.time()+3600
@@ -389,14 +485,17 @@ class WechatNotifications:
                             except ValueError:pass
                 except Exception:
                     self.record(username,identifier,'unconfirmed')
+                    await self.delivery(username,entry,'unconfirmed',kind='internal')
                     self.health.setdefault(username,{}).update(send_error=True,send_fault=True,send_error_code=None,send_error_kind='internal')
+                    self.send_backoff(username)
             await asyncio.sleep(1)
 
     async def reminder_loop(self):
         while not self.closed:
-            try:await self.reminder_tick()
+            try:
+                await self.reminder_tick();self.reminder_fault=False
             except asyncio.CancelledError:raise
-            except Exception:pass # Notification failure never stops school tasks.
+            except Exception:self.reminder_fault=True # School tasks remain independent.
             await asyncio.sleep(30)
 
     async def reminder_tick(self):
@@ -406,14 +505,17 @@ class WechatNotifications:
                 except asyncio.CancelledError:raise
                 except Exception:snapshot=None
                 if self.bindings.get(username,{}).get('generation')!=generation or not self.account_exists(username):return
-                if not isinstance(snapshot,dict):
+                if not isinstance(snapshot,dict) or not isinstance(snapshot.get('classes'),list) or any(not isinstance(c,dict) for c in snapshot['classes']):
                     self.reminder_health[username]={'state':'unavailable'};return
                 self.reminder_health[username]={'state':'ok'}
                 for course in snapshot.get('classes',[]):
                     notice=upcoming(course,self.clock(),snapshot.get('semester'))
                     if notice:await self.claim_reminder(username,generation,notice)
-        jobs=[student(u,b['generation']) for u,b in list(self.bindings.items()) if b.get('enabled') and b.get('course_reminders') and b.get('context') and b.get('paused_until',0)<=time.time() and self.account_exists(u)]
-        await asyncio.gather(*jobs,return_exceptions=True)
+        eligible=[(u,b['generation']) for u,b in list(self.bindings.items()) if b.get('enabled') and b.get('course_reminders') and b.get('context') and b.get('paused_until',0)<=time.time() and self.account_exists(u)]
+        results=await asyncio.gather(*(student(u,g) for u,g in eligible),return_exceptions=True)
+        for (username,generation),result in zip(eligible,results):
+            if isinstance(result,Exception) and self.bindings.get(username,{}).get('generation')==generation:
+                self.reminder_health[username]={'state':'unavailable'}
 
     async def claim_reminder(self, username, generation, notice):
         # Persist before enqueue: a restart/timeout never replays a claimed notice.
@@ -424,11 +526,16 @@ class WechatNotifications:
             if notice['key'] in b.get('course_notices',{}):return
             updated=copy.deepcopy(self.bindings);claims=updated[username].setdefault('course_notices',{})
             claims={k:v for k,v in claims.items() if v>now-7*86400}
-            if len(claims)>=512:return # Fail closed rather than evict a live dedup claim.
+            if len(claims)>=512:
+                self.reminder_health[username]={'state':'capacity'}
+                return # Fail closed rather than evict a live dedup claim.
             claims[notice['key']]=notice['expires'];updated[username]['course_notices']=claims
+            deliveries=updated[username].setdefault('course_deliveries',{})
+            updated[username]['course_deliveries']={k:v for k,v in deliveries.items() if k in claims}
+            updated[username]['course_deliveries'][notice['key']]={'state':'queued','time':self.clock().isoformat(timespec='seconds'),'error_code':None,'error_kind':None}
             await self.save(updated)
             identifier=secrets.token_hex(16)
             entry={'username':username,'message':notice['text'],'category':'regular','level':'info','time':self.clock().strftime('%H:%M:%S')}
             # This opt-in reminder is separate from the runtime-log importance filter.
             safe=self.text(entry).split('\n',2)[-1]
-            self.queues.setdefault(username,deque(maxlen=100)).append((time.monotonic(),identifier,safe,generation,notice['expires']))
+        await self.enqueue(username,(time.monotonic(),identifier,safe,generation,notice['expires'],notice['key']))

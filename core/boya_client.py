@@ -269,19 +269,24 @@ class BoyaClient:
             if key:
                 operations.ledger.finish(key, "success")
             return decoded
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout) as exc:
             if key:
                 operations.ledger.failed_before_send(key)
                 if api_name == "choseCourse":
                     operations.ledger.failed_before_send(quota)
+            exc.boya_phase = "not_sent" if writing else "read"
             raise
         except (BoyaSessionExpired, BoyaApiError):
             if key:
                 operations.ledger.finish(key, "failed")
             raise
-        except BaseException:
+        except BaseException as exc:
             if key:
                 operations.ledger.finish(key, "uncertain")
+            if isinstance(exc, httpx.HTTPError):
+                # Keep the original exception type and the durable write budget.
+                # Callers may describe the phase without exposing URLs or payloads.
+                exc.boya_phase = "write_uncertain" if writing else "read"
             raise
 
     def get_all_config(self) -> Dict[str, Any]:
