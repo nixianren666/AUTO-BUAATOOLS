@@ -421,7 +421,7 @@ class BoyaScheduler:
 
     def _check_auto_select(self, acc, now, active=lambda: True):
         from core import operations
-        from core.boya_actions import perform_boya_action
+        from core.boya_actions import perform_boya_action, BoyaPreflightStop
         info = acc.boya_client.semester_info
         start, end = semester_bounds(info or {})
         if not start or not end:
@@ -446,6 +446,9 @@ class BoyaScheduler:
             if current_demands.get(category, {}).get("remaining", 0) <= 0:
                 self._warn_course(acc,"category:"+category,"select-normal","本类别已完成或已有足够预约，已按设置停止额外抢选。",level="info",notify=False)
                 continue
+            if any(courses_time_overlap(course,existing) for existing in reservations):
+                self._warn_course(acc,cid,"select-conflict-normal","与当前已选博雅或在途预约的时间冲突，本轮未提交。",level="info",notify=False)
+                continue
             try:
                 result = perform_boya_action(acc, "select", course_id(course), automatic=True, guard=lambda: active() and acc.boya_auto_select, renew=self._renew_session, ordinary=self.ordinary_courses)
                 if result.get("submitted"):
@@ -456,6 +459,8 @@ class BoyaScheduler:
                     if result.get("verification_network_error"):
                         self._network_failure(acc,result["verification_network_error"],notify=False)
                     break
+            except BoyaPreflightStop as exc:
+                self._warn_course(acc,cid,"select-preflight-normal",exc.message,level="info",notify=False)
             except httpx.HTTPError as exc:
                 self._network_failure(acc, exc, cid, "select-network")
                 break

@@ -39,7 +39,7 @@ def main():
     subprocess.run([sys.executable, 'scripts/test_isolated.py', '--embedded-executable', str(executable), '--pattern', 'test_td.py'], cwd=ROOT, env=dict(os.environ, BUAA_TEST_REPORT_DIR=str(ROOT/'acceptance/td-embedded')), check=True)
     call(sys.executable,"scripts/verify_remote.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance/remote-compiled"))
     call(sys.executable,"scripts/verify_management_setup.py","--executable",str(executable),"--report-dir",str(ROOT/"acceptance/setup-compiled"))
-    for contract in ('test_management_recovery.py','test_wechat_notifications.py','test_wechat_api.py','test_wechat_storage.py','test_course_reminders.py','test_wechat_longevity.py','test_account_switch_failure.py','test_boya_scheduler.py','test_boya_declines.py','test_regular_course_policy.py','test_regular_refresh_notices.py','test_boya_permanent_rules.py','test_boya_network_incidents.py','test_wechat_delivery_audit.py'):
+    for contract in ('test_management_recovery.py','test_wechat_notifications.py','test_wechat_api.py','test_wechat_storage.py','test_course_reminders.py','test_wechat_longevity.py','test_account_switch_failure.py','test_boya_scheduler.py','test_boya_declines.py','test_regular_course_policy.py','test_regular_refresh_notices.py','test_boya_permanent_rules.py','test_boya_network_incidents.py','test_wechat_delivery_audit.py','test_boya_preflight_states.py'):
         subprocess.run([sys.executable,'scripts/test_isolated.py','--embedded-executable',str(executable),'--pattern',contract],
             cwd=ROOT,env=dict(os.environ,BUAA_TEST_REPORT_DIR=str(ROOT/'acceptance'/contract.removesuffix('.py'))),check=True)
     if os.environ.get("GITHUB_ACTIONS")=="true":

@@ -19,14 +19,14 @@
 
 **不用一直盯着软件：绑定微信助手，把运行结果、失败提醒和课前提醒送到自己的微信。**
 
-[![Version](https://img.shields.io/badge/version-1.4.16-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.17-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8b5cf6)](#下载与安装)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/nixianren666/AUTO-BUAATOOLS/total?label=downloads&color=38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)
 
 [**⬇️ 下载客户端**](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) · [💬 绑定微信助手](#微信助手) · [🖼️ 界面与功能](#界面展示) · [🛡️ 操作安全](#怎么减少漏选错选和重复操作)
 
-源码版本 **v1.4.16**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
+源码版本 **v1.4.17**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
 
 [⚠️ 使用前必读](#免责声明) · [🔐 账号隐私](#账号与隐私如何保护) · [🚀 三步上手](#第一次使用三步完成设置) · [⚙️ 后台部署](#源码与后台部署) · [💬 常见问题](#常见问题)
 
@@ -155,6 +155,8 @@ AUTO-BUAA 是面向北航学生的**开源自动签到与博雅自动抢课工�
 类别已完成、已有足够预约或已放弃某门课时，停止额外抢选属于正常行为。这类状态只保留在应用日志，不发送微信异常提醒；真正的网络、认证和操作故障仍会提示。
 
 博雅网络中断按学生合并同类提醒，并保留上次数据；自动任务会退避核对，连续两轮完整同步后才判定恢复，避免间歇网络波动反复刷屏。提交后的响应中断会单独提示“结果待确认”，保留防重记录，不自动重发；没有收到微信新提醒不代表后台一定正常，请同时查看应用中的同步状态。
+
+选课前核对到名额刚满、官方窗口尚未开始或已经结束，只在应用记录本轮正常停止，不发送微信异常提醒；名额或时间数据缺失、不一致，以及学校实际拒绝提交仍会告警，不能与正常停止混淆。
 
 **接收连接正常不等于消息已送达。** 请先查看微信助手的发送结果和错误提示；明确拒绝、发送结果未确认、登录失效分别处理。普通业务错误不能一律当作登录失效或要求重新扫码。
 

@@ -6,7 +6,10 @@ import time
 from core import operations
 from core.boya_client import BoyaApiError, BoyaSessionExpired
 from core.domain import (now, course_id, course_times, sign_config, sign_points,
-    attendance_allowed, drop_allowed, within_semester, semester_bounds, in_window)
+    attendance_allowed, drop_allowed, within_semester, semester_bounds, in_window, parse_dt)
+
+class BoyaPreflightStop(BoyaApiError):
+    """An expected preflight decision, before any school write is attempted."""
 
 _creation_lock = threading.Lock()
 
@@ -121,8 +124,18 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
             course = next((c for c in pool if course_id(c) == cid), None)
             if course is None:
                 raise BoyaApiError("not_found", "官方课池不存在此课程")
-            if not capacity_available(course) or not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()):
-                raise BoyaApiError("unavailable", "名额未知/已满或不在官方选课窗口")
+            if not capacity_available(course):
+                current, maximum = capacity_values(course)
+                if (not isinstance(current,bool) and not isinstance(maximum,bool)
+                    and str(current).isdigit() and str(maximum).isdigit()
+                    and 0 < int(maximum) == int(current)):
+                    raise BoyaPreflightStop("unavailable", "官方最新名额已满，本轮未提交，继续等待课池变化。")
+                raise BoyaApiError("unavailable", "官方名额信息未知或不一致，未提交，请核对课程数据")
+            if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()):
+                start, end = parse_dt(course.get("courseSelectStartDate")), parse_dt(course.get("courseSelectEndDate"))
+                if start and end and start <= end:
+                    raise BoyaPreflightStop("unavailable", "官方选课窗口尚未开始或已经结束，本轮未提交。")
+                raise BoyaApiError("unavailable", "官方选课时间缺失或不一致，未提交，请核对课程数据")
             if automatic:
                 from core.boya_auto_rules import permanently_excluded
                 if permanently_excluded(course):
