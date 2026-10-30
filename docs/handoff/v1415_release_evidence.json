@@ -1,0 +1,3243 @@
+{
+  "passed": true,
+  "version": "1.4.15",
+  "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+  "run_id": 40942169664,
+  "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.15",
+  "assets": 15,
+  "platforms": {
+    "Windows-x64": {
+      "source": {
+        "tests": 495,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 335.73,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.52,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.3,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.72,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.3,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.66,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_longevity": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 12.52,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_account_switch_failure": {
+          "summary": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.17,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_scheduler": {
+          "summary": {
+            "tests": 11,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.59,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_declines": {
+          "summary": {
+            "tests": 15,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 8.31,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_course_policy": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.53,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_refresh_notices": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.78,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_permanent_rules": {
+          "summary": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.23,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 20.38,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 5.23,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_auto_rules",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_course_policy",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 139,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "win32",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": false
+      },
+      "packaging": {
+        "passed": true,
+        "installation": "fresh-and-upgrade",
+        "payload_matches_portable": true,
+        "compiled_installed_app_verified": true,
+        "uninstall_preserves_user_files": true,
+        "installed_autostart_removed": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null,
+      "all_embedded_contracts_match_distributed_executable": true
+    },
+    "macOS-arm64": {
+      "source": {
+        "tests": 495,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 291.46,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.29,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.17,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.64,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.23,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.88,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_longevity": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 11.8,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_account_switch_failure": {
+          "summary": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.33,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_scheduler": {
+          "summary": {
+            "tests": 11,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.18,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_declines": {
+          "summary": {
+            "tests": 15,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.56,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_course_policy": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.32,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_refresh_notices": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.28,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_permanent_rules": {
+          "summary": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.11,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 8.41,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 1.07,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "e0154971e74584741981b789a992436f95188f8008d7cf20e2eba46397e4ca16",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_auto_rules",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_course_policy",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 134,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.4.15",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null,
+      "all_embedded_contracts_match_distributed_executable": true
+    },
+    "macOS-x86_64": {
+      "source": {
+        "tests": 495,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 511.81,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.34,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.15,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.89,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.23,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.05,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_longevity": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 11.95,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_account_switch_failure": {
+          "summary": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.65,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_scheduler": {
+          "summary": {
+            "tests": 11,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.42,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_declines": {
+          "summary": {
+            "tests": 15,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.42,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_course_policy": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.72,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_refresh_notices": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.63,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_permanent_rules": {
+          "summary": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.24,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 10.57,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 1.97,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "5f2065b99d1cbb5b363025728cdba028853ba0e37be13839e410b8289a13e2cf",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_auto_rules",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_course_policy",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 134,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "darwin",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": {
+        "passed": true,
+        "version": "1.4.15",
+        "dmg_integrity_verified": true,
+        "mounted_payload_matches_tested_application": true
+      },
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": null,
+      "all_embedded_contracts_match_distributed_executable": true
+    },
+    "Linux-x86_64": {
+      "source": {
+        "tests": 495,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 261.81,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "new_embedded_contracts": {
+        "test_management_recovery": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.47,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.management_store",
+              "core.profile",
+              "server",
+              "server.management",
+              "server.presentation"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_notifications": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 2.2,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_api": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.49,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.management_store",
+              "core.profile",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.management",
+              "server.presentation",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_storage": {
+          "summary": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.23,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.course_reminders",
+              "core.domain",
+              "core.vault",
+              "core.version",
+              "core.wechat",
+              "core.wechat_protocol"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_course_reminders": {
+          "summary": {
+            "tests": 17,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.74,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_wechat_longevity": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 11.6,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_account_switch_failure": {
+          "summary": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.39,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_scheduler": {
+          "summary": {
+            "tests": 11,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.21,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_declines": {
+          "summary": {
+            "tests": 15,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.87,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_course_policy": {
+          "summary": {
+            "tests": 14,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 1.17,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_regular_refresh_notices": {
+          "summary": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.38,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.course_reminders",
+              "core.domain",
+              "core.iclass",
+              "core.management_store",
+              "core.operations",
+              "core.profile",
+              "core.regular_course_policy",
+              "core.regular_policy",
+              "core.scheduler",
+              "core.td_client",
+              "core.td_license",
+              "core.td_license_public",
+              "core.td_policy",
+              "core.td_scheduler",
+              "core.td_store",
+              "core.updates",
+              "core.vault",
+              "core.version",
+              "core.webvpn",
+              "core.wechat",
+              "core.wechat_protocol",
+              "server",
+              "server.app",
+              "server.management",
+              "server.presentation",
+              "server.td_routes",
+              "server.update_routes",
+              "server.wechat"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        },
+        "test_boya_permanent_rules": {
+          "summary": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "passed": true,
+            "elapsed_seconds": 0.15,
+            "blocked_non_loopback_attempts": 0,
+            "failure_names": [],
+            "error_names": []
+          },
+          "embedded_code": {
+            "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+            "modules": [
+              "core",
+              "core.boya_actions",
+              "core.boya_auto_rules",
+              "core.boya_client",
+              "core.boya_crypto",
+              "core.boya_scheduler",
+              "core.cas",
+              "core.cas_transport",
+              "core.domain",
+              "core.operations",
+              "core.webvpn"
+            ],
+            "tests_executed_from_packaged_application": true
+          }
+        }
+      },
+      "setup": {
+        "source": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        },
+        "compiled": {
+          "passed": true,
+          "checks": [
+            "private-setup-fragment-removed-before-further-use",
+            "phone-setup-fields-fit-and-hidden-controls-stay-hidden",
+            "first-password-recovery-code-and-explicit-save-confirmation",
+            "recovery-secret-cleared-from-dom-after-acknowledgement",
+            "cancel-password-change-keeps-original-session-and-clears-fields",
+            "real-recovery-reset-rotates-recovery-code",
+            "old-password-rejected-new-password-accepted"
+          ],
+          "script_errors": [],
+          "school_writes": 0
+        }
+      },
+      "td_embedded": {
+        "tests": 102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 9.45,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "elapsed_seconds": 0.73,
+        "blocked_non_loopback_attempts": 0,
+        "failure_names": [],
+        "error_names": []
+      },
+      "network_embedded_code": {
+        "executable_sha256": "bb1918165fa13ffe051206c235ba614ccdb3d2d12f9e83e21ddc034347e302d5",
+        "modules": [
+          "core",
+          "core.boya_actions",
+          "core.boya_auto_rules",
+          "core.boya_client",
+          "core.boya_crypto",
+          "core.boya_scheduler",
+          "core.cas",
+          "core.cas_transport",
+          "core.course_reminders",
+          "core.domain",
+          "core.iclass",
+          "core.management_store",
+          "core.operations",
+          "core.profile",
+          "core.regular_course_policy",
+          "core.regular_policy",
+          "core.scheduler",
+          "core.td_client",
+          "core.td_license",
+          "core.td_license_public",
+          "core.td_policy",
+          "core.td_scheduler",
+          "core.td_store",
+          "core.updates",
+          "core.vault",
+          "core.version",
+          "core.webvpn",
+          "core.wechat",
+          "core.wechat_protocol",
+          "server",
+          "server.app",
+          "server.management",
+          "server.presentation",
+          "server.td_routes",
+          "server.update_routes",
+          "server.wechat"
+        ],
+        "tests_executed_from_packaged_application": true
+      },
+      "compiled_passed": true,
+      "compiled_check_count": 134,
+      "first_login_checks": [
+        "first-login-notice-arrives-first",
+        "first-login-accounts-arrive-first",
+        "first-login-accepted-before-slow-accounts",
+        "first-login-previously-accepted-empty-profile",
+        "first-login-existing-account-not-interrupted",
+        "first-login-failed-save-stays-open-and-retries",
+        "first-login-unconfirmed-save-stays-open",
+        "first-login-pending-save-no-double-submit",
+        "first-login-unavailable-notice-requires-confirmation",
+        "first-login-unknown-accounts-never-assumed-empty",
+        "first-login-failed-accounts-never-assumed-empty",
+        "first-login-fallback-without-motion-module",
+        "first-login-typed-pledge-both-requirements-and-ime",
+        "first-login-typed-pledge-narrow-screen-and-keyboard",
+        "first-login-mismatched-acceptance-version-stays-locked",
+        "first-login-notice-reference-is-mouse-selectable-without-copy-button"
+      ],
+      "native_service": {
+        "passed": true,
+        "platform": "linux",
+        "compiled_service_started": true,
+        "enabled_status_verified": true,
+        "service_removed": true,
+        "real_school_writes": 0,
+        "reboot_tested": false,
+        "first_headless_setup_tested": true
+      },
+      "packaging": null,
+      "remote_source": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "remote_compiled": {
+        "passed": true,
+        "checks": [
+          "phone-password-management-real-cookie-and-reachable-login",
+          "phone-first-use-terms-scroll-portrait-landscape-keyboard-no-signing",
+          "phone-remote-reload-reuses-cookie-without-replaying-service-startup",
+          "remote-first-use-glass-login-without-native-prompt",
+          "remote-password-cookie-protects-real-notice-and-accounts",
+          "refresh-reuses-password-cookie-and-no-repeated-splash",
+          "remote-modules-switch-and-preserve-account-isolation",
+          "parallel-expired-reads-require-one-login-and-retry-reads-only",
+          "expired-write-is-never-replayed-after-management-login",
+          "server-autostart-rejected-without-changing-host-or-service",
+          "new-tab-and-unavailable-browser-storage-do-not-replay-startup",
+          "offline-bootstrap-can-reconnect-with-cookie-without-password-post",
+          "server-exit-logs-out-browser-without-stopping-background"
+        ],
+        "native_prompts": 0,
+        "script_errors": [],
+        "school_writes": 0
+      },
+      "container": {
+        "passed": true,
+        "checks": [
+          "docker-real-password-browser-thirteen-contracts-including-phone",
+          "container-recreation-preserves-config-private-vault-td-data",
+          "new-process-first-document-once",
+          "host-autostart-write-denied",
+          "non-root-no-capabilities-zero-external-connect-attempts"
+        ],
+        "real_school_writes": 0,
+        "blocked_non_loopback_attempts": 0,
+        "external_network": "CI-only Python audit forbids external app connections; browser blocks third-party resources",
+        "host_rebooted": false
+      },
+      "all_embedded_contracts_match_distributed_executable": true
+    }
+  },
+  "compiled_integrity": {
+    "passed": true,
+    "version": "1.4.15",
+    "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+    "python_minor": "3.12",
+    "application_modules": [
+      "core/__init__.py",
+      "core/autostart.py",
+      "core/boya_actions.py",
+      "core/boya_auto_rules.py",
+      "core/boya_client.py",
+      "core/boya_crypto.py",
+      "core/boya_scheduler.py",
+      "core/cas.py",
+      "core/cas_transport.py",
+      "core/course_reminders.py",
+      "core/domain.py",
+      "core/iclass.py",
+      "core/management_store.py",
+      "core/operations.py",
+      "core/profile.py",
+      "core/regular_course_policy.py",
+      "core/regular_policy.py",
+      "core/render_lifecycle.py",
+      "core/scheduler.py",
+      "core/smoke.py",
+      "core/td_client.py",
+      "core/td_license.py",
+      "core/td_license_public.py",
+      "core/td_policy.py",
+      "core/td_scheduler.py",
+      "core/td_store.py",
+      "core/updates.py",
+      "core/vault.py",
+      "core/version.py",
+      "core/webvpn.py",
+      "core/wechat.py",
+      "core/wechat_protocol.py",
+      "server/__init__.py",
+      "server/app.py",
+      "server/management.py",
+      "server/presentation.py",
+      "server/td_routes.py",
+      "server/update_routes.py",
+      "server/wechat.py"
+    ],
+    "entry_script_equal_source": true,
+    "static_assets": {
+      "server/static/css/remote-phone.css": "f0988050d16781661ec3fedb5ceeb52df4648ecf70ba403bd544075c8b36f730",
+      "server/static/css/startup.css": "6296774fdcd05adfba96927a7dcaacce6fc0728f37f59b222a4193d447e0802d",
+      "server/static/css/stitch-glass.css": "0cc87bd8e901fe0a6271e0509acad40eed1a11c9a2ecdf7848a929d954fe2145",
+      "server/static/css/style.css": "85fcee259b59b4ae956991d5da85e4ac12e7b9ef0095f4cc0e9e2e7ed0257693",
+      "server/static/css/td.css": "80eb644a2398df8b37b4aaab2d9b7da94972ac2c8645c8033122699f60b9b9ba",
+      "server/static/favicon.ico": "16c4d6271712db0eb281601c8cf9e125d0aac1c22fc25f3a86d95bc34550faf4",
+      "server/static/images/app_logo.png": "53bd2835fa4c4c66e045ba6ea9d1e412e4cf0f100b427b88b5f4ad1b7f64c5d0",
+      "server/static/images/buaa-emblem.svg": "46018a6e4b04bb12a1e93935b9bb528e995be2c99356b7550a1106649df9466c",
+      "server/static/images/buaa-wordmark.svg": "0640709a990ca5d9705a1a11eb24dc66478336106240dcded16a4756e2e06efc",
+      "server/static/images/buaa_logo.svg": "365ca3bf52effc95bce6848903019e4e0a9e9ec7a55afdf858688a937a674495",
+      "server/static/images/BUAA_LOGO_SOURCE.json": "d0e29ba0a2ac1b40445afd1de52f8bbe5b1c4956ba7f0bc44681aa35d8fabc01",
+      "server/static/index.html": "c824764ea42b2b1a9f6a11a4518bd4ab0c315d6b177853540da74405755685aa",
+      "server/static/js/app.js": "7f95f431ea912c00113d3f0d760e3c6769e1b80e43707f4f91ef5c08b575ed5d",
+      "server/static/js/remote-phone.js": "b6fc04cd654160fedbb1ad2d369af3d21cc3883891306c582e625ff211ca9dd7",
+      "server/static/js/render-lifecycle.js": "76c3b2909d8aecc311c4eb38b2caacce5f64af4cb4c1cefb824f49913a98c03e",
+      "server/static/js/startup.js": "da386a3be758b0f2e88820e7aed6a405db5516ec2101aa0c237f18d6254dac00",
+      "server/static/js/stitch-ambient.js": "86a799cb9eb0af3389017cde2cbe5ff959d8423d47428e3126a4b993a5c609a8",
+      "server/static/js/td-calendar.js": "88c647cbeb0d12a2324f51d978f045d02f2173b156b4a1934835f01482f2966c",
+      "server/static/js/td.js": "4a34ecf7a5696738909c0e003e9e4796c1c7fda6d09f789408d3184b6a9d2395",
+      "server/static/js/ui-controls.js": "83ef3764fce9e9ce234a03c0d64cf00105061f285972c37ac672e6da571dc8b4",
+      "server/static/js/ui-motion.js": "4c3b0b5b3735083bca13aede627b6f1755c9086dfe2bd118f5668b4261b7259f",
+      "server/static/js/ui-surfaces.js": "fe4cd1ef9156ead8965b66bd590faebaaf1074a6121b94cd6f03ed2960cdd48f",
+      "server/static/js/updates.js": "bfae81f5068d7eb6aa2a795983b62e1b71a09ee4967297688c161298b08181ad",
+      "server/static/js/wechat.js": "a7ed9441c16086ce36673b61824f164b434096ff8e9e3d3acd0c4cf166fea077"
+    },
+    "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259"
+  },
+  "windows_computer_use": {
+    "passed": true,
+    "version": "1.4.15",
+    "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+    "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+    "checks": [
+      "exact-final-native-version-and-original-dark-glass-regular-page",
+      "whole-subject-pause-caption-and-manual-button-retained",
+      "manual-synthetic-regular-sign-succeeds-while-course-paused",
+      "signed-counter-updated-and-duplicate-manual-button-disabled",
+      "resume-course-preserves-successful-attendance-and-global-off",
+      "account-modal-explains-background-independence",
+      "switch-second-student-shows-own-lesson-and-unsigned-counter",
+      "boya-pool-and-selected-tabs-have-distinct-content",
+      "synthetic-boya-signout-confirmed-without-inventing-assessment-progress",
+      "sidebar-wechat-selects-current-student-and-shows-required-three-steps",
+      "unbound-wechat-test-and-bind-remain-disabled-without-consent",
+      "closing-assistant-restores-previous-boya-view",
+      "unactivated-TD-entry-shows-student-specific-gate",
+      "native-Escape-does-not-dismiss-required-TD-gate",
+      "TD-back-button-returns-to-regular-without-activation",
+      "student-scoped-log-view-shows-single-refresh-notice-and-operation"
+    ],
+    "method": "Windows computer-use sky observation and individual native actions; synthetic profile only",
+    "actual_native_window": true,
+    "real_school_writes": 0,
+    "actual_WeChat_sent": false,
+    "own_fixture_exited_via_api": true,
+    "owned_fixture_port_closed": true,
+    "previous_failed_capture_retained": true,
+    "limits": [
+      "First activation/cache failure and one mixed foreground capture were not counted; fresh correct target was reactivated before further input",
+      "No new native QR binding or consent change; unbound steps inspected; send-fault/green-step states covered by separate compiled touch contracts",
+      "No physical phone Safari acceptance or real school workflow claim"
+    ]
+  },
+  "phone_touch_compiled": {
+    "passed": true,
+    "checks": [
+      "phone-headless-classification-and-device-boundaries",
+      "phone-regular-320-390-430-portrait-and-landscape-fit",
+      "phone-original-menu-labels-focus-backdrop-and-no-requests",
+      "phone-boya-search-tabs-and-filters-retain-semantics",
+      "phone-accounts-login-and-manual-dialog-actions-reachable",
+      "phone-td-locked-gate-remains-locked-and-can-return",
+      "phone-td-rules-calendar-gallery-and-photo-editor-fit",
+      "phone-td-once-confirmed-request-keeps-account-csrf-and-grey-state",
+      "phone-logs-glass-update-and-rotation-keep-controls-available",
+      "phone-actual-desktop-tablet-and-native-contexts-stay-normal",
+      "phone-desktop-and-tablet-geometry-equals-unadapted-page",
+      "phone-startup-preserves-timeline-and-lands-on-visible-header-logo",
+      "compiled-phone-sidebar-assistant-touch",
+      "compiled-phone-three-green-steps-truthful-touch",
+      "compiled-phone-assistant-keyboard-header-fit",
+      "compiled-phone-send-failure-visible-without-false-receipt",
+      "compiled-phone-other-student-has-independent-channel-health"
+    ],
+    "method": "Chromium mobile touch emulation (Locator.tap); synthetic WeChat state only",
+    "physical_phone": false,
+    "real_school_writes": 0,
+    "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+    "executable_sha256": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+    "source_test_sha256": "f4e3de03f5eb4b8d3ff3041fa75192adeeba4aa9d8fc083a9b122db1dd4e52fd"
+  },
+  "server": {
+    "application_only": true,
+    "preservation_checks": {
+      "same_host_boot": true,
+      "same_kernel_parameters": true,
+      "other_container_ids_unchanged": true,
+      "ssh_vpn_monitor_active": true,
+      "unrelated_network_auth_files_unchanged": true,
+      "application_healthy": true,
+      "exact_new_image": true,
+      "only_one_application_container": true,
+      "restart_policy": true,
+      "read_only_rootfs": true,
+      "non_root": true,
+      "cpu_memory_pid_caps_unchanged": true,
+      "original_external_volume": true,
+      "exact_official_runtime_source": true,
+      "protected_config_photos_vault_license_unchanged": true,
+      "original_password_file_unchanged": true,
+      "retired_installation_directories_absent": true,
+      "no_new_matching_critical_kernel_events": true,
+      "no_application_restart_loop": true,
+      "health_version": true,
+      "anonymous_api_denied": true,
+      "per_student_wechat_bindings_and_preferences_preserved": true,
+      "saved_password_plaintext_equal_in_memory": true,
+      "all_nonpassword_configuration_unchanged": true,
+      "TD_profiles_images_and_groups_preserved": true,
+      "TD_license_accounts_expiries_used_codes_and_binding_preserved": true,
+      "reinstall_staging_removed": true,
+      "no_temporary_acceptance_container": true,
+      "canonical_auth_trusts_only_existing_application_proxy": true,
+      "only_application_image_changed_in_compose": true
+    },
+    "direct_browser_checks": [
+      "real-server-glass-management-card",
+      "legacy-management-password-kept-without-invented-recovery",
+      "password-field-retains-login-semantics",
+      "real-server-notice-loads-without-acceptance-or-school-access",
+      "real-server-cookie-bootstrap-reuse",
+      "real-server-refresh-no-splash-or-password-reprompt",
+      "real-server-headless-capability-display",
+      "wechat-binding-requires-explicit-per-student-consent",
+      "new-notification-controls-delivered-with-accessibility",
+      "real-server-phone-css-script-and-original-account-bound-controls",
+      "real-server-phone-terms-actions-fit-without-accepting",
+      "real-server-phone-refresh-reuses-cookie-no-splash",
+      "own-session-logout-keeps-application-running"
+    ],
+    "existing_HTTPS_proxy_browser_checks": [
+      "real-server-glass-management-card",
+      "legacy-management-password-kept-without-invented-recovery",
+      "password-field-retains-login-semantics",
+      "real-server-notice-loads-without-acceptance-or-school-access",
+      "real-server-cookie-bootstrap-reuse",
+      "real-server-refresh-no-splash-or-password-reprompt",
+      "real-server-headless-capability-display",
+      "wechat-binding-requires-explicit-per-student-consent",
+      "new-notification-controls-delivered-with-accessibility",
+      "real-server-phone-css-script-and-original-account-bound-controls",
+      "real-server-phone-terms-actions-fit-without-accepting",
+      "real-server-phone-refresh-reuses-cookie-no-splash",
+      "own-session-logout-keeps-application-running"
+    ],
+    "exact_existing_proxy_trust": true,
+    "latest_accounts_photos_licenses_password_and_wechat_bindings_preserved": true,
+    "host_rebooted": false,
+    "host_network_or_other_services_changed": false,
+    "resource_caps_changed": false
+  },
+  "updates": {
+    "passed": true,
+    "real_school_writes": 0,
+    "checks": [
+      {
+        "version": "1.3.9",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.3.9",
+          "latest_version": "1.4.15",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.15",
+          "checked_at": 1793326293,
+          "automatic_interval_seconds": 86400,
+          "status": "update_available",
+          "message": "发现新版本 v1.4.15",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        }
+      },
+      {
+        "version": "1.4.14",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.4.14",
+          "latest_version": "1.4.15",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.15",
+          "checked_at": 1793326301,
+          "automatic_interval_seconds": 86400,
+          "status": "update_available",
+          "message": "发现新版本 v1.4.15",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        }
+      },
+      {
+        "version": "1.4.15",
+        "actual_compiled": true,
+        "anonymous_real_github": true,
+        "configured_accounts": 0,
+        "result": {
+          "current_version": "1.4.15",
+          "latest_version": "1.4.15",
+          "release_url": "https://github.com/nixianren666/AUTO-BUAATOOLS/releases/tag/v1.4.15",
+          "checked_at": 1793326308,
+          "automatic_interval_seconds": 86400,
+          "status": "up_to_date",
+          "message": "当前已是最新版本",
+          "cached": false,
+          "retry_after_seconds": 86400,
+          "expected_live_version_verified": true
+        }
+      }
+    ],
+    "status": "verified"
+  },
+  "old_releases": {
+    "passed": true,
+    "checks": [
+      {
+        "id": 420440621,
+        "tag": "v1.4.11",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 422696043,
+        "tag": "v1.4.14",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 422226357,
+        "tag": "v1.4.13",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 421561760,
+        "tag": "v1.4.12",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 419936476,
+        "tag": "v1.4.10",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 416690979,
+        "tag": "v1.3.9",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 415982295,
+        "tag": "v1.3.8",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 412406275,
+        "tag": "v1.2.7",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388930110,
+        "tag": "v1.2.6",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 388402178,
+        "tag": "v1.2.5",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 387973739,
+        "tag": "v1.2.2",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      },
+      {
+        "id": 386902450,
+        "tag": "v1.2.0",
+        "metadata_unchanged": true,
+        "assets_unchanged": true
+      }
+    ]
+  },
+  "local": {
+    "passed": true,
+    "version": "1.4.15",
+    "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+    "formally_published": false,
+    "files": {
+      "BUAA-Signin.exe": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+      "BUAA-Signin-v1.4.15-portable.exe": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+      "dist/BUAA-Signin.exe": "4d4b5b5dddde1a3f383c3ee95990063403733cbbb773b0934ccc4e4ad9139259",
+      "BUAA-Signin-Setup-v1.4.15.exe": "f34f62bcfa775273054608ae6601cc1f3823ddfb882dc2b7f72f5d58aafcf4b1",
+      "dist_installer/BUAA-Signin-Setup-v1.4.15.exe": "f34f62bcfa775273054608ae6601cc1f3823ddfb882dc2b7f72f5d58aafcf4b1"
+    },
+    "pending_locked_files": [],
+    "configuration_preserved_during_replacement": true,
+    "configuration_copied": false,
+    "existing_user_processes_terminated": false,
+    "issuer_unchanged": true
+  },
+  "privacy_passed": true,
+  "preupload_requirements_audit": {
+    "passed": true,
+    "version": "1.4.15",
+    "commit": "fe1786341026d9a5befc1d858eef26d80b8c4a40",
+    "checks": [
+      {
+        "requirement": "微信运行数日后停推，多用户反馈，不能只看接收轮询",
+        "evidence": "发送健康独立，数字错误分类、任务监督恢复、取消/写盘恢复和有界长轮询；14长期合同、5存储合同。官方未承诺固定上下文寿命，不把模拟三天当真实长期腾讯验收"
+      },
+      {
+        "requirement": "前台切换或关闭浏览器不影响其他学生任务/微信",
+        "evidence": "事件所有者贯穿日志、独立队列、接收发送及课前提醒；两学生常规/博雅/TD隔离，一人故障不阻塞另一人；旧版切换路由测试本身也通过，不虚构根因"
+      },
+      {
+        "requirement": "本人主动发开始接收后验证实际收信",
+        "evidence": "此前候选协议测试和旧版通知实收已确认；最终部署后台首次测试被微信-2拒绝，主动新消息后用新编号测试并由本人确认实收。旧拒绝消息不重放、未给其他真实学生测试。不冒称真实数日无故障或新增课前提醒实收"
+      },
+      {
+        "requirement": "target_filled是正常状态，不发微信、不重复告警",
+        "evidence": "按学生/类别普通info去重且notify=False；真实故障继续提示，实际日志入口到通知队列合同覆盖"
+      },
+      {
+        "requirement": "平台内/其他平台主动退课不再自动抢回",
+        "evidence": "既有SQLite增量保存学生/课程排除；平台内发包前保存，外部基于同范围完整成功官方快照；重启/名额/其他学生不解除，最终POST再查；15合同。无法推断从未观察到的历史退课"
+      },
+      {
+        "requirement": "仅常规课、本学期整门课暂停，保留手动",
+        "evidence": "可靠课程ID、学生隔离、SQLite重开、已知/未知学期、保存失败、最终POST竞态、预算保持；14源码/8新增浏览器含键盘/触控/重复点击/切学生迟到检查"
+      },
+      {
+        "requirement": "密集重复课表日志修复，考虑连锁影响",
+        "evidence": "按学生/日期/内容去重通知，首条/变化/异常/恢复可见；不改变读取、调度、认证或缓存频率；6合同含30次API读仍执行30次、500同内容仅首条"
+      },
+      {
+        "requirement": "耕趣农场劳动课全系列永久不自动抢",
+        "evidence": "名称归一化匹配、自动候选和最终发包前双查，课池明确标记；3合同验证新ID/名额/重启与手动/其他劳动课隔离"
+      },
+      {
+        "requirement": "全盘、多角度排查，并发/长期/异常/恢复及级联",
+        "evidence": "495源码/127浏览器，加同提交四平台139/134实际成品、各新增实际内嵌合同，网络30/TD102；含身份、预算、未知响应、写盘、重启、无浏览器和学生隔离"
+      },
+      {
+        "requirement": "README突出自动TD/微信助手、清楚绑定步骤、绿色对勾及独立提醒",
+        "evidence": "既有1414功能保持，新增长期故障处理/正常不推送/退课意图/单课暂停/永久系列和日志说明；本人确认仍独立于接口接受"
+      },
+      {
+        "requirement": "手机专用、平板桌面原排布、美术交互不变",
+        "evidence": "127浏览器、最终成品触控与实际Windows窗口；原玻璃/菜单保持。模拟手机不等于实体Safari"
+      },
+      {
+        "requirement": "SSO/TD授权配对时窗预算/无课日窄修复与管理恢复保持",
+        "evidence": "网络30/TD102实际内嵌，原常规重试和不确定不重放；各源码/成品13管理和7首次设置恢复；不代签声明、不解真实验证码"
+      },
+      {
+        "requirement": "内网服务器清程序重装但保数据、指定管理密码",
+        "evidence": "此前干净重装和密码轮换已完成不重放；本次新备份、空闲检查、仅应用受控更新和回滚，保留原.env/卷/账号/照片/许可/微信凭据；原IP/HTTPS验收"
+      },
+      {
+        "requirement": "不要宿主死机，不动其他服务/网络/资源上限",
+        "evidence": "记录同一boot、其他容器/服务/配置和无新匹配严重内核事件；无宿主重启/网络VPN DNS防火墙GPU改动/新资源上限或压测。不保证硬件永久稳定"
+      },
+      {
+        "requirement": "最终上传前核对全部对话，所有插话不打断旧任务",
+        "evidence": "接续20261024完整需求审计与1414正式交接，再逐项覆盖当前全部新增消息；已完成不重放、撤销保持撤销；最新45%停止要求取代忽略额度，按当前明确阈值保存进度停止"
+      },
+      {
+        "requirement": "各客户端测试、15附件发行、源码成品一致、隐私和本人身份",
+        "evidence": "新四平台同提交、安装服务Setup/DMG/Docker、实际Windows/触控、源码模块静态资源一致及隐私均通过后才能上传；旧正式版/预发行/草稿保留，标签固定runtime候选"
+      }
+    ],
+    "previous_completed_work_not_replayed": true,
+    "all_in_scope_prepublication_gates_passed": true,
+    "school_real_writes": 0,
+    "owner_candidate_receipt_confirmed": true,
+    "final_real_multi_day_wechat_delivery_proven": false,
+    "remaining_external_conditions": [
+      "Reliable read-only TD count API and current complete official autumn rules/temporary closures",
+      "Actual user Mac third-party TUN root cause and real school acceptance",
+      "Physical phone Safari and user multi-platform reboot/long-term hardware stability",
+      "Owner independent-media encrypted private-key backup",
+      "GitHub contributor sidebar cache",
+      "Tencent future server policy and permanent proactive delivery cannot be guaranteed"
+    ],
+    "post_publication_required": [
+      "15 assets Latest digest verification",
+      "Actual139/1414/1415 anonymous update detection",
+      "Prior10 formal+1pre+1old draft preserved",
+      "Final six documents owner-only commit/privacy/push and clean Git verification"
+    ]
+  },
+  "wechat": {
+    "owner_candidate_single_test_actual_receipt_confirmed": true,
+    "owner_runtime_boya_notice_receipt_confirmed": true,
+    "final_real_multi_day_delivery_proven": false,
+    "other_real_students_tested": 0,
+    "api_accepted_is_not_delivery": true,
+    "simulated_long_running_contracts": 14,
+    "new_reminder_real_receipt_verified": false,
+    "no_agent_execution_or_school_commands": true,
+    "final_deployed_worker_owner_receipt_confirmed": true,
+    "first_deployed_attempt_rejected_code": -2,
+    "fresh_user_message_then_new_test": true,
+    "old_rejected_message_replayed": false
+  },
+  "real_school_business_writes": 0
+}
