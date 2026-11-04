@@ -5,11 +5,17 @@ import unittest
 from unittest.mock import Mock, patch
 
 from core.boya_client import BoyaApiError
+from core import operations
 from server import app as backend
 
 
 class ReadAuthenticationSafety(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        ledger = operations.OperationLedger()
+        self.addCleanup(ledger.db.close)
+        scope = patch.object(operations, "ledger", ledger)
+        scope.start()
+        self.addCleanup(scope.stop)
         self.acc = backend.AccountState('fixture-refresh-student', remember=False, auto_checkin=False)
         self.acc.client.user_info = {'schoolid': self.acc.username}
         self.acc.boya_all_courses = []

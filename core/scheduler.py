@@ -1,14 +1,25 @@
 """Bounded multi-account regular attendance; the client owns final write validation."""
 import asyncio
+import time
 import datetime
 import logging
 import random
 from collections import defaultdict
-from core.domain import now as china_now, regular_start, regular_window, CHINA
-from core.regular_policy import MAX_POSTS, minimum_retry_delay
+from contextlib import nullcontext
+from core.domain import now as china_now, parse_dt, regular_start, regular_window, CHINA
+from core.regular_policy import (MAX_POSTS, READ_RETRY_DELAYS, REGULAR_REFRESH_SECONDS, minimum_retry_delay,
+                                 regular_read_failed, regular_read_succeeded)
 from core.iclass import IclassSessionExpired
+from core.school_traffic import SchoolTrafficPaused
 
 logger = logging.getLogger("buaa_signin_scheduler")
+
+
+def regular_snapshot_fresh(account, current):
+    health = getattr(account, "regular_health", {})
+    refreshed = parse_dt(health.get("last_success"))
+    return (not health.get("stale", True) and refreshed is not None and refreshed.date() == current.date()
+            and 0 <= (current - refreshed).total_seconds() < REGULAR_REFRESH_SECONDS)
 
 class SigninScheduler:
     def __init__(self, get_active_accounts, on_event_log=None, reconnect_account=None):
@@ -22,6 +33,7 @@ class SigninScheduler:
         self.clock = china_now
         self.signed_courses = set()
         self.retry_counts = defaultdict(int)
+        self.preflight_failures = defaultdict(int)
         self.planned_targets = {}
         self.failed_permanently = set()
         self.pending_notified = set()
@@ -65,7 +77,7 @@ class SigninScheduler:
         await self._check_and_sign_all()
 
     def remove_account(self, username):
-        for mapping in (self.retry_counts, self.planned_targets):
+        for mapping in (self.retry_counts, self.preflight_failures, self.planned_targets):
             for key in list(mapping):
                 if key[0] == username:
                     mapping.pop(key, None)
@@ -75,7 +87,7 @@ class SigninScheduler:
     async def _check_and_sign_all(self, generation=None):
         async with self._tick_lock:
             today = self.clock().date().isoformat()
-            for mapping in (self.retry_counts, self.planned_targets):
+            for mapping in (self.retry_counts, self.preflight_failures, self.planned_targets):
                 for key in list(mapping):
                     if len(key) != 3 or key[2] != today:
                         mapping.pop(key, None)
@@ -90,27 +102,44 @@ class SigninScheduler:
             client = item.get("client")
             epoch = getattr(account, "auth_epoch", 0)
             def allowed():
-                return (generation is None or (self.enabled and generation == self._generation)) and not getattr(account, "removed", False) and not getattr(account, "maintenance", False) and getattr(account, "auth_epoch", 0) == epoch and getattr(account, "auto_checkin", True)
+                return (generation is None or (self.enabled and generation == self._generation)) and not getattr(account, "removed", False) and not getattr(account, "maintenance", False) and not getattr(account, "auth_requires_input", False) and getattr(account, "auth_epoch", 0) == epoch and getattr(account, "auto_checkin", True)
             if not client or not allowed():
                 return
             try:
-                if not client.is_authenticated():
-                    if not account or not self.reconnect_account or not await self.reconnect_account(account):
+                async with getattr(account, "regular_background_lock", nullcontext()):
+                    if not allowed():
                         return
-                    client = item["client"] = account.client
-                    epoch = getattr(account, "auth_epoch", 0)
-                try:
-                    classes = await client.get_today_classes()
-                except IclassSessionExpired:
-                    if not account or not self.reconnect_account or not await self.reconnect_account(account):
-                        raise
-                    client = item["client"] = account.client
-                    epoch = getattr(account, "auth_epoch", 0)
-                    classes = await client.get_today_classes()
-                if account:
-                    account.last_classes = classes
-                    account.last_refresh_time = self.clock().isoformat(timespec="seconds")
-                    account.regular_health = {"stale": False, "last_success": account.last_refresh_time, "error": None}
+                    if account and regular_snapshot_fresh(account, self.clock()) and client.is_authenticated():
+                        classes = account.last_classes
+                    else:
+                        if account and time.monotonic() < getattr(account, "regular_background_retry_at", 0):
+                            return
+                        if not client.is_authenticated():
+                            if not account or not self.reconnect_account or not await self.reconnect_account(account):
+                                if account:
+                                    regular_read_failed(account)
+                                return
+                            client = item["client"] = account.client
+                            epoch = getattr(account, "auth_epoch", 0)
+                        if account and regular_snapshot_fresh(account, self.clock()):
+                            classes = account.last_classes
+                        else:
+                            try:
+                                classes = await client.get_today_classes()
+                            except IclassSessionExpired:
+                                if not account or not self.reconnect_account or not await self.reconnect_account(account):
+                                    raise
+                                client = item["client"] = account.client
+                                epoch = getattr(account, "auth_epoch", 0)
+                                classes = (account.last_classes if regular_snapshot_fresh(account, self.clock())
+                                           else await client.get_today_classes())
+                        if not allowed():
+                            return
+                        if account:
+                            account.last_classes = classes
+                            account.last_refresh_time = self.clock().isoformat(timespec="seconds")
+                            account.regular_health = {"stale": False, "last_success": account.last_refresh_time, "error": None}
+                            regular_read_succeeded(account)
                 for course in classes:
                     if not allowed():
                         break
@@ -120,10 +149,22 @@ class SigninScheduler:
                         self.log("本门课程处理失败：" + type(exc).__name__, "warning", username, item.get("name"))
             except asyncio.CancelledError:
                 raise
+            except SchoolTrafficPaused as exc:
+                if account:
+                    regular_read_failed(account, exc.retry_after)
+                    account.regular_health = {**account.regular_health, "stale": True, "error": str(exc)}
+                self.log(str(exc), "info", username, item.get("name"))
             except Exception as exc:
                 if account:
+                    regular_read_failed(account)
                     account.regular_health = {"stale": True, "last_success": getattr(account, "last_refresh_time", None), "error": type(exc).__name__}
                 self.log("常规课表未同步，保留上次数据：" + type(exc).__name__, "warning", username, item.get("name"))
+
+    def _delay_preflight(self, key, retry_after=0):
+        failures = self.preflight_failures[key]
+        delay = READ_RETRY_DELAYS[failures % len(READ_RETRY_DELAYS)]
+        self.preflight_failures[key] += 1
+        self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(delay, retry_after))
 
     async def _check_course(self, item, course, allowed):
         current = self.clock()
@@ -190,10 +231,11 @@ class SigninScheduler:
                 self.pending_notified.add(key)
                 self.log("签到请求结果不确定，仅同步官方课表，不盲目补发。", "warning", item["username"], item.get("name"))
             else:
-                self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
+                self._delay_preflight(key, getattr(exc, "retry_after", 0))
                 self.log("签到预检未完成，将在窗口内退避检查：" + type(exc).__name__, "warning", item["username"], item.get("name"))
             return
         if success:
+            self.preflight_failures.pop(key, None)
             self.signed_courses.add(key)
             self.log("常规签到请求已接受：" + message, "success", item["username"], item.get("name"))
             try:
@@ -202,9 +244,12 @@ class SigninScheduler:
                 if account:
                     account.last_classes = refreshed
                     account.last_refresh_time = self.clock().isoformat(timespec="seconds")
-            except Exception:
+                    account.regular_health = {"stale": False, "last_success": account.last_refresh_time, "error": None}
+                    regular_read_succeeded(account)
+            except Exception as error:
                 account = item.get("account")
                 if account:
+                    regular_read_failed(account, getattr(error, "retry_after", 0))
                     account.regular_health = {"stale": True, "pending_verification": True}
                 self.log("请求已接受，官方状态暂未同步；不会重发。", "warning", item["username"], item.get("name"))
         else:
@@ -217,7 +262,10 @@ class SigninScheduler:
             self.log("常规签到未完成：" + message, "warning", item["username"], item.get("name"))
             if self.retry_counts[key] >= MAX_POSTS:
                 self.failed_permanently.add(key)
+            elif isinstance(before, int) and isinstance(after, int) and after == before:
+                self._delay_preflight(key)
             else:
+                self.preflight_failures.pop(key, None)
                 self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
                 if not getattr(item["client"], "session_id", None) and self.reconnect_account and item.get("account"):
                     await self.reconnect_account(item["account"])

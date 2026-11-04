@@ -29,6 +29,6 @@ class SeriesActionContracts(unittest.TestCase):
             # The live preflight course object is checked again by the client's guard.
             self.acc.boya_all_courses[0]['courseName']='耕趣农场劳动课'
             return original(cid)
-        with patch.object(self.client,'query_courses',return_value=self.acc.boya_all_courses),patch.object(self.client,'select_course',side_effect=changed):
+        with patch.object(self.client,'query_course_detail',return_value=self.acc.boya_all_courses[0]),patch.object(self.client,'select_course',side_effect=changed):
             with self.assertRaises(BoyaApiError) as caught:self.auto()
         self.assertEqual(caught.exception.code,'permanently_excluded');self.assertEqual(self.client.select_call_count,0)

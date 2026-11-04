@@ -19,14 +19,14 @@
 
 **不用一直盯着软件：绑定微信助手，把运行结果、失败提醒和课前提醒送到自己的微信。**
 
-[![Version](https://img.shields.io/badge/version-1.4.17-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.18-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8b5cf6)](#下载与安装)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/nixianren666/AUTO-BUAATOOLS/total?label=downloads&color=38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)
 
 [**⬇️ 下载客户端**](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) · [💬 绑定微信助手](#微信助手) · [🖼️ 界面与功能](#界面展示) · [🛡️ 操作安全](#怎么减少漏选错选和重复操作)
 
-源码版本 **v1.4.17**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
+源码版本 **v1.4.18**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
 
 [⚠️ 使用前必读](#免责声明) · [🔐 账号隐私](#账号与隐私如何保护) · [🚀 三步上手](#第一次使用三步完成设置) · [⚙️ 后台部署](#源码与后台部署) · [💬 常见问题](#常见问题)
 
@@ -354,6 +354,8 @@ sudo apt-get install libegl1 libopengl0 libgl1 libxcb-cursor0 \
 | 👤 第一步：接入账号 | 🎛️ 第二步：选择任务 | 📋 第三步：核对结果 |
 | --- | --- | --- |
 | 添加账号，查看常规课堂与博雅各自认证状态；按当前网络选择校园网直连 / 官方 WebVPN，验证码手动处理 | 核对校区与预约目标，再分别开启常规签到、博雅抢选、博雅签到签退 | 查看今日课堂、已选课程和分类日志；遇到未同步或待确认，先核对官网 |
+
+添加账号时可以选择「学校短信登录」，由本人点击「发送短信验证码」并填写收到的验证码。远程管理页面需要通过 HTTPS 使用短信登录。如果密码登录后提示「需要本人验证」，该账号的学校任务会暂停，请按提示打开学校统一认证页面处理。
 
 **切换当前账号只切换视图，不会暂停其他账号的后台任务。**
 

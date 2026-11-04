@@ -21,12 +21,84 @@ class OperationLedger:
         self.db.execute("CREATE TABLE IF NOT EXISTS boya_auto_exclusions (user_key TEXT, cid INTEGER, reason TEXT, PRIMARY KEY(user_key,cid))")
         self.db.execute("CREATE TABLE IF NOT EXISTS boya_selected_snapshots (scope_key TEXT, cid INTEGER, PRIMARY KEY(scope_key,cid))")
         self.db.execute("CREATE TABLE IF NOT EXISTS regular_course_policies (user_key TEXT, cid TEXT, data TEXT, PRIMARY KEY(user_key,cid))")
+        self.db.execute("CREATE TABLE IF NOT EXISTS school_requests (owner TEXT, stamp REAL, cost INTEGER, action TEXT)")
+        self.db.execute("CREATE INDEX IF NOT EXISTS school_requests_stamp ON school_requests(stamp)")
+        self.db.execute("CREATE INDEX IF NOT EXISTS school_requests_owner ON school_requests(owner, stamp)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS school_cooldown (owner TEXT PRIMARY KEY, until REAL)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS school_auth_pause (owner TEXT PRIMARY KEY, reason TEXT)")
         self.db.commit()
         self._last_prune = time.monotonic()
 
     @staticmethod
     def key(user, action, cid, day):
         return hashlib.sha256(json.dumps([user, action, str(cid), str(day)]).encode()).hexdigest()
+
+    def reserve_school_requests(self, owner, cost, action, account_limits, global_limits,
+                                action_limits, *, global_action_limits=(), allow_auth_pause=False):
+        with self.lock:
+            self.db.execute("BEGIN IMMEDIATE")
+            try:
+                stamp = time.time()
+                if not allow_auth_pause and self.school_auth_pause(owner):
+                    return None
+                cooldown = self.db.execute("SELECT until FROM school_cooldown WHERE owner=?", (owner,)).fetchone()
+                if cooldown and cooldown[0] > stamp:
+                    return max(1, int(cooldown[0] - stamp) + 1)
+                delays = []
+                for limits, predicate, args in (
+                    (account_limits, "owner=?", (owner,)),
+                    (global_limits, "1=1", ()),
+                    (action_limits, "owner=? AND action=?", (owner, action)),
+                    (global_action_limits, "action=?", (action,)),
+                ):
+                    for seconds, limit in limits:
+                        parameters = (*args, stamp - seconds)
+                        used_total = self.db.execute(
+                            f"SELECT COALESCE(SUM(cost),0) FROM school_requests WHERE {predicate} AND stamp>?",
+                            parameters,
+                        ).fetchone()[0]
+                        excess = used_total + cost - limit
+                        if excess <= 0:
+                            continue
+                        rows = self.db.execute(
+                            f"SELECT stamp,cost FROM school_requests WHERE {predicate} AND stamp>? ORDER BY stamp",
+                            parameters,
+                        )
+                        for at, used in rows:
+                            excess -= used
+                            if excess <= 0:
+                                delays.append(max(1, int(at + seconds - stamp) + 1))
+                                break
+                        else:
+                            delays.append(seconds)
+                if delays:
+                    return max(delays)
+                self.db.execute("DELETE FROM school_requests WHERE stamp<=?", (stamp - 86400,))
+                self.db.execute("DELETE FROM school_cooldown WHERE until<=?", (stamp,))
+                self.db.execute("INSERT INTO school_requests VALUES (?,?,?,?)", (owner, stamp, cost, action))
+                self.db.commit()
+                return 0
+            finally:
+                # A denied or failed reservation never leaves a transaction open.
+                if self.db.in_transaction:
+                    self.db.rollback()
+
+    def cool_school_requests(self, owner, until):
+        with self.lock, self.db:
+            self.db.execute("INSERT INTO school_cooldown VALUES (?,?) ON CONFLICT(owner) DO UPDATE SET until=MAX(until,excluded.until)",
+                            (owner, until))
+
+    def school_auth_pause(self, owner):
+        with self.lock:
+            row = self.db.execute("SELECT reason FROM school_auth_pause WHERE owner=?", (owner,)).fetchone()
+            return row[0] if row else None
+
+    def set_school_auth_pause(self, owner, reason):
+        with self.lock, self.db:
+            if reason:
+                self.db.execute("INSERT OR REPLACE INTO school_auth_pause VALUES (?,?)", (owner, reason))
+            else:
+                self.db.execute("DELETE FROM school_auth_pause WHERE owner=?", (owner,))
 
     def claim(self, key, limit=3, group=None, block_group_success=False, retry_delay=None):
         with self.lock:

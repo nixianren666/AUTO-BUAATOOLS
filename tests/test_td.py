@@ -70,6 +70,20 @@ class TDStateTests(unittest.TestCase):
         calls=self.client.calls; self.assertEqual(len(calls),4)
         self.assertEqual(calls[0][3],calls[1][2]); self.assertEqual(calls[2][3],calls[3][2])
         self.assertNotEqual(calls[1][3],calls[3][3])
+
+    def test_shared_budget_cools_td_without_claiming_or_replaying_entry(self):
+        from core.school_traffic import SchoolTrafficPaused
+        with patch.object(self.engine, 'request_budget', side_effect=SchoolTrafficPaused('local cooldown', 180)) as budget:
+            self.engine.tick(self.user)
+            self.engine.tick(self.user)
+            budget.assert_called_once_with(self.user, cost=2)
+        self.assertEqual(self.job()['attempted'], 0)
+        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.job()['due'], self.now.timestamp() + 180)
+        self.advance_due()
+        self.engine.tick(self.user)
+        self.assertEqual(self.job()['attempted'], 1)
+        self.assertEqual(len(self.client.calls), 2)
     def test_unlicensed_and_expired_stop_both_paths_without_claiming_budget(self):
         self.license.active=False;self.engine.tick(self.user)
         self.assertFalse(self.store.profile(owner_key(self.user))['enabled']);self.assertEqual(self.client.calls,[]);self.assertEqual(self.job()['attempted'],0)

@@ -16,8 +16,13 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
 from core.boya_auto_rules import permanently_excluded
+from core.school_traffic import SchoolTrafficPaused
 
 logger = logging.getLogger(__name__)
+SELECTED_REFRESH_SECONDS = 900
+POOL_MIN_REFRESH_SECONDS = 1800
+POOL_SECONDS_PER_PAGE = 1200
+SELECTION_PROBE_SECONDS = 300
 
 
 from core.domain import (parse_dt, in_window, sign_config as parse_sign_config,
@@ -143,7 +148,7 @@ def capacity_values(course):
     maximum = next((course.get(key) for key in ("courseMaxCount", "courseMaxNum", "maxCount") if course.get(key) is not None), None)
     return current, maximum
 
-def is_auto_select_candidate(course, now, campus="北京", require_auto_sign=True):
+def is_auto_select_candidate(course, now, campus="北京", require_auto_sign=True, *, check_capacity=True):
     if permanently_excluded(course):return False
     if not course_id(course) or not course_matches_campus(course, campus):
         return False
@@ -153,7 +158,8 @@ def is_auto_select_candidate(course, now, campus="北京", require_auto_sign=Tru
     if any(word in status for word in ("停开", "取消", "未发布", "结课", "结束", "关闭")):
         return False
     start, end = parse_course_time_range(course)
-    return bool(start and end and now < start < end and capacity_available(course) and in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now))
+    return bool(start and end and now < start < end and (not check_capacity or capacity_available(course))
+                and in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now))
 
 class BoyaScheduler:
     def __init__(self, get_accounts_func, add_log_func, ordinary_courses=None):
@@ -169,7 +175,8 @@ class BoyaScheduler:
         self._tick_lock = threading.Lock()
         self.logged_pool_summary = set()
         self.last_sync_times = {}
-        self.last_pool_sync_times = {}
+        self.next_pool_sync_times = {}
+        self.next_selection_probes = {}
         self.last_inspect_log_times = {}
         self.done_records = set()
         self.chosen_history = set()
@@ -202,6 +209,14 @@ class BoyaScheduler:
                 # Do not carry a long pool-outage cooldown into a short, already
                 # open attendance window. Durable claims still forbid replays.
                 delay = min(delay,30)
+        if isinstance(exc, SchoolTrafficPaused):
+            delay = max(delay, exc.retry_after)
+            incident.update(error="local_request_pause", phase="not_sent", retry_at=stamp + delay)
+            acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": True,
+                               "error": "local_request_pause", "next_sync_in_seconds": delay}
+            if first:
+                self.add_log("info", str(exc), username=acc.username, category="boya", notify=False)
+            return
         incident["retry_at"] = stamp + delay
         phase = "read" if isinstance(exc,str) else getattr(exc, "boya_phase", "unknown")
         error = exc if isinstance(exc,str) else type(exc).__name__
@@ -283,7 +298,7 @@ class BoyaScheduler:
 
     def remove_account(self, username):
         self._network.pop(username, None)
-        for mapping in (self.last_sync_times, self.last_pool_sync_times, self.last_inspect_log_times):
+        for mapping in (self.last_sync_times, self.next_pool_sync_times, self.next_selection_probes, self.last_inspect_log_times):
             mapping.pop(username, None)
         self.logged_pool_summary.discard(username)
         self.chosen_history.difference_update(k for k in list(self.chosen_history) if k[0] == username)
@@ -328,8 +343,8 @@ class BoyaScheduler:
                 return True
             return False
         except BoyaApiError as exc:
-            if exc.code == "captcha_required":
-                acc.auth_requires_input = True
+            if exc.code in ("captcha_required", "sms_required", "verification_required"):
+                self._pause_auth(acc, exc.code)
                 return False
             if exc.code != "session_expired":
                 return False
@@ -343,11 +358,19 @@ class BoyaScheduler:
         try:
             return bool(acc.boya_client.login_with_credentials(acc.username, acc.password))
         except BoyaApiError as exc:
-            if exc.code == "captcha_required" or (exc.code == "cas_error" and any(word in exc.message for word in ("账号", "密码"))):
-                acc.auth_requires_input = True
+            if exc.code in ("captcha_required", "sms_required", "verification_required"):
+                self._pause_auth(acc, exc.code)
+            elif exc.code == "cas_error" and any(word in exc.message for word in ("账号", "密码")):
+                self._pause_auth(acc, "credentials_required")
             return False
         except Exception:
             return False
+
+    def _pause_auth(self, acc, reason):
+        if hasattr(acc, "require_verification"):
+            acc.require_verification(reason)
+        else:
+            acc.auth_requires_input = True
 
     def tick(self, event=None):
         if not self._tick_lock.acquire(blocking=False):
@@ -370,7 +393,9 @@ class BoyaScheduler:
     def _check_account(self, acc, event):
         from core.boya_actions import account_lock, reconcile_official
         def active():
-            return not getattr(acc, "removed", False) and not getattr(acc, "maintenance", False) and (event is None or (self.running and not event.is_set()))
+            return (not getattr(acc, "removed", False) and not getattr(acc, "maintenance", False)
+                    and not getattr(acc, "auth_requires_input", False)
+                    and (event is None or (self.running and not event.is_set())))
         if not active():
             return
         incident = self._network.get(acc.username)
@@ -384,15 +409,20 @@ class BoyaScheduler:
                 stamp = time.monotonic()
                 synced_selected = synced_pool = False
                 probe_incident = incident and (incident["stable_at"] is None or stamp - incident["stable_at"] >= 60)
-                if probe_incident or acc.username not in self.last_sync_times or stamp-self.last_sync_times[acc.username] >= 60:
+                if probe_incident or acc.username not in self.last_sync_times or stamp-self.last_sync_times[acc.username] >= SELECTED_REFRESH_SECONDS:
                     acc.boya_selected_courses = acc.boya_client.query_chosen_courses()
                     reconcile_official(acc, acc.boya_selected_courses)
                     self.last_sync_times[acc.username] = time.monotonic()
                     synced_selected = True
                     acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
-                if probe_incident or acc.username not in self.last_pool_sync_times or stamp-self.last_pool_sync_times[acc.username] >= 60:
+                if probe_incident or stamp >= self.next_pool_sync_times.get(acc.username, 0):
                     acc.boya_all_courses = acc.boya_client.query_courses()
-                    self.last_pool_sync_times[acc.username] = time.monotonic()
+                    pages = getattr(acc.boya_client, "course_pool_pages", 1)
+                    if type(pages) is not int:
+                        pages = 1
+                    self.next_pool_sync_times[acc.username] = time.monotonic() + max(
+                        POOL_MIN_REFRESH_SECONDS, pages * POOL_SECONDS_PER_PAGE
+                    )
                     synced_pool = True
                     acc.boya_health = {**getattr(acc, "boya_health", {}), "last_success": self.clock().isoformat(timespec="seconds")}
             if acc.username not in self.logged_pool_summary:
@@ -409,7 +439,10 @@ class BoyaScheduler:
             if not (incident and time.monotonic() < incident["retry_at"]):
                 recovered = self._network_recovered(acc) if synced_selected and synced_pool else incident is None
                 if recovered:
-                    acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": False, "error": None, "network_phase": None, "next_sync_in_seconds": max(0, round(60-(time.monotonic()-self.last_sync_times[acc.username])))}
+                    next_sync = min(self.last_sync_times[acc.username] + SELECTED_REFRESH_SECONDS,
+                                    self.next_pool_sync_times[acc.username])
+                    acc.boya_health = {**getattr(acc, "boya_health", {}), "stale": False, "error": None,
+                                       "network_phase": None, "next_sync_in_seconds": max(0, round(next_sync - time.monotonic()))}
         except httpx.HTTPError as exc:
             self._network_failure(acc, exc)
         except Exception as exc:
@@ -427,14 +460,21 @@ class BoyaScheduler:
         if not start or not end:
             return
         demands = get_user_category_demands(acc.boya_selected_courses, start, end, getattr(acc, "boya_targets", None))
-        candidates = [c for c in (acc.boya_all_courses or []) if is_auto_select_candidate(c, self.clock(), getattr(acc, "campus", "北京"))]
+        campus = getattr(acc, "campus", "北京")
+        candidates = [c for c in (acc.boya_all_courses or [])
+                      if is_auto_select_candidate(c, now, campus, check_capacity=False)]
         candidates.sort(key=lambda c: calculate_candidate_priority(c, demands), reverse=True)
+        stamp = time.monotonic()
+        pending_probes = {cid: due for cid, due in self.next_selection_probes.get(acc.username, {}).items() if due > stamp}
+        self.next_selection_probes[acc.username] = pending_probes
         for course in candidates:
             if not active() or not getattr(acc, "boya_auto_select", False):
                 break
             # Cached knowledge can only reject a candidate. Every permitted
             # action still performs the existing fresh official preflight.
             cid = course_id(course)
+            if cid in pending_probes or not is_auto_select_candidate(course, self.clock(), campus, check_capacity=False):
+                continue
             reservations = list(acc.boya_selected_courses or []) + list(getattr(acc, "boya_pending_courses", {}).values())
             if cid in {course_id(c) for c in reservations}:
                 continue
@@ -450,7 +490,8 @@ class BoyaScheduler:
                 self._warn_course(acc,cid,"select-conflict-normal","与当前已选博雅或在途预约的时间冲突，本轮未提交。",level="info",notify=False)
                 continue
             try:
-                result = perform_boya_action(acc, "select", course_id(course), automatic=True, guard=lambda: active() and acc.boya_auto_select, renew=self._renew_session, ordinary=self.ordinary_courses)
+                pending_probes[cid] = time.monotonic() + SELECTION_PROBE_SECONDS
+                result = perform_boya_action(acc, "select", cid, automatic=True, guard=lambda: active() and acc.boya_auto_select, renew=self._renew_session, ordinary=self.ordinary_courses)
                 if result.get("submitted"):
                     self._warnings.pop((acc.username,course_id(course),"select"),None)
                     self.add_log("success", "博雅选课请求已被学校接受。", username=acc.username, user_name=acc.name, category="boya")

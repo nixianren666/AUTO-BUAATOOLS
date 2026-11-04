@@ -55,7 +55,29 @@ class NetworkIncidents(unittest.TestCase):
         self.scheduler.tick();self.assertEqual(self.calls['queryChosenCourse'],1)
         self.assertEqual(self.calls['queryStudentSemesterCourseByPage'],1)
         self.assertEqual(self.calls['choseCourse'],0)
-        self.stamp+=61;self.scheduler.tick();self.assertEqual(self.calls['queryChosenCourse'],2)
+        self.stamp += 61
+        self.scheduler.tick()
+        self.assertEqual(self.calls['queryChosenCourse'], 1)
+        self.stamp += 840
+        self.scheduler.tick()
+        self.assertEqual(self.calls['queryChosenCourse'], 2)
+        self.assertEqual(self.calls['queryStudentSemesterCourseByPage'], 1)
+        self.stamp += 900
+        self.scheduler.tick()
+        self.assertEqual(self.calls['queryStudentSemesterCourseByPage'], 2)
+
+    def test_multi_page_pool_interval_leaves_room_for_other_work(self):
+        self.acc.boya_targets = {'美育': 0}
+        def query():
+            self.acc.boya_client.course_pool_pages = 6
+            return []
+        with patch.object(self.acc.boya_client, 'query_courses', side_effect=query) as fetch:
+            for _ in range(288):
+                self.scheduler.tick()
+                self.stamp += 300
+        self.assertEqual(self.calls['queryChosenCourse'], 96)
+        self.assertEqual(fetch.call_count, 12)
+        self.assertLess(2 * self.calls['queryChosenCourse'] + fetch.call_count * 6 + 144, 600)
 
     def test_selected_and_pending_courses_do_not_trigger_action_preflight(self):
         self.acc.boya_selected_courses=[valid_course(901)]
@@ -72,10 +94,36 @@ class NetworkIncidents(unittest.TestCase):
         self.choose();self.assertEqual(self.calls['choseCourse'],1)
 
     def test_stale_capacity_cannot_authorize_write(self):
-        original=self.acc.boya_client.query_courses
-        def fresh():return [dict(c,courseCurrentCount=20) for c in original()]
-        with patch.object(self.acc.boya_client,'query_courses',side_effect=fresh):self.choose()
+        original=self.acc.boya_client.query_course_detail
+        def fresh(cid):return dict(original(cid),courseCurrentCount=20)
+        with patch.object(self.acc.boya_client,'query_course_detail',side_effect=fresh):self.choose()
         self.assertEqual(self.calls['choseCourse'],0)
+        self.assertEqual(self.calls['queryChosenCourse'],0)
+        self.assertEqual(self.calls['queryStudentSemesterCourseByPage'],0)
+
+    def test_known_window_waits_then_checks_released_seat_without_full_pool(self):
+        from datetime import timedelta
+        current = self.scheduler.clock()
+        cached = valid_course(901, current=current)
+        cached.update(courseCurrentCount=20, courseSelectStartDate=(current + timedelta(minutes=1)).isoformat())
+        self.acc.boya_all_courses = [cached]
+        with patch('core.boya_actions.now', side_effect=lambda: self.scheduler.clock()):
+            self.choose()
+            self.assertFalse(self.calls)
+            self.scheduler.clock = lambda: current + timedelta(minutes=1)
+            self.choose()
+            self.assertEqual(self.calls['queryCourseById'], 1)
+            self.assertEqual(self.calls['choseCourse'], 0)
+            self.choose()
+            self.assertEqual(self.calls['queryCourseById'], 1)
+            self.stamp += 301
+            original = self.acc.boya_client.query_course_detail
+            with patch.object(self.acc.boya_client, 'query_course_detail',
+                              side_effect=lambda cid: dict(original(cid), courseCurrentCount=19)):
+                self.choose()
+        self.assertEqual(self.calls['queryCourseById'], 2)
+        self.assertEqual(self.calls['queryStudentSemesterCourseByPage'], 0)
+        self.assertEqual(self.calls['choseCourse'], 1)
 
     def test_first_preflight_timeout_stops_remaining_candidates(self):
         self.faults['getAllConfig']=httpx.ReadTimeout;self.choose()
@@ -245,7 +293,7 @@ class NetworkIncidents(unittest.TestCase):
         for _ in range(288):
             self.scheduler.tick();self.stamp+=300
         self.assertEqual(len(self.warnings()),1)
-        self.assertEqual(counts['queryChosenCourse'],288);self.assertEqual(counts['choseCourse'],0)
+        self.assertEqual(counts['queryChosenCourse'],96);self.assertEqual(counts['choseCourse'],0)
         self.assertTrue(self.acc.boya_health['stale']);self.assertFalse(other.boya_health['stale'])
 
     def test_reopened_sqlite_uncertain_attendance_does_not_repeat_preflight_or_write(self):

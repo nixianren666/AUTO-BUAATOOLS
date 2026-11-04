@@ -9,6 +9,7 @@ import logging
 import os
 import pathlib
 import sys
+import time
 import httpx
 from typing import Any, Dict, List, Optional
 
@@ -22,7 +23,9 @@ from pydantic import BaseModel, ConfigDict, StrictBool, Field, field_validator
 from typing import Literal, Annotated
 import tempfile
 from core.version import VERSION
-from core import operations
+from core import operations, school_traffic
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from core.regular_course_policy import decorate as decorate_regular_classes, set_pause as set_regular_course_pause, subject_id as regular_subject_id
 from core.domain import now as china_now, course_id, course_times, sign_config, autonomous, attendance_allowed, drop_allowed, within_semester, semester_bounds, REQUIREMENTS
 from core.boya_actions import perform_boya_action, merge_selected, account_lock
@@ -31,7 +34,8 @@ from server.presentation import StartupPresentation, capabilities
 from server.update_routes import install as install_updates
 
 from core.iclass import IclassClient, IclassSessionExpired
-from core.scheduler import SigninScheduler
+from core.scheduler import SigninScheduler, regular_snapshot_fresh
+from core.regular_policy import regular_read_failed, regular_read_succeeded
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired, extract_real_name_from_stats
 from core.boya_scheduler import BoyaScheduler, parse_dt, parse_sign_config, is_auto_select_candidate, random_point_in_radius, get_current_semester_range
 from core.boya_crypto import encrypt_local_secret, decrypt_local_secret
@@ -226,10 +230,13 @@ class AccountState:
     ):
         self.removed = False
         self.auth_lock = asyncio.Lock()
+        self.regular_background_lock = asyncio.Lock()
+        self.regular_background_retry_at = 0
         self.maintenance = False
         self.auth_epoch = 0
         self.auth_retry_after = 0.0
-        self.auth_requires_input = False
+        self.auth_input_reason = school_traffic.auth_pause(username)
+        self.auth_requires_input = bool(self.auth_input_reason)
         self.protected_password = ""
         self.boya_lock = __import__("threading").RLock()
         self.boya_pending_courses = operations.ledger.reservations(username)
@@ -249,10 +256,8 @@ class AccountState:
         self.campus = campus or "北京"
         self.client = IclassClient(mode=("webvpn" if mode == "webvpn" else "direct"))
         self.boya_client = BoyaClient(mode=("webvpn" if mode == "webvpn" else "direct"))
-        self.client.operation_user = username
-        self.client.request_guard = lambda: not self.removed and not self.maintenance
-        self.boya_client.operation_user = username
-        self.boya_client.request_guard = lambda: not self.removed and not self.maintenance
+        self.bind_client(self.client)
+        self.bind_client(self.boya_client)
         self.last_classes: List[Dict[str, Any]] = []
         self.last_refresh_time: Optional[str] = None
         self.boya_all_courses: Optional[List[Dict[str, Any]]] = None
@@ -260,6 +265,18 @@ class AccountState:
         self.boya_statistics: Optional[Dict[str, Any]] = None
         self.boya_last_refresh_time: Optional[str] = None
         self._is_connecting: bool = False
+
+    def bind_client(self, client):
+        client.operation_user = self.username
+        client.traffic_allowed = lambda: not self.removed and not self.auth_requires_input
+        client.request_guard = lambda: client.traffic_allowed() and not self.maintenance
+        if isinstance(client, IclassClient):
+            client.verification_required = self.require_verification
+
+    def require_verification(self, reason):
+        self.auth_requires_input = True
+        self.auth_input_reason = reason
+        school_traffic.set_auth_pause(self.username, reason)
 
     def to_dict(self, is_active: bool = False) -> Dict[str, Any]:
         return {
@@ -273,7 +290,7 @@ class AccountState:
             "boya_require_auto_sign": getattr(self, "boya_require_auto_sign", True),
             "boya_allow_offline": getattr(self, "boya_allow_offline", False),
             "campus": getattr(self, "campus", "北京"),
-            "authenticated": self.client.is_authenticated() or self.boya_client.is_authenticated(),
+            "authenticated": not self.auth_requires_input and (self.client.is_authenticated() or self.boya_client.is_authenticated()),
             "iclass_authenticated": bool(self.client.user_id and self.client.session_id),
             "boya_authenticated": self.boya_client.is_authenticated(),
             "is_active": is_active,
@@ -281,6 +298,7 @@ class AccountState:
             "boya_health": self.boya_health,
             "boya_targets": self.boya_targets,
             "auth_requires_input": self.auth_requires_input,
+            "auth_input_reason": self.auth_input_reason,
             "connecting": self._is_connecting,
             "course_count": len(self.last_classes),
             "signed_count": len([c for c in self.last_classes if c.get("signStatus") == 1]),
@@ -427,10 +445,13 @@ def persist_switch(restore, stop_requested=False):
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
-    captcha: Optional[str] = ""
-    captcha_id: Optional[str] = ""
+    username: str = Field(max_length=128)
+    password: str = Field(default="", max_length=1024)
+    captcha: Optional[str] = Field(default="", max_length=64)
+    captcha_id: Optional[str] = Field(default="", max_length=256)
+    sms_action: Optional[Literal["send", "verify"]] = None
+    sms_challenge: str = Field(default="", max_length=64)
+    sms_code: str = Field(default="", max_length=12)
     remember: Optional[bool] = True
     mode: Optional[str] = "auto"
     auto_checkin: Optional[bool] = True
@@ -593,8 +614,13 @@ def sync_boya_login(acc, mode, cookies):
             return False
         acc.boya_client.mode = mode
         acc.boya_client.sync_cookies_from(cookies)
-        if not acc.boya_client.acquire_token():
-            return False
+        try:
+            if not acc.boya_client.acquire_token():
+                return False
+        except BoyaApiError as error:
+            if error.code in ("captcha_required", "sms_required", "verification_required"):
+                acc.require_verification(error.code)
+            raise
         pool = acc.boya_client.query_courses()
         selected = acc.boya_client.query_chosen_courses()
         stats = acc.boya_client.query_statistics()
@@ -611,11 +637,11 @@ def sync_boya_login(acc, mode, cookies):
 
 async def connect_single_account(acc: AccountState) -> bool:
     import time
-    if acc.removed or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
+    if acc.removed or not acc.password or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
         return False
     # Concurrent refreshes share one authentication attempt, with a bounded cooldown.
     async with acc.auth_lock:
-        if acc.removed or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
+        if acc.removed or not acc.password or acc.auth_requires_input or time.monotonic() < acc.auth_retry_after:
             return False
         acc.auth_retry_after = time.monotonic() + 60
         acc.maintenance = acc._is_connecting = True
@@ -650,9 +676,13 @@ async def _connect_single_account(acc: AccountState) -> bool:
                         add_log("success", "博雅授权与排课同步成功。", username=acc.username, user_name=acc.name, category="boya")
                 except Exception as be:
                     logger.debug(f"Boya auto sync during connect: {type(be).__name__}")
+                if acc.auth_requires_input:
+                    return False
 
                 # 尝试接入常规课堂签到系统
                 iclass_ok = await acc.client.login_iclass()
+                if acc.auth_requires_input:
+                    return False
                 if iclass_ok:
                     iclass_name = acc.client.user_info.get("name")
                     if iclass_name and iclass_name != acc.username:
@@ -672,21 +702,17 @@ async def _connect_single_account(acc: AccountState) -> bool:
                     return False
                 sync_config()
                 return True
-            elif res.get("status") == "captcha_required":
-                acc.auth_requires_input = True
-                add_log("warning", f"学生 [{acc.name}] 自动登录被阻断（需要图形验证码），请在界面手动登录。", username=acc.username, user_name=acc.name)
+            elif res.get("status") in ("captcha_required", "sms_required", "verification_required"):
+                acc.require_verification(res["status"])
+                add_log("warning", "学校需要本人完成验证，已暂停自动登录和学校请求。", username=acc.username, user_name=acc.name, notify=False)
                 return False
             elif res.get("status") != "success" and any(word in str(res.get("message", "")) for word in ("密码", "账号")):
-                acc.auth_requires_input = True
+                acc.require_verification("credentials_required")
                 add_log("warning", "自动认证未通过，请手动核对账号凭据；已暂停自动登录。", username=acc.username)
                 return False
+            elif not res.get("retry_other_route"):
+                return False
         except Exception as e:
-            if attempt_mode != modes_to_try[-1]:
-                await acc.client.close()
-                acc.client = IclassClient(mode="webvpn")
-                acc.client.operation_user = acc.username
-                acc.client.request_guard = lambda: not acc.removed and not acc.maintenance
-                continue
             add_log("error", f"学生 [{acc.name}] 连接异常: {type(e).__name__}", username=acc.username, user_name=acc.name)
             return False
 
@@ -698,7 +724,7 @@ async def _connect_single_account(acc: AccountState) -> bool:
 async def get_status(username: Optional[str] = None):
     curr = resolve_account(username)
     mode = curr.mode if curr else config.get("default_mode", "direct")
-    is_authed = bool(curr and (curr.client.is_authenticated() or curr.boya_client.is_authenticated()))
+    is_authed = bool(curr and not curr.auth_requires_input and (curr.client.is_authenticated() or curr.boya_client.is_authenticated()))
     return {
         "authenticated": is_authed,
         "mode": mode,
@@ -810,12 +836,10 @@ async def switch_mode(req: ModeRequest):
                         with account_lock(curr):
                             curr.boya_client.close()
                             curr.boya_client = BoyaClient(mode="webvpn" if new_mode == "webvpn" else "direct")
-                            curr.boya_client.operation_user = curr.username
-                            curr.boya_client.request_guard = lambda: not curr.removed and not curr.maintenance
+                            curr.bind_client(curr.boya_client)
                     await asyncio.to_thread(reset_boya)
                     curr.client = IclassClient(mode="webvpn" if new_mode == "webvpn" else "direct")
-                    curr.client.operation_user = curr.username
-                    curr.client.request_guard = lambda: not curr.removed and not curr.maintenance
+                    curr.bind_client(curr.client)
                     curr.mode = new_mode
                     curr.auth_retry_after = 0
                     curr.regular_health["stale"] = curr.boya_health["stale"] = True
@@ -837,30 +861,68 @@ async def switch_mode(req: ModeRequest):
 
 
 @app.post("/api/login")
-async def login(req: LoginRequest):
+async def login(req: LoginRequest, request: Request = None):
     req_mode = (req.mode or "auto").lower()
-    if req_mode not in ("auto", "direct", "webvpn") or not req.username.strip() or not req.password:
+    req.username = req.username.strip()
+    if req_mode not in ("auto", "direct", "webvpn") or not req.username or not (req.password or req.sms_action):
         raise HTTPException(status_code=400, detail="账号、密码或连接模式无效")
+    if req.sms_action and (not req.username.isascii() or not req.username.isdigit()):
+        raise HTTPException(status_code=400, detail="短信登录需要填写数字学号或工号")
+    if req.sms_action and request is not None and request.url.scheme != "https":
+        loopback = {"localhost", "127.0.0.1", "::1"}
+        if request.url.hostname not in loopback or not request.client or request.client.host not in loopback:
+            raise HTTPException(status_code=403, detail="远程短信登录需要通过 HTTPS 打开管理页面")
+    if req.sms_action == "verify" and (
+        not req.sms_challenge or not req.sms_code.isascii() or not req.sms_code.isdigit()
+        or not 4 <= len(req.sms_code) <= 12
+    ):
+        raise HTTPException(status_code=400, detail="请填写当前会话收到的短信验证码")
     acc = accounts.get(req.username)
+    if req.sms_action == "verify" and acc is None:
+        raise HTTPException(status_code=409, detail="短信会话已失效，请重新开始")
     if acc is None:
         acc = AccountState(req.username, auto_checkin=False)
         accounts[req.username] = acc
+    if acc.auth_lock.locked():
+        raise HTTPException(status_code=409, detail="此账号已有认证操作，请等待结果")
     async with acc.auth_lock:
         if acc.removed:
             raise HTTPException(status_code=409, detail="账号已移除，请重新添加")
         acc.maintenance = acc._is_connecting = True
         acc.auth_epoch += 1
         acc.auth_requires_input = False
+        regular_scope = acc.client.interactive_auth.set(True)
+        boya_scope = acc.boya_client.interactive_auth.set(True)
+        authenticated = False
         try:
+            if req.sms_action == "send":
+                school_traffic.set_auth_pause(acc.username, "sms_required")
+                acc.auth_input_reason = "sms_required"
             with account_lock(acc):
                 acc.boya_client.token = None
             async with acc.client._signin_lock:
                 response = await _login_locked(req)
-            if response.get("status") != "success":
-                acc.auth_requires_input = True
+            authenticated = response.get("status") == "success"
+            if authenticated:
+                school_traffic.set_auth_pause(acc.username, None)
+                acc.auth_input_reason = None
+            elif response.get("status") in ("captcha_required", "sms_required", "verification_required", "sms_sent"):
+                reason = "sms_required" if response["status"] == "sms_sent" else response["status"]
+                acc.require_verification(reason)
             return response
         finally:
+            acc.auth_requires_input = not authenticated
+            acc.client.interactive_auth.reset(regular_scope)
+            acc.boya_client.interactive_auth.reset(boya_scope)
             acc.maintenance = acc._is_connecting = False
+
+
+@app.exception_handler(RequestValidationError)
+async def redact_login_validation(request, error):
+    if request.url.path == "/api/login":
+        return JSONResponse({"detail": "登录字段格式无效"}, status_code=422)
+    from fastapi.exception_handlers import request_validation_exception_handler
+    return await request_validation_exception_handler(request, error)
 
 
 async def _login_locked(req: LoginRequest):
@@ -868,7 +930,9 @@ async def _login_locked(req: LoginRequest):
     req_mode = (req.mode or "auto").lower()
 
     # 查找已有或新建
-    if req.username in accounts:
+    if req.sms_action:
+        acc = accounts[req.username]
+    elif req.username in accounts:
         acc = accounts[req.username]
         acc.password = req.password
         acc.mode = req_mode
@@ -885,7 +949,10 @@ async def _login_locked(req: LoginRequest):
         )
         accounts[req.username] = acc
 
-    modes_to_try = ["direct", "webvpn"] if req_mode in ("auto", "direct") else [req_mode]
+    if req.sms_action:
+        modes_to_try = ["direct" if req_mode == "auto" else req_mode]
+    else:
+        modes_to_try = ["direct", "webvpn"] if req_mode in ("auto", "direct") else [req_mode]
 
     for attempt_mode in modes_to_try:
         acc.client.mode = attempt_mode
@@ -893,24 +960,31 @@ async def _login_locked(req: LoginRequest):
 
         acc.regular_health["stale"] = acc.boya_health["stale"] = True
         try:
-            res = await acc.client.login_sso(
-                username=req.username,
-                password=req.password,
-                captcha=req.captcha or "",
-                captcha_id=req.captcha_id or "",
-            )
+            if req.sms_action == "send":
+                res = await acc.client.send_sms_code(req.username)
+            elif req.sms_action == "verify":
+                res = await acc.client.verify_sms_code(req.username, req.sms_challenge, req.sms_code, req.captcha or "")
+            else:
+                res = await acc.client.login_sso(
+                    username=req.username, password=req.password,
+                    captcha=req.captcha or "", captcha_id=req.captcha_id or "",
+                )
+        except school_traffic.SchoolTrafficPaused as error:
+            return {"status": "failed", "message": str(error), "retry_after": error.retry_after}
         except (httpx.HTTPError, ValueError):
-            res = {"status":"failed","message":"统一认证通信未完成，请检查网络通道后重试"}
+            res = {"status":"failed","message":"统一认证通信未确认，请先核对结果再手动重试"}
 
         if res.get("status") == "captcha_required":
             add_log("warning", f"统一身份认证需要图形验证码", username=acc.username, user_name=acc.name)
             return res
+        if res.get("status") in ("sms_sent", "sms_required", "verification_required"):
+            return res
 
         if res.get("status") != "success":
             err_msg = res.get("message") or "登录失败"
-            if "账号" in err_msg or "密码" in err_msg or attempt_mode == modes_to_try[-1]:
+            if not res.get("retry_other_route") or attempt_mode == modes_to_try[-1]:
                 add_log("error", f"统一身份认证失败: {err_msg}", username=acc.username, user_name=acc.name)
-                return {"status": "failed", "message": err_msg}
+                return res
             continue
 
         real_name = res.get("user", {}).get("name")
@@ -928,10 +1002,14 @@ async def _login_locked(req: LoginRequest):
         except Exception as be:
             logger.debug(f"Boya auto sync during login: {type(be).__name__}")
             add_log("warning", f"【{acc.name}】博雅系统授权同步异常: {type(be).__name__}", username=acc.username, user_name=acc.name, category="boya")
+        if acc.auth_requires_input:
+            return {"status": acc.auth_input_reason, "message": "学校要求本人完成安全验证"}
 
         # 接入 iclass 课堂签到系统
         add_log("info", f"正在接入 iclass 课堂签到系统 ({'校园网直连' if attempt_mode == 'direct' else 'WebVPN 外网'})...", username=acc.username, user_name=acc.name)
         iclass_ok = await acc.client.login_iclass()
+        if acc.auth_requires_input:
+            return {"status": acc.auth_input_reason, "message": "学校要求本人完成安全验证"}
         if iclass_ok:
             iclass_name = acc.client.user_info.get("name")
             if iclass_name and iclass_name != acc.username:
@@ -950,6 +1028,8 @@ async def _login_locked(req: LoginRequest):
 
         if acc.removed:
             raise HTTPException(status_code=409, detail="认证过程中账号已移除")
+        if req.sms_action:
+            acc.mode = attempt_mode
         sync_config()
         return {
             "status": "success",
@@ -981,11 +1061,33 @@ async def logout(username: Optional[str] = None):
 
 
 @app.get("/api/classes")
-async def get_today_classes(username: Optional[str] = None):
+async def get_today_classes(username: Optional[str] = None, force: bool = True):
     curr = resolve_account(username)
     if not curr:
         return {"status": "unauthenticated", "classes": []}
+    if force:
+        return await refresh_regular_classes(curr)
+    async with curr.regular_background_lock:
+        if curr.removed or curr.maintenance or curr.auth_requires_input:
+            return regular_classes_cache(curr, stale=True)
+        if regular_snapshot_fresh(curr, china_now()):
+            return regular_classes_cache(curr, stale=False)
+        if time.monotonic() < curr.regular_background_retry_at:
+            return regular_classes_cache(curr, stale=True)
+        result = await refresh_regular_classes(curr)
+        if result.get("stale"):
+            regular_read_failed(curr, result.get("retry_after", 0))
+        return result
 
+
+def regular_classes_cache(account, *, stale):
+    return {"status": "stale" if stale else "success", "stale": stale,
+            "classes": decorate_regular_classes(account, account.last_classes or []),
+            "last_success": account.regular_health.get("last_success"),
+            "username": account.username, "name": account.name}
+
+
+async def refresh_regular_classes(curr):
     # 若尚未完成鉴权且存有密码，在获取前尝试自动建立连接
     if (not curr.client.is_authenticated() or not curr.client.session_id) and curr.password:
         try:
@@ -1009,6 +1111,7 @@ async def get_today_classes(username: Optional[str] = None):
         curr.last_classes = classes
         curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
         curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
+        regular_read_succeeded(curr)
         note_regular_refresh(curr,classes)
         return {"status": "success", "classes": decorate_regular_classes(curr,classes), "username": curr.username, "name": curr.name}
     except Exception as e:
@@ -1023,13 +1126,15 @@ async def get_today_classes(username: Optional[str] = None):
                     curr.last_classes = classes
                     curr.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
                     curr.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
+                    regular_read_succeeded(curr)
                     note_regular_refresh(curr,classes)
                     return {"status": "success", "classes": decorate_regular_classes(curr,classes), "username": curr.username, "name": curr.name}
             except Exception:
                 pass
         note_regular_refresh(curr,error=type(e).__name__)
         curr.regular_health = {**curr.regular_health, "stale": True, "error": type(e).__name__}
-        return {"status": "stale", "stale": True, "classes": decorate_regular_classes(curr,curr.last_classes or []), "username": curr.username, "name": curr.name, "message": "课表未同步，显示上次成功数据"}
+        return {**regular_classes_cache(curr, stale=True), "retry_after": getattr(e, "retry_after", 0),
+                "message": "课表未同步，显示上次成功数据"}
 
 
 
@@ -1062,7 +1167,11 @@ async def perform_signin(req: SigninRequest):
             if refreshed is not None:
                 target_acc.last_classes = refreshed
                 target_acc.last_refresh_time = datetime.datetime.now().strftime("%H:%M:%S")
+                target_acc.regular_health = {"stale": False, "last_success": china_now().isoformat(timespec="seconds"), "error": None}
+                regular_read_succeeded(target_acc)
         except Exception as ref_err:
+            regular_read_failed(target_acc, getattr(ref_err, "retry_after", 0))
+            target_acc.regular_health = {**target_acc.regular_health, "stale": True, "pending_verification": True}
             logger.debug(f"Post manual signin schedule refresh error: {type(ref_err).__name__}")
     else:
         add_log("warning", f"【{target_acc.name}】排课 [{req.course_id}] 签到反馈: {msg}", username=target_acc.username, user_name=target_acc.name)
@@ -1725,28 +1834,46 @@ from server.wechat import install as install_wechat
 
 async def wechat_course_snapshot(username):
     """Independent read-only feed. Never enables attendance or depends on active UI."""
-    from core.domain import parse_dt
-    import copy
     acc=accounts.get(username)
-    if not acc or acc.removed or acc.maintenance or acc.auth_requires_input:return None
-    current=china_now();health=acc.regular_health
-    refreshed=parse_dt(health.get('last_success'))
-    if health.get('stale') or not refreshed or refreshed.date()!=current.date() or not 0<=(current-refreshed).total_seconds()<=60:
+    if not acc:
+        return None
+    async with acc.regular_background_lock:
+        return await wechat_course_snapshot_locked(username, acc)
+
+
+async def wechat_course_snapshot_locked(username, acc):
+    import copy
+    if accounts.get(username) is not acc or acc.removed or acc.maintenance or acc.auth_requires_input:
+        return None
+    if not regular_snapshot_fresh(acc, china_now()):
+        if time.monotonic() < acc.regular_background_retry_at:
+            return None
         if not acc.client.is_authenticated():
-            if not acc.password or not await connect_single_account(acc):return None
+            if not acc.password or not await connect_single_account(acc):
+                regular_read_failed(acc)
+                return None
+        if accounts.get(username) is not acc or acc.removed or acc.maintenance or acc.auth_requires_input:
+            return None
+        if regular_snapshot_fresh(acc, china_now()):
+            return {"classes": copy.deepcopy(acc.last_classes),
+                    "semester": copy.deepcopy((acc.boya_statistics or {}).get("semesterInfo") or {})}
         epoch=acc.auth_epoch
         try:
             classes=await acc.client.get_today_classes()
         except IclassSessionExpired:
             # Only explicit expiry may reconnect; transient network errors do not.
             if acc.password:await connect_single_account(acc)
+            if not regular_snapshot_fresh(acc, china_now()):
+                regular_read_failed(acc)
             return None
-        except Exception:
+        except Exception as error:
+            regular_read_failed(acc, getattr(error, "retry_after", 0))
             acc.regular_health={**acc.regular_health,'stale':True}
             return None
         if accounts.get(username) is not acc or acc.removed or acc.maintenance or acc.auth_epoch!=epoch:return None
         acc.last_classes=classes;acc.last_refresh_time=china_now().isoformat(timespec='seconds')
         acc.regular_health={'stale':False,'last_success':acc.last_refresh_time,'error':None}
+        regular_read_succeeded(acc)
     if accounts.get(username) is not acc or acc.removed or acc.maintenance:return None
     return {'classes':copy.deepcopy(acc.last_classes),'semester':copy.deepcopy((acc.boya_statistics or {}).get('semesterInfo') or {})}
 

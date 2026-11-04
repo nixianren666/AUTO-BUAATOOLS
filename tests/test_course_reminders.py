@@ -137,6 +137,18 @@ class ReminderServerFeed(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.backend.scheduler.enabled,previous_enabled)
         await self.backend.wechat_course_snapshot('B');self.assertEqual(acc.client.get_today_classes.await_count,1)
 
+    async def test_browser_and_wechat_share_read_without_suppressing_manual_refresh(self):
+        acc = self.accounts[1]
+        acc.client.session_id = 'fixture-session'
+        await asyncio.gather(
+            self.backend.wechat_course_snapshot('B'),
+            self.backend.get_today_classes(username='B', force=False),
+            self.backend.get_today_classes(username='B', force=False),
+        )
+        acc.client.get_today_classes.assert_awaited_once()
+        await self.backend.get_today_classes(username='B')
+        self.assertEqual(acc.client.get_today_classes.await_count, 2)
+
     async def test_stale_failure_and_human_auth_pause_do_not_use_old_cache_or_reconnect(self):
         acc=self.accounts[0];acc.last_classes=[COURSE];acc.client.get_today_classes.side_effect=OSError('temporary network')
         with patch.object(self.backend,'connect_single_account',new_callable=AsyncMock) as connect:

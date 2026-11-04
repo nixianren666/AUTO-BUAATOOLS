@@ -7,13 +7,17 @@ import base64
 import asyncio
 import datetime
 import logging
+import secrets
+import time
 import urllib.parse
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from contextvars import ContextVar
+from core import school_traffic
 
 from core.cas import CasParser
-from core.cas_transport import resolve_auth_redirect, follow_auth_response, CasFlowError, CasCaptchaRequired, REDIRECTS
+from core.cas_transport import resolve_auth_redirect, follow_auth_response, CasFlowError, CasCaptchaRequired, CasManualVerification, REDIRECTS
 from core.domain import now as china_now, trusted_url, regular_allowed, regular_window, CHINA
 from core import operations
 from core.regular_policy import MAX_POSTS, minimum_retry_delay
@@ -91,6 +95,11 @@ class IclassClient:
         self.last_error: Optional[str] = None
         self.request_guard = lambda: True
         self.operation_user = None
+        self.traffic_allowed = lambda: True
+        self.interactive_auth = ContextVar("iclass_interactive_auth", default=False)
+        self.final_write_guard = ContextVar("iclass_final_write_guard", default=None)
+        self.verification_required = lambda reason: None
+        self._sms_form = None
         self.clock = china_now
         self._signin_lock = asyncio.Lock()
         self.actual_sign_posts = 0
@@ -112,8 +121,19 @@ class IclassClient:
                 trust_env=False,
                 timeout=httpx.Timeout(timeout=20.0, connect=4.0),
                 follow_redirects=False,
+                event_hooks={"request": [self._before_request], "response": [self._after_response]},
             )
         return self._client
+
+    async def _before_request(self, request):
+        # The SQLite transaction is short, but a competing process can hold its lock.
+        await asyncio.to_thread(school_traffic.request_guard, self, request)
+        final_guard = self.final_write_guard.get()
+        if not self.traffic_allowed() or (final_guard is not None and not final_guard()):
+            raise school_traffic.SchoolTrafficPaused("账号已暂停或操作窗口已结束，未发送请求")
+
+    async def _after_response(self, response):
+        await asyncio.to_thread(school_traffic.note_response, self, response)
 
     def wrap_url(self, url: str) -> str:
         """根据当前连接模式决定是否进行 WebVPN URL 封装"""
@@ -134,6 +154,7 @@ class IclassClient:
         self.login_name = None
         self.user_info.clear()
         self._captcha_form = None
+        self._sms_form = None
 
     async def get_captcha_image(self, captcha_id: str) -> Optional[str]:
         """获取验证码并返回 Base64 编码的 data URL"""
@@ -146,12 +167,13 @@ class IclassClient:
 
     async def _captcha_result(self, username, response, info):
         kind, captcha_id = info
-        self._captcha_form = (username, self.mode, captcha_id, response)
+        challenge = secrets.token_urlsafe(24)
+        self._captcha_form = (username, self.mode, challenge, response, time.monotonic() + 300)
         try:
             image = await self.get_captcha_image(captcha_id)
         except httpx.HTTPError:
             image = None
-        return {"status":"captcha_required", "captcha_id":captcha_id,
+        return {"status":"captcha_required", "captcha_id":challenge,
                 "captcha_type":kind, "captcha_image":image, "mode":self.mode,
                 "message":"统一认证需要验证码，请输入图中内容后再提交" if image else "学校要求额外验证，验证码暂未加载，请重试或先在学校官方页面处理"}
 
@@ -159,10 +181,13 @@ class IclassClient:
         # A failed new authentication cannot keep an old business identity live.
         self.user_info = {}
         self.user_id = self.session_id = self.login_name = None
+        self._sms_form = None
         sso_url = self.wrap_url("https://sso.buaa.edu.cn/login")
         pending = getattr(self, '_captcha_form', None)
         self._captcha_form = None
-        retry_challenge = bool(captcha and pending and pending[:3] == (username, self.mode, captcha_id))
+        retry_challenge = bool(captcha and pending and pending[:3] == (username, self.mode, captcha_id)
+                               and pending[4] > time.monotonic())
+        password_started = False
         try:
             if retry_challenge:
                 response = pending[3]
@@ -172,7 +197,12 @@ class IclassClient:
                     await follow_auth_response(response, self.client, self.mode)
                     return await self._finish_sso_login(username)
                 if response.status_code != 200:
+                    if response.status_code == 403:
+                        raise CasManualVerification("verification_required")
                     return {"status":"failed","message":"统一认证登录页面暂不可用，请稍后重试"}
+                reason = CasParser.manual_verification(response.text)
+                if reason:
+                    raise CasManualVerification(reason)
                 info = CasParser.detect_captcha(response.text)
                 if info:
                     return await self._captcha_result(username, response, info)
@@ -184,15 +214,81 @@ class IclassClient:
             if error:
                 return {"status":"failed","message":error}
             if not CasParser.extract_execution(html):
-                return {"status":"failed","message":"统一认证登录页面格式异常，请稍后重试"}
+                raise CasManualVerification("verification_required")
             params = CasParser.build_login_params(html, username, password, captcha=captcha)
+            password_started = True
             submitted = await self.client.post(sso_url, data=params)
             await follow_auth_response(submitted, self.client, self.mode)
             return await self._finish_sso_login(username)
         except CasCaptchaRequired as challenge:
             return await self._captcha_result(username, challenge.response, challenge.captcha)
+        except CasManualVerification as error:
+            return {"status": error.reason, "message": str(error), "mode": self.mode}
+        except school_traffic.SchoolTrafficPaused as error:
+            return {"status": "failed", "message": str(error), "retry_after": error.retry_after}
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            return {"status": "failed", "message": "统一认证连接未建立，请检查网络通道",
+                    "retry_other_route": not password_started and not retry_challenge}
+        except httpx.HTTPError:
+            return {"status": "failed", "message": "统一认证通信未完成，请核对后手动重试"}
         except CasFlowError as error:
             return {"status":"failed","message":str(error)}
+
+    async def send_sms_code(self, username):
+        """The explicit SMS sign-in option on the school's public CAS page."""
+        if self._sms_form and self._sms_form[:2] == (username, self.mode) and self._sms_form[3] > time.monotonic():
+            return {"status": "failed", "message": "当前验证码仍在有效期内，请先使用已收到的短信"}
+        self._sms_form = None
+        self._captcha_form = None
+        self.user_info = {}
+        self.user_id = self.session_id = self.login_name = None
+        sso_url = self.wrap_url("https://sso.buaa.edu.cn/login")
+        response = await self.client.get(sso_url)
+        if response.status_code != 200 or not CasParser.extract_execution(response.text):
+            return {"status": "failed", "message": "学校未提供可用的短信登录表单，请在官方页面处理"}
+        reason = CasParser.manual_verification(response.text)
+        if reason:
+            return {"status": reason, "message": "当前学校验证需要在官方页面完成"}
+        result = await self.client.post(
+            self.wrap_url("https://sso.buaa.edu.cn/token"), json={"username": username},
+        )
+        if result.status_code != 200:
+            return {"status": "failed", "message": "学校未确认发码，请稍后在官方页面核对"}
+        payload = result.json()
+        ttl = payload.get("expire_in") if isinstance(payload, dict) else None
+        if isinstance(ttl, str) and ttl.isascii() and ttl.isdigit() and len(ttl) <= 6:
+            ttl = int(ttl)
+        if not isinstance(payload, dict) or payload.get("status") != "success" or type(ttl) is not int or ttl <= 0:
+            return {"status": "failed", "message": "学校未确认发码，请稍后在官方页面核对"}
+        challenge = secrets.token_urlsafe(24)
+        ttl = min(ttl, 300)
+        self._sms_form = (username, self.mode, challenge, time.monotonic() + ttl, response)
+        output = {"status": "sms_sent", "sms_challenge": challenge, "expires_in": ttl, "mode": self.mode}
+        captcha = CasParser.detect_captcha(response.text)
+        if captcha:
+            output["captcha_required"] = True
+            output["captcha_image"] = await self.get_captcha_image(captcha[1])
+        return output
+
+    async def verify_sms_code(self, username, challenge, code, captcha=""):
+        pending = self._sms_form
+        if not pending or pending[:3] != (username, self.mode, challenge) or pending[3] <= time.monotonic():
+            return {"status": "failed", "message": "短信验证已过期或与当前账号、通道不匹配"}
+        response = pending[4]
+        if CasParser.detect_captcha(response.text) and not captcha:
+            return {"status": "failed", "message": "请同时输入学校图形验证码"}
+        # Consume before sending. Even an ambiguous network failure must not replay.
+        self._sms_form = None
+        data = CasParser.build_login_params(response.text, username, code, captcha=captcha)
+        data["type"] = "username_smstoken"
+        try:
+            submitted = await self.client.post(self.wrap_url("https://sso.buaa.edu.cn/login"), data=data)
+            await follow_auth_response(submitted, self.client, self.mode)
+            return await self._finish_sso_login(username)
+        except CasManualVerification as error:
+            return {"status": error.reason, "message": str(error)}
+        except CasFlowError:
+            return {"status": "failed", "message": "学校未确认短信登录，请核对验证码或在官方页面处理"}
 
     async def _finish_sso_login(self, username):
         activation = await self.client.get(self.wrap_url("https://uc.buaa.edu.cn/api/login?target=https%3A%2F%2Fuc.buaa.edu.cn%2F%23%2Fuser%2Flogin"))
@@ -229,6 +325,11 @@ class IclassClient:
             for _ in range(SIGNIN_LOGIN_REDIRECT_LIMIT):
                 resp = await self.client.get(curr_url)
                 final_url = str(resp.url)
+                if resp.status_code == 200 and urllib.parse.urlsplit(from_webvpn_url(final_url)).hostname == "sso.buaa.edu.cn":
+                    reason = CasParser.manual_verification(resp.text)
+                    if reason or CasParser.detect_captcha(resp.text):
+                        self.verification_required(reason or "captcha_required")
+                        return None
                 if self.mode == "webvpn":
                     final_url = from_webvpn_url(final_url)
 
@@ -445,7 +546,7 @@ class IclassClient:
                         }
                     )
                 return classes
-            except IclassSessionExpired:
+            except (IclassSessionExpired, school_traffic.SchoolTrafficPaused):
                 raise
             except Exception as e:
                 errors.append(type(e).__name__)
@@ -502,10 +603,16 @@ class IclassClient:
                 return False, str(exc)
             if not claimed:
                 return True, "请求已被接受，等待官方状态同步，不再重发"
-            # A persistent claim can wait for another writer; recheck before sending.
-            if self.clock().date() != query_day or not self.request_guard() or (guard is not None and not guard()) or not regular_allowed(course, self.clock()):
+            def still_allowed():
+                current = self.clock()
+                return (current.date() == query_day and self.request_guard()
+                        and (guard is None or guard()) and regular_allowed(course, current))
+
+            # Both the operation claim and the shared network budget can wait.
+            if not still_allowed():
                 operations.ledger.failed_before_send(key)
                 return False, "账号已暂停或已超过签到窗口，未提交"
+            write_scope = self.final_write_guard.set(still_allowed)
             try:
                 self.actual_sign_posts += 1
                 response = await self.client.post(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/stu_scan_sign.action"), headers={"sessionId": self.session_id}, params={"courseSchedId": course_id, "timestamp": str(timestamp)}, data={"id": self.user_id})
@@ -527,6 +634,10 @@ class IclassClient:
                 if not success and message and "登录" in message:
                     self.user_id = self.session_id = None
                 return success, sanitize_signin_message(success, message)
+            except school_traffic.SchoolTrafficPaused as exc:
+                operations.ledger.failed_before_send(key)
+                self.actual_sign_posts -= 1
+                return False, str(exc)
             except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
                 operations.ledger.failed_before_send(key)
                 self.actual_sign_posts -= 1
@@ -534,3 +645,5 @@ class IclassClient:
             except BaseException:
                 operations.ledger.finish(key, "uncertain")
                 raise
+            finally:
+                self.final_write_guard.reset(write_scope)

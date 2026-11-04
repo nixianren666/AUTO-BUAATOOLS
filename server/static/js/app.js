@@ -1,5 +1,5 @@
 /**
- * BUAA 课程签到 Pro v1.4.17 - Origin Web 前端核心交互引擎
+ * BUAA 课程签到 Pro v1.4.18 - Origin Web 前端核心交互引擎
  * 严谨金融级界面驱动：多学生并发、常规考勤守护、自动博雅套件、实时终端日志
  */
 
@@ -504,16 +504,20 @@ function updateUIElements() {
 
 // ==================== 1. 常规课堂考勤逻辑 ====================
 
-async function fetchClasses(isSilent = false) {
+async function fetchClasses(isSilent = false, force = true) {
   const requestedUsername = appState.activeUsername;
   const requestedGeneration = viewGeneration;
   try {
-    const res = await apiFetch("/api/classes");
+    const res = await apiFetch(force ? "/api/classes" : "/api/classes?force=false");
     const data = await res.json();
 
     if (!viewStillCurrent(requestedUsername, requestedGeneration)) return;
     appState.regularStale = !!(data.stale || data.offline);
-    if (!appState.regularStale && data.status === "success") appState.regularLastSuccess = new Date().toLocaleTimeString("zh-CN", {timeZone:"Asia/Shanghai"});
+    if (!appState.regularStale && data.status === "success") {
+      appState.regularLastSuccess = data.last_success
+        ? data.last_success.slice(11, 19)
+        : new Date().toLocaleTimeString("zh-CN", {timeZone:"Asia/Shanghai"});
+    }
     updateUIElements();
     if (data.stale || data.offline) { if (!isSilent) showToast("课表未同步，显示上次成功数据", "info"); }
     if (data.classes) {
@@ -673,7 +677,7 @@ async function manualSignIn(courseSchedId) {
     if (!viewStillCurrent(requestedUsername,requestedGeneration)) return;
     if (data.status === "success" || data.success) {
       showToast("常规课程签到成功！", "success");
-      fetchClasses();
+      fetchClasses(false, false);
     } else {
       showToast(`签到反馈: ${data.message || "未能成功"}`, "error");
     }
@@ -1360,7 +1364,7 @@ async function fetchLogs() {
         appState.lastSeenLogSig = topSig;
         const msg = topLog.message || "";
         if (msg.includes("签到成功") || msg.includes("签退成功")) {
-          fetchClasses(true);
+          fetchClasses(true, false);
           fetchBoyaData(false);
         } else if (msg.includes("抢中") || msg.includes("退选成功") || msg.includes("已退选")) {
           fetchBoyaData(false);
@@ -1374,7 +1378,7 @@ async function fetchLogs() {
 function startActiveViewAutoRefresh() {
   setInterval(() => {
     if (appState.currentMainView === "regular") {
-      fetchClasses(true);
+      fetchClasses(true, false);
     } else if (appState.currentMainView === "boya") {
       fetchBoyaData(false);
     }
@@ -1382,7 +1386,7 @@ function startActiveViewAutoRefresh() {
 
   window.addEventListener("focus", () => {
     if (appState.currentMainView === "regular") {
-      fetchClasses(true);
+      fetchClasses(true, false);
     } else if (appState.currentMainView === "boya") {
       fetchBoyaData(false);
     }
@@ -1434,7 +1438,7 @@ function renderAccountsModal() {
       <div class="origin-user-capsule" style="padding:12px;margin-bottom:8px;border-color:${isActive ? 'var(--accent-cyan)' : 'var(--border)'}" ${actionAttributes("switchAccount", acc.username)}>
         <div class="origin-avatar">${escapeHtml(initial)}</div>
         <div class="origin-user-info">
-          <div class="origin-user-name">${escapeHtml(acc.name || acc.username)} ${isActive ? '<span class="origin-tag">当前活跃</span>' : ''}</div>
+          <div class="origin-user-name">${escapeHtml(acc.name || acc.username)} ${isActive ? '<span class="origin-tag">当前活跃</span>' : ''} ${acc.auth_requires_input ? '<span class="origin-tag">需要本人验证</span>' : ''}</div>
           <div class="origin-user-id">学号: ${escapeHtml(acc.username)} · 模式: ${acc.mode === 'webvpn' ? 'WebVPN' : '直连'}</div>
         </div>
         <div>
@@ -1553,12 +1557,28 @@ function openLoginModal() {
 
 function closeLoginModal() {
   const m = document.getElementById("loginModal");
-  if (m) setUISurface("loginModal", false);
+  if (m) {
+    resetLoginCaptcha();
+    setUISurface("loginModal", false);
+  }
 }
 
 let loginInFlight = false;
 let loginCaptchaContext = '';
+let loginSmsChallenge = '';
+let loginSmsTimer;
+let loginRevision = 0;
 function resetLoginCaptcha() {
+  loginRevision++;
+  clearTimeout(loginSmsTimer);
+  loginSmsChallenge = '';
+  const send = document.getElementById('loginSmsSend');
+  if (send && !loginInFlight) send.disabled = false;
+  const smsCode = document.getElementById('loginSmsCode');
+  if (smsCode) { smsCode.value = ''; smsCode.required = false; }
+  const smsHint = document.getElementById('loginSmsHint');
+  if (smsHint) smsHint.textContent = '';
+  document.getElementById('loginVerificationHelp')?.classList.add('hidden');
   appState.currentCaptchaId = ''; loginCaptchaContext = '';
   const group = document.getElementById('loginCaptchaGroup');
   group?.classList.add('hidden');
@@ -1569,31 +1589,92 @@ function resetLoginCaptcha() {
 function refreshLoginCaptcha() {
   if (loginInFlight) return;
   resetLoginCaptcha();
+  if (document.getElementById('loginMethod')?.value === 'sms') return;
   handleLogin({ preventDefault() {} });
 }
+document.getElementById('loginMethod')?.addEventListener('change', (event) => {
+  resetLoginCaptcha();
+  const sms = event.target.value === 'sms';
+  document.getElementById('loginPasswordGroup')?.classList.toggle('hidden', sms);
+  document.getElementById('loginRememberGroup')?.classList.toggle('hidden', sms);
+  document.getElementById('loginSmsGroup')?.classList.toggle('hidden', !sms);
+  document.getElementById('loginPassword').required = !sms;
+});
+document.getElementById('loginSmsSend')?.addEventListener('click', (event) => handleLogin(event, 'send'));
+document.getElementById('loginUseSms')?.addEventListener('click', () => {
+  if (loginInFlight) return;
+  const method = document.getElementById('loginMethod');
+  method.value = 'sms';
+  method.dispatchEvent(new Event('change', {bubbles:true}));
+  window.BUAAUiControls?.syncSelect(method);
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginSmsHint').textContent = '点击发送短信验证码，再输入手机收到的验证码。';
+  document.getElementById('loginSmsSend')?.focus();
+});
 for (const id of ['loginUsername','loginPassword','loginModeSelect']) {
   document.getElementById(id)?.addEventListener(id === 'loginModeSelect' ? 'change' : 'input', resetLoginCaptcha);
 }
-async function handleLogin(e) {
+async function handleLogin(e, action = null) {
   e.preventDefault();
   if (loginInFlight) return;
   const u = document.getElementById('loginUsername').value.trim();
   const p = document.getElementById('loginPassword').value;
   const m = document.getElementById('loginModeSelect').value;
+  const sms = document.getElementById('loginMethod')?.value === 'sms';
   const rem = document.getElementById('rememberMe').checked;
-  if (!u || !p) return;
+  if (!u || (!sms && !p)) return;
+  if (sms && action !== 'send' && !loginSmsChallenge) {
+    showToast('请先点击发送短信验证码', 'info');
+    return;
+  }
+  const revision = loginRevision;
+  const smsCode = document.getElementById('loginSmsCode');
   const context = JSON.stringify([u,m]);
-  const captcha = loginCaptchaContext === context ? document.getElementById('loginCaptchaInput')?.value.trim() || '' : '';
+  const captcha = (sms || loginCaptchaContext === context) ? document.getElementById('loginCaptchaInput')?.value.trim() || '' : '';
+  const payload = sms
+    ? {username:u, mode:m, sms_action:action || 'verify', sms_challenge:loginSmsChallenge, sms_code:action === 'send' ? '' : smsCode.value.trim(), captcha}
+    : {username:u, password:p, mode:m, remember:rem, captcha, captcha_id:captcha ? appState.currentCaptchaId : ''};
+  if (smsCode) smsCode.value = '';
   loginInFlight = true;
   const submit = document.getElementById('loginSubmitBtn');
+  const send = document.getElementById('loginSmsSend');
+  if (send) send.disabled = true;
   if (submit) { submit.disabled = true; submit.textContent = '正在认证...'; }
   try {
     const res = await apiFetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ username:u,password:p,mode:m,remember:rem,captcha,captcha_id:captcha ? appState.currentCaptchaId : '' }) });
+      body:JSON.stringify(payload) });
     const data = await res.json();
     // A challenge arriving after editing the identity must never bind to new fields.
-    if (document.getElementById('loginUsername').value.trim() !== u || document.getElementById('loginModeSelect').value !== m || document.getElementById('loginPassword').value !== p) return;
-    if (data.status === 'captcha_required') {
+    if (revision !== loginRevision || document.getElementById('loginUsername').value.trim() !== u || document.getElementById('loginModeSelect').value !== m || document.getElementById('loginPassword').value !== p) return;
+    if (data.status === 'sms_required' || data.status === 'verification_required') {
+      resetLoginCaptcha();
+      if (data.status === 'sms_required' && ['direct', 'webvpn'].includes(data.mode)) {
+        const mode = document.getElementById('loginModeSelect');
+        mode.value = data.mode;
+        window.BUAAUiControls?.syncSelect(mode);
+      }
+      document.getElementById('loginVerificationHelp')?.classList.remove('hidden');
+      document.getElementById('loginUseSms')?.classList.toggle('hidden', sms || data.status !== 'sms_required');
+      document.getElementById('loginVerificationMessage').textContent = data.status === 'sms_required'
+        ? (sms ? '学校仍要求额外验证，请打开官方认证页处理。当前账号的自动请求已暂停。'
+          : '学校要求短信验证，当前账号的自动请求已暂停。可以切换到学校短信登录，或打开官方认证页处理。')
+        : '学校要求本人完成安全验证。当前账号的自动请求已暂停。';
+    } else if (data.status === 'sms_sent' || data.status === 'captcha_required') {
+      if (data.status === 'sms_sent') {
+        loginSmsChallenge = data.sms_challenge || '';
+        smsCode.required = true;
+        document.getElementById('loginSmsHint').textContent = '学校已确认发码，请输入手机收到的验证码后提交。';
+        loginSmsTimer = setTimeout(() => {
+          resetLoginCaptcha();
+          document.getElementById('loginSmsHint').textContent = '本次短信验证已过期，可重新申请。';
+        }, Math.max(1, Math.min(300, Number(data.expires_in) || 1)) * 1000);
+        smsCode.focus();
+        if (!data.captcha_required) {
+          document.getElementById('loginCaptchaGroup')?.classList.add('hidden');
+          document.getElementById('loginCaptchaInput').required = false;
+          return;
+        }
+      }
       const challengeMode = ['direct','webvpn'].includes(data.mode) ? data.mode : m;
       const modeSelect = document.getElementById('loginModeSelect');
       modeSelect.value = challengeMode; window.BUAAUiControls?.syncSelect(modeSelect);
@@ -1603,7 +1684,7 @@ async function handleLogin(e) {
       const hasImage = /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(data.captcha_image || '');
       if (image) { image.hidden = !hasImage; if (hasImage) image.src = data.captcha_image; else image.removeAttribute('src'); }
       const input = document.getElementById('loginCaptchaInput');
-      if (input) { input.value = ''; input.required = hasImage; if (hasImage) input.focus(); }
+      if (input) { input.value = ''; input.required = hasImage; if (hasImage && !sms) input.focus(); }
       const hint = document.getElementById('loginCaptchaHint');
       if (hint) hint.textContent = data.message || '请完成学校验证码后再次提交';
       showToast(data.message || '请填写学校验证码', 'info');
@@ -1613,10 +1694,10 @@ async function handleLogin(e) {
       closeLoginModal(); fetchInitialState();
     } else {
       resetLoginCaptcha();
-      showToast(`登录失败: ${data.message || '认证未完成，请重试'}`, 'error');
+      showToast(data.message || data.detail || '认证未完成，请重试', 'error');
     }
   } catch (err) { showToast('登录通信未完成，请检查网络通道后重试', 'error'); }
-  finally { loginInFlight = false; if (submit) { submit.disabled = false; submit.textContent = '确认登录并接入守护'; } }
+  finally { loginInFlight = false; if (send) send.disabled = Boolean(loginSmsChallenge); if (submit) { submit.disabled = false; submit.textContent = '确认登录并接入守护'; } }
 }
 
 // 手动排课 ID 签到模态框

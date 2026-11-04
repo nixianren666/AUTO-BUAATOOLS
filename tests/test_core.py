@@ -48,8 +48,9 @@ class TestCasParser(unittest.TestCase):
         self.assertEqual(result, ("sliding", "cap_12345"))
 
     def test_is_ignorable_password_expiry(self):
-        html = '<input name="execution" value="token123"><form id="continueForm">账号存在安全风险</form>'
+        html = '<input name="execution" value="token123"><form id="continueForm">密码即将过期</form>'
         self.assertTrue(CasParser.is_ignorable_password_expiry(html))
+        self.assertFalse(CasParser.is_ignorable_password_expiry(html.replace("密码即将过期", "账号存在安全风险")))
 
     def test_build_login_params(self):
         html = '''

@@ -27,6 +27,10 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         acc_obj = MagicMock()
         acc_obj.removed = False
         acc_obj.maintenance = False
+        acc_obj.auth_requires_input = False
+        acc_obj.regular_background_lock = asyncio.Lock()
+        acc_obj.regular_background_retry_at = 0
+        acc_obj.regular_health = {"stale": True, "last_success": None}
         acc_obj.auth_epoch = 0
         acc_obj.auto_checkin = True
         acc_obj.last_classes = [
@@ -53,7 +57,7 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         self.assertEqual(mock_client.perform_signin.call_args.args[0], "101")
         self.assertTrue(mock_client.perform_signin.call_args.kwargs["guard"]())
         # 验证在签到成功后立即触发了 get_today_classes 重新拉取
-        self.assertGreaterEqual(mock_client.get_today_classes.call_count, 2)
+        self.assertEqual(mock_client.get_today_classes.call_count, 2)
         # 验证内存课表与时间戳已更新
         self.assertEqual(acc_obj.last_classes[0]["signStatus"], 1)
         self.assertNotEqual(acc_obj.last_refresh_time, "00:00:00")
@@ -89,6 +93,7 @@ class TestV126RefreshAndHeartbeat(unittest.TestCase):
         acc = MagicMock()
         acc.removed = False
         acc.maintenance = False
+        acc.auth_requires_input = False
         acc.auth_epoch = 0
         acc.boya_health = {}
         acc.username = "20240001"

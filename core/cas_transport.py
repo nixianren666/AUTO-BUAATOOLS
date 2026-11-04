@@ -48,6 +48,12 @@ class CasCaptchaRequired(CasFlowError):
         self.captcha = captcha
 
 
+class CasManualVerification(CasFlowError):
+    def __init__(self, reason):
+        super().__init__("学校要求本人完成安全验证，已暂停自动请求")
+        self.reason = reason
+
+
 REDIRECTS = (301, 302, 303, 307, 308)
 
 
@@ -62,8 +68,13 @@ def _next_step(response, mode, state):
     # only a landing page; the caller must still verify UC identity/BYKC data.
     uc_root_404 = response.status_code == 404 and raw.hostname == 'uc.buaa.edu.cn' and raw.path in ('', '/')
     if response.status_code >= 400 and not uc_root_404:
+        if response.status_code == 403 and raw.hostname == "sso.buaa.edu.cn":
+            raise CasManualVerification("verification_required")
         raise CasFlowError('统一认证未通过，请检查账号或稍后重试' if response.status_code in (401,403) else '统一认证服务暂不可用，请稍后重试')
     html = response.text
+    reason = CasParser.manual_verification(html)
+    if reason:
+        raise CasManualVerification(reason)
     captcha = CasParser.detect_captcha(html)
     if captcha:
         raise CasCaptchaRequired(response, captcha)

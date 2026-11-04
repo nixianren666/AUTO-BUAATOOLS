@@ -20,7 +20,9 @@ class PreflightStates(unittest.TestCase):
   self.acc.boya_client=FixtureBoyaClient(self.acc);self.addCleanup(self.acc.boya_client.close)
   self.logs=[];self.worker=BoyaScheduler(lambda:[self.acc],lambda level,message,**kw:self.logs.append((level,message,kw)),ordinary_courses=lambda *a:[])
  def check(self,fresh):
-  with patch.object(self.acc.boya_client,'query_courses',return_value=fresh):self.worker._check_auto_select(self.acc,now())
+  by_id={course['id']:course for course in fresh}
+  with patch.object(self.acc.boya_client,'query_course_detail',side_effect=by_id.__getitem__):
+   self.worker._check_auto_select(self.acc,now())
  def assert_normal_no_post(self):
   self.assertEqual(self.acc.boya_client.select_call_count,0)
   self.assertEqual(len(self.logs),1);self.assertEqual(self.logs[0][0],'info');self.assertIs(self.logs[0][2]['notify'],False)
@@ -34,12 +36,12 @@ class PreflightStates(unittest.TestCase):
  def test_unknown_inconsistent_or_boolean_capacity_still_warns_without_post(self):
   for changes in ({'courseMaxCount':None},{'courseCurrentCount':True},{'courseCurrentCount':21},{'courseMaxCount':0}):
    with self.subTest(changes=changes):
-    self.logs.clear();self.worker._warnings.clear();self.acc.boya_all_courses=[valid_course(901)]
+    self.logs.clear();self.worker._warnings.clear();self.worker.next_selection_probes.clear();self.acc.boya_all_courses=[valid_course(901)]
     self.check([dict(valid_course(901),**changes)])
     self.assertEqual(self.logs[0][0],'warning');self.assertNotIn('notify',self.logs[0][2]);self.assertEqual(self.acc.boya_client.select_call_count,0)
  def test_missing_or_reversed_window_is_still_a_data_warning(self):
   for changes in ({'courseSelectEndDate':None},{'courseSelectStartDate':(now()+timedelta(days=1)).isoformat()}):
-   self.logs.clear();self.worker._warnings.clear();self.acc.boya_all_courses=[valid_course(901)]
+   self.logs.clear();self.worker._warnings.clear();self.worker.next_selection_probes.clear();self.acc.boya_all_courses=[valid_course(901)]
    self.check([dict(valid_course(901),**changes)])
    self.assertEqual(self.logs[0][0],'warning');self.assertEqual(self.acc.boya_client.select_call_count,0)
  def test_actual_school_rejection_with_same_code_is_not_silenced(self):

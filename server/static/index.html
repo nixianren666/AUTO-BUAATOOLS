@@ -14,17 +14,17 @@
   })();
   </script>
 
-  <title>BUAA 课程签到 Pro - Origin v1.4.17</title>
+  <title>BUAA 课程签到 Pro - Origin v1.4.18</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
   <!-- Google Fonts: Inter & Roboto Mono for Origin Financial Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.17">
-  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.17">
-  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.17">
-  <link rel="stylesheet" href="/static/css/td.css?v=1.4.17">
-  <link rel="stylesheet" href="/static/css/remote-phone.css?v=1.4.17">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.18">
+  <link rel="stylesheet" href="/static/css/stitch-glass.css?v=1.4.18">
+  <link rel="stylesheet" href="/static/css/startup.css?v=1.4.18">
+  <link rel="stylesheet" href="/static/css/td.css?v=1.4.18">
+  <link rel="stylesheet" href="/static/css/remote-phone.css?v=1.4.18">
 </head>
 <body class="origin-theme">
   <div id="startupStage" aria-label="正在启动 AUTO-BUAA" role="status" aria-live="polite">
@@ -189,7 +189,7 @@
         <div class="origin-brand-meta">
           <div class="origin-brand-title">
             <span class="brand-text">AUTO-BUAA</span>
-            <span class="origin-tag">v1.4.17</span>
+            <span class="origin-tag">v1.4.18</span>
           </div>
           <div class="origin-brand-sub">课程与博雅自动守护套件</div>
         </div>
@@ -676,8 +676,26 @@
               <input type="text" id="loginUsername" required placeholder="例如: 2337xxxx" class="origin-input">
             </div>
             <div class="form-group">
+              <label for="loginMethod">认证方式</label>
+              <select id="loginMethod" class="origin-select">
+                <option value="password">统一认证密码</option>
+                <option value="sms">学校短信登录</option>
+              </select>
+            </div>
+            <div class="form-group" id="loginPasswordGroup">
               <label>统一认证密码</label>
               <input type="password" id="loginPassword" required placeholder="统一身份认证密码" class="origin-input">
+            </div>
+            <div class="form-group hidden" id="loginSmsGroup">
+              <label for="loginSmsCode">学校短信验证码</label>
+              <button type="button" id="loginSmsSend" class="origin-btn origin-btn-ghost">发送短信验证码</button>
+              <input type="password" id="loginSmsCode" inputmode="numeric" autocomplete="one-time-code" maxlength="12" class="origin-input">
+              <span id="loginSmsHint" role="status" aria-live="polite" class="field-hint"></span>
+            </div>
+            <div class="form-group hidden" id="loginVerificationHelp">
+              <span id="loginVerificationMessage" role="status" class="field-hint"></span>
+              <button type="button" id="loginUseSms" class="origin-btn origin-btn-ghost hidden">切换到学校短信登录</button>
+              <a href="https://sso.buaa.edu.cn/login" target="_blank" rel="noopener noreferrer">打开北航官方统一认证</a>
             </div>
             <div class="form-group hidden feed-card-body login-captcha" id="loginCaptchaGroup">
               <label for="loginCaptchaInput">学校图形验证码</label>
@@ -695,7 +713,7 @@
                 <option value="webvpn">WebVPN 外网通道 (校外无缝穿透)</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="loginRememberGroup">
               <label class="origin-checkbox-label">
                 <input type="checkbox" id="rememberMe" checked>
                 <span>记住凭据并在本机受保护存储</span>
@@ -806,7 +824,7 @@
             <span class="disclaimer-badge">LEGAL NOTICE</span>
             <h3 class="modal-title">免责声明与使用条款</h3>
           </div>
-          <span class="origin-version">v1.4.17</span>
+          <span class="origin-version">v1.4.18</span>
         </div>
         <div class="modal-body">
           <div class="origin-callout">
@@ -900,17 +918,17 @@
       </div>
     </div>
   </section>
-  <script src="/static/js/remote-phone.js?v=1.4.17"></script>
-  <script src="/static/js/render-lifecycle.js?v=1.4.17"></script>
-  <script src="/static/js/startup.js?v=1.4.17" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
-  <script src="/static/js/stitch-ambient.js?v=1.4.17"></script>
-  <script src="/static/js/ui-surfaces.js?v=1.4.17"></script>
-  <script src="/static/js/ui-controls.js?v=1.4.17"></script>
-  <script src="/static/js/ui-motion.js?v=1.4.17"></script>
-  <script src="/static/js/app.js?v=1.4.17"></script>
-  <script src="/static/js/wechat.js?v=1.4.17"></script>
-  <script src="/static/js/updates.js?v=1.4.17"></script>
-  <script src="/static/js/td.js?v=1.4.17"></script>
-  <script src="/static/js/td-calendar.js?v=1.4.17"></script>
+  <script src="/static/js/remote-phone.js?v=1.4.18"></script>
+  <script src="/static/js/render-lifecycle.js?v=1.4.18"></script>
+  <script src="/static/js/startup.js?v=1.4.18" onerror="window.BUAAStartupBoot?.release('script-load-failed')"></script>
+  <script src="/static/js/stitch-ambient.js?v=1.4.18"></script>
+  <script src="/static/js/ui-surfaces.js?v=1.4.18"></script>
+  <script src="/static/js/ui-controls.js?v=1.4.18"></script>
+  <script src="/static/js/ui-motion.js?v=1.4.18"></script>
+  <script src="/static/js/app.js?v=1.4.18"></script>
+  <script src="/static/js/wechat.js?v=1.4.18"></script>
+  <script src="/static/js/updates.js?v=1.4.18"></script>
+  <script src="/static/js/td.js?v=1.4.18"></script>
+  <script src="/static/js/td-calendar.js?v=1.4.18"></script>
 </body>
 </html>

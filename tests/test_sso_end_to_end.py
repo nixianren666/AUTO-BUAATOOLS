@@ -62,7 +62,7 @@ class School:
                 if self.fault == 'captcha' and data.get('captcha') != ['fixture-answer']:
                     return httpx.Response(200, text=CAPTCHA+'<div id="errorDiv">验证码错误</div>')
                 if self.fault == 'expiry':
-                    return httpx.Response(200, text='<form id="continueForm"><input name="execution" value="fixture-expiry"></form>')
+                    return httpx.Response(200, text='<form id="continueForm"><input name="execution" value="fixture-expiry">密码即将过期</form>')
                 return self.redir('https://uc.buaa.edu.cn/', 'TGC=fixture-sso; Secure; HttpOnly; Path=/')
             if not query.get('service'):
                 if self.preload:

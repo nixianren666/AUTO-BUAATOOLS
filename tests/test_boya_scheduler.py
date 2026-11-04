@@ -38,10 +38,12 @@ class TestBoyaScheduler(unittest.TestCase):
         self.assertEqual(len(logs),1);self.assertEqual(logs[0][0],'info')
         self.assertNotIn('BoyaError',logs[0][1]);self.assertEqual(logs[0][2]['username'],acc.username)
         self.assertIs(logs[0][2]['notify'],False)
+        scheduler.next_selection_probes.clear()
         with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=BoyaApiError('user_declined','用户已放弃本门课程')):
             scheduler._check_auto_select(acc,scheduler.clock());scheduler._check_auto_select(acc,scheduler.clock())
         self.assertEqual(len(logs),3);self.assertTrue(all(x[0]=='info' and x[2]['notify'] is False for x in logs))
         for failure in (BoyaApiError('unavailable','名额已满'),BoyaSessionExpired('需要重新认证')):
+            scheduler.next_selection_probes.clear()
             with patch('core.boya_scheduler.is_auto_select_candidate',return_value=True),patch('core.boya_actions.perform_boya_action',side_effect=failure):
                 scheduler._check_auto_select(acc,scheduler.clock())
         self.assertTrue(all(level=='warning' for level,_,_ in logs[3:]));self.assertEqual(len(logs),7)
@@ -130,13 +132,16 @@ class TestBoyaScheduler(unittest.TestCase):
         scheduler = BoyaScheduler(lambda: [acc], lambda *args, **kwargs: None, ordinary_courses=lambda *args: [])
         import time
         base = time.time()
+        monotonic = time.monotonic()
         for index in range(4):
-            with patch("core.boya_client.time.time", return_value=base+61*index):
+            with patch("core.boya_client.time.time", return_value=base+301*index), patch(
+                    "core.boya_scheduler.time.monotonic", return_value=monotonic+301*index):
                 scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 3)
         acc.boya_all_courses[0]["courseCurrentCount"] = 1
         acc.boya_client.fail_on_select = False
-        with patch("core.boya_client.time.time", return_value=base+300):
+        with patch("core.boya_client.time.time", return_value=base+1204), patch(
+                "core.boya_scheduler.time.monotonic", return_value=monotonic+1204):
             scheduler.tick()
         self.assertEqual(acc.boya_client.select_call_count, 4)
         self.assertIn(9999, acc.boya_client.selected_ids)

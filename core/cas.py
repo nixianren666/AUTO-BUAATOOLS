@@ -13,6 +13,9 @@ class CasParser:
     CAPTCHA_CONFIG_REGEX = re.compile(r'config\.captcha\s*=\s*\{\s*type:\s*[\'"]([^\'"]+)[\'"],\s*id:\s*[\'"]([^\'"]+)[\'"]')
     INPUT_TAG_REGEX = re.compile(r'<input\b([^>]*)>', re.I)
     ATTR_REGEX = re.compile(r'([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*["\']([^"\']*)["\']')
+    CONTINUE_FORM = re.compile(r'<form\b[^>]*\bid\s*=\s*["\']continueForm["\']', re.I)
+    EXPIRY_NOTICE = re.compile(r"密码(?:已|即将|将要)?过期|password (?:has expired|is expiring|will expire)", re.I)
+    RISK_NOTICE = re.compile(r"安全风险|账号风险|账户风险|异常登录|security risk|unusual sign.in", re.I)
 
     @classmethod
     def extract_execution(cls, html: str) -> str:
@@ -33,6 +36,24 @@ class CasParser:
         match = cls.CAPTCHA_CONFIG_REGEX.search(html)
         if match:
             return match.group(1), match.group(2)
+        return None
+
+    @classmethod
+    def manual_verification(cls, html: str) -> Optional[str]:
+        captcha = cls.detect_captcha(html)
+        if captcha and captcha[0].lower() not in ("image", "text"):
+            return "sms_required" if captcha[0].lower() in ("sms", "smstoken") else "verification_required"
+        if re.search(r"\bconfig\.mfa\s*=", html, re.I):
+            return "sms_required" if re.search(r"短信|\bsms\b", html, re.I) else "verification_required"
+        if "短信验证码" in html and any(marker in html for marker in
+                                     ("二次认证", "二次验证", "安全验证", "已发送", "请完成短信验证")):
+            return "sms_required"
+        if not captcha and re.search(r"\bconfig\.captcha\s*=\s*\{", html, re.I):
+            return "verification_required"
+        if any(marker in html for marker in ("账号已锁定", "账户已锁定", "账号已封禁", "登录过于频繁")):
+            return "verification_required"
+        if cls.CONTINUE_FORM.search(html) and not cls.is_ignorable_password_expiry(html):
+            return "verification_required"
         return None
 
     @classmethod
@@ -59,15 +80,8 @@ class CasParser:
 
     @classmethod
     def is_ignorable_password_expiry(cls, html: str) -> bool:
-        if not html or not cls.extract_execution(html):
-            return False
-        lower = html.lower()
-        return (
-            "continueform" in lower
-            or "ignoreandcontinue" in lower
-            or "账号存在安全风险" in html
-            or "密码过期" in html
-        )
+        return bool(html and cls.extract_execution(html) and cls.CONTINUE_FORM.search(html)
+                    and cls.EXPIRY_NOTICE.search(html) and not cls.RISK_NOTICE.search(html))
 
     @classmethod
     def parse_inputs(cls, html: str) -> list[Dict[str, str]]:

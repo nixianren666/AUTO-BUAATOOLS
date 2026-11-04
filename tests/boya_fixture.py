@@ -35,6 +35,9 @@ class FixtureBoyaClient(BoyaClient):
         elif action == "queryStudentSemesterCourseByPage":
             pool = self.owner.boya_all_courses
             result["data"] = {"content":pool,"totalPages":1,"totalElements":len(pool),"last":True}
+        elif action == "queryCourseById":
+            result["data"] = next((course for course in self.owner.boya_all_courses
+                                   if int(course.get("courseId") or course["id"]) == int(payload["id"])), None)
         elif action == "choseCourse":
             self.select_call_count += 1
             if self.fail_on_select:

@@ -65,10 +65,27 @@ def _normal_conflicts(account, course, ordinary):
             return True
     return False
 
+def _validate_selection_availability(course):
+    from core.boya_scheduler import capacity_available, capacity_values
+    if not capacity_available(course):
+        current, maximum = capacity_values(course)
+        if (not isinstance(current, bool) and not isinstance(maximum, bool)
+                and str(current).isdigit() and str(maximum).isdigit()
+                and 0 < int(maximum) == int(current)):
+            raise BoyaPreflightStop("unavailable", "官方最新名额已满，本轮未提交，等待下次核对。")
+        raise BoyaApiError("unavailable", "官方名额信息未知或不一致，未提交，请核对课程数据")
+    start = parse_dt(course.get("courseSelectStartDate"))
+    end = parse_dt(course.get("courseSelectEndDate"))
+    if not start or not end or start > end:
+        raise BoyaApiError("unavailable", "官方选课时间缺失或不一致，未提交，请核对课程数据")
+    if not start <= now() <= end:
+        raise BoyaPreflightStop("unavailable", "官方选课窗口尚未开始或已经结束，本轮未提交。")
+
+
 def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
                         automatic=False, guard=None, renew=None, ordinary=None):
     """Return accepted/pending separately; never retry an ambiguous write here."""
-    from core.boya_scheduler import (is_auto_select_candidate, capacity_available, capacity_values,
+    from core.boya_scheduler import (is_auto_select_candidate, capacity_values,
         get_course_category, get_user_category_demands, courses_time_overlap, random_point_in_radius)
     if isinstance(cid, bool) or not str(cid).isdigit() or int(cid) <= 0:
         raise BoyaApiError("invalid_id", "无效课程本体 ID")
@@ -88,8 +105,21 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
         if action == "select" and automatic and operations.ledger.auto_select_excluded(account.username,cid):
             raise BoyaApiError("user_declined", "此课程曾被退选或从官方已选中移除，不再自动抢选；需要时请自行手动选择")
         client = account.boya_client
+        target = None
+        if action == "select" and automatic:
+            cached = next((c for c in account.boya_all_courses or [] if course_id(c) == cid), None)
+            if cached is None or not in_window(cached.get("courseSelectStartDate"), cached.get("courseSelectEndDate"), now()):
+                raise BoyaPreflightStop("outside_window", "尚未进入已知预选窗口，本轮未查询或提交。")
         if not client.is_authenticated() and (renew is None or not renew(account)):
             raise BoyaSessionExpired("请重新认证")
+        if action == "select" and automatic:
+            try:
+                target = client.query_course_detail(cid)
+            except BoyaSessionExpired:
+                if renew is None or not renew(account):
+                    raise
+                target = client.query_course_detail(cid)
+            _validate_selection_availability(target)
         try:
             selected = client.query_chosen_courses()
         except BoyaSessionExpired:
@@ -118,24 +148,15 @@ def perform_boya_action(account, action, cid, sign_type=1, coordinates=None,
         if action == "drop" and not drop_allowed(course, now()):
             raise BoyaApiError("attendance_recorded", "已有官方考勤/通过记录、课程已结束或时间不明，不能在本程序退选")
         if action == "select":
-            # Read a fresh complete pool; a stale capacity snapshot cannot authorize a write.
-            pool = client.query_courses()
-            account.boya_all_courses = pool
-            course = next((c for c in pool if course_id(c) == cid), None)
-            if course is None:
-                raise BoyaApiError("not_found", "官方课池不存在此课程")
-            if not capacity_available(course):
-                current, maximum = capacity_values(course)
-                if (not isinstance(current,bool) and not isinstance(maximum,bool)
-                    and str(current).isdigit() and str(maximum).isdigit()
-                    and 0 < int(maximum) == int(current)):
-                    raise BoyaPreflightStop("unavailable", "官方最新名额已满，本轮未提交，继续等待课池变化。")
-                raise BoyaApiError("unavailable", "官方名额信息未知或不一致，未提交，请核对课程数据")
-            if not in_window(course.get("courseSelectStartDate"), course.get("courseSelectEndDate"), now()):
-                start, end = parse_dt(course.get("courseSelectStartDate")), parse_dt(course.get("courseSelectEndDate"))
-                if start and end and start <= end:
-                    raise BoyaPreflightStop("unavailable", "官方选课窗口尚未开始或已经结束，本轮未提交。")
-                raise BoyaApiError("unavailable", "官方选课时间缺失或不一致，未提交，请核对课程数据")
+            if automatic:
+                course = target
+            else:
+                pool = client.query_courses()
+                account.boya_all_courses = pool
+                course = next((c for c in pool if course_id(c) == cid), None)
+                if course is None:
+                    raise BoyaApiError("not_found", "官方课池不存在此课程")
+            _validate_selection_availability(course)
             if automatic:
                 from core.boya_auto_rules import permanently_excluded
                 if permanently_excluded(course):

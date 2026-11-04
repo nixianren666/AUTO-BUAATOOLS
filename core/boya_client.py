@@ -14,10 +14,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
+from contextvars import ContextVar
+from core import school_traffic
 
 from core.cas import CasParser
-from core.cas_transport import resolve_auth_redirect, follow_auth_response_sync, CasFlowError, CasCaptchaRequired, CasSessionExpired, REDIRECTS
-from core.webvpn import to_webvpn_url
+from core.cas_transport import resolve_auth_redirect, follow_auth_response_sync, CasFlowError, CasCaptchaRequired, CasManualVerification, CasSessionExpired, REDIRECTS
+from core.webvpn import from_webvpn_url, to_webvpn_url
 from core.boya_crypto import BykcCrypto
 from core.domain import trusted_url, semester, semester_bounds, course_id, now as china_now
 from core import operations
@@ -31,6 +33,7 @@ BYKC_CAS = "https://bykc.buaa.edu.cn/sscv/cas/login"
 BYKC_CAS_EMPTY_TOKEN = "https://bykc.buaa.edu.cn/cas-login?token="
 UC_ACTIVATE = "https://uc.buaa.edu.cn/api/login?target=https%3A%2F%2Fuc.buaa.edu.cn%2F%23%2Fuser%2Flogin"
 SSO_LOGIN = "https://sso.buaa.edu.cn/login"
+WRITE_ACTIONS = frozenset({"choseCourse", "delChosenCourse", "signCourseByUser"})
 
 
 class BoyaApiError(Exception):
@@ -48,13 +51,29 @@ class BoyaClient:
     def __init__(self, mode: str = "direct", token: Optional[str] = None) -> None:
         self.mode = mode.lower()  # "direct" 或 "webvpn"
         self.token = token
-        self.http_client = httpx.Client(timeout=25, follow_redirects=False, verify=True, trust_env=False)
+        self.http_client = httpx.Client(
+            timeout=25, follow_redirects=False, verify=True, trust_env=False,
+            event_hooks={"request": [self._before_request], "response": [self._after_response]},
+        )
         self.request_guard = lambda: True
         self.semester_info = None
         self.calendar_range = None
+        self.course_pool_pages = 1
         self.operation_user = None
+        self.traffic_allowed = lambda: True
+        self.interactive_auth = ContextVar("boya_interactive_auth", default=False)
         self.operation_scope = None
         self._request_lock = threading.RLock()
+
+    def _before_request(self, request):
+        school_traffic.request_guard(self, request)
+        raw = urlparse(from_webvpn_url(str(request.url)))
+        writing = raw.hostname == "bykc.buaa.edu.cn" and raw.path.rsplit("/", 1)[-1] in WRITE_ACTIONS
+        if not self.traffic_allowed() or (writing and not self.request_guard()):
+            raise school_traffic.SchoolTrafficPaused("账号已暂停学校请求")
+
+    def _after_response(self, response):
+        school_traffic.note_response(self, response)
 
     def close(self):
         with self._request_lock:
@@ -101,6 +120,9 @@ class BoyaClient:
                     if response.status_code != 200:
                         raise BoyaApiError('auth_http', '统一认证登录页面暂不可用')
                     html = response.text
+                    reason = CasParser.manual_verification(html)
+                    if reason:
+                        raise CasManualVerification(reason)
                     if CasParser.detect_captcha(html) and not captcha:
                         raise BoyaApiError('captcha_required', '统一认证需要验证码，请在界面重新登录')
                     if CasParser.is_ignorable_password_expiry(html):
@@ -119,6 +141,8 @@ class BoyaClient:
                 return self._set_acquired_token()
             except CasCaptchaRequired as error:
                 raise BoyaApiError('captcha_required', str(error)) from None
+            except CasManualVerification as error:
+                raise BoyaApiError(error.reason, str(error)) from None
             except CasFlowError as error:
                 raise BoyaApiError('cas_error', str(error)) from None
 
@@ -141,6 +165,8 @@ class BoyaClient:
                 return self._set_acquired_token()
             except CasCaptchaRequired as error:
                 raise BoyaApiError('captcha_required', str(error)) from None
+            except CasManualVerification as error:
+                raise BoyaApiError(error.reason, str(error)) from None
             except CasSessionExpired as error:
                 raise BoyaApiError('session_expired', str(error)) from None
             except CasFlowError as error:
@@ -169,6 +195,9 @@ class BoyaClient:
                     break
                 else:
                     if resp.status_code == 200:
+                        reason = CasParser.manual_verification(resp.text)
+                        if reason:
+                            raise CasManualVerification(reason)
                         if CasParser.detect_captcha(resp.text):
                             raise BoyaApiError("captcha_required", "统一认证需要验证码，请在界面重新登录")
                         if CasParser.is_ignorable_password_expiry(resp.text):
@@ -221,7 +250,7 @@ class BoyaClient:
             **req_enc.headers,
         }
 
-        writing = api_name in ("choseCourse", "delChosenCourse", "signCourseByUser")
+        writing = api_name in WRITE_ACTIONS
         key = None
         if writing:
             if not self.operation_user or not self.request_guard():
@@ -328,6 +357,7 @@ class BoyaClient:
             if ended:
                 if (expected_total is not None and len(courses) != expected_total) or (expected_pages is not None and page < expected_pages):
                     raise BoyaApiError("pagination_incomplete", "课池分页提前结束，未取得完整课程")
+                self.course_pool_pages = page
                 return courses
         raise BoyaApiError("pagination_incomplete", "分页超过安全上限，课池不可用于自动选课")
 

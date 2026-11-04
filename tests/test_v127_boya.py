@@ -35,6 +35,9 @@ class BoyaContracts(unittest.TestCase):
         self.selected = []
         self.client.query_chosen_courses = lambda: list(self.selected)
         self.client.query_courses = lambda **kwargs: [self.course]
+        self.client.query_course_detail = lambda cid: next(
+            (course for course in self.client.query_courses() if int(course["id"]) == cid), None
+        )
         self.acc = SimpleNamespace(username="fixture-account", name="synthetic-user", removed=False, boya_client=self.client, boya_all_courses=[self.course], boya_selected_courses=[], boya_pending_courses={}, campus="北京", boya_auto_select=True, boya_auto_sign=True, boya_health={}, password="")
         self.posts = []
         self.reply = {"status": "0", "data": {}}

@@ -253,14 +253,54 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
         reconnect.assert_awaited_once_with(self.acc)
         self.assertFalse(self.acc.regular_health['stale'])
 
-    async def test_worker_next_tick_recovers_existing_session_after_network_returns(self):
+    async def test_worker_recovers_existing_session_after_read_cooldown(self):
         reconnect = AsyncMock(return_value=True)
         scheduler = SigninScheduler(lambda: [], reconnect_account=reconnect)
-        with patch.object(self.acc.client, 'get_today_classes', AsyncMock(side_effect=[IclassReadError('synthetic route change'), []])):
+        reader = AsyncMock(side_effect=[IclassReadError('synthetic route change'), []])
+        with patch.object(self.acc.client, 'get_today_classes', reader), patch('core.regular_policy.time.monotonic') as clock:
+            clock.return_value = 100
             await scheduler._check_account(self.item(), None)
+            clock.return_value = 189
+            await scheduler._check_account(self.item(), None)
+            reader.assert_awaited_once()
+            clock.return_value = 190
             await scheduler._check_account(self.item(), None)
         reconnect.assert_not_awaited()
         self.assertFalse(self.acc.regular_health['stale'])
+
+    async def test_three_read_failures_pause_all_background_consumers_then_recover(self):
+        scheduler = SigninScheduler(lambda: [])
+        reader = AsyncMock(side_effect=[IclassReadError('synthetic outage')] * 3 + [[]])
+        with patch.object(self.acc.client, 'get_today_classes', reader), patch('core.regular_policy.time.monotonic') as clock:
+            for timestamp in (100, 190, 370):
+                clock.return_value = timestamp
+                await scheduler._check_account(self.item(), None)
+            clock.return_value = 2169
+            await scheduler._check_account(self.item(), None)
+            self.assertIsNone(await backend.wechat_course_snapshot(self.acc.username))
+            silent = await backend.get_today_classes(username=self.acc.username, force=False)
+            self.assertTrue(silent['stale'])
+            self.assertEqual(reader.await_count, 3)
+            clock.return_value = 2170
+            await scheduler._check_account(self.item(), None)
+            self.assertEqual(reader.await_count, 4)
+            self.assertEqual(self.acc.regular_read_failures, 0)
+
+    async def test_successful_same_day_schedule_is_reused_for_half_an_hour(self):
+        from datetime import timedelta
+        from core.domain import now
+        scheduler = SigninScheduler(lambda: [])
+        start = now().replace(hour=8, minute=0, second=0, microsecond=0)
+        scheduler.clock = lambda: start
+        reader = AsyncMock(return_value=[])
+        with patch.object(self.acc.client, 'get_today_classes', reader):
+            await scheduler._check_account(self.item(), None)
+            scheduler.clock = lambda: start + timedelta(minutes=29, seconds=59)
+            await scheduler._check_account(self.item(), None)
+            reader.assert_awaited_once()
+            scheduler.clock = lambda: start + timedelta(minutes=30)
+            await scheduler._check_account(self.item(), None)
+        self.assertEqual(reader.await_count, 2)
 
     async def test_boya_cookie_exchange_network_failure_never_falls_through_to_password(self):
         self.acc.boya_client.token = None

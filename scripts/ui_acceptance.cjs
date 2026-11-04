@@ -48,7 +48,8 @@ const fs = require('node:fs');
     await check('initialization-and-paused-health', async () => {
       const refresh=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/classes');
       await page.evaluate(()=>{if(!window.__acceptanceViewPoll)throw new Error('Missing normal active-view refresh');clearInterval(__acceptanceViewPoll.id);__acceptanceViewPoll.callback();});
-      await refresh;await page.waitForLoadState('networkidle');
+      assert.equal(new URL((await refresh).url()).searchParams.get('force'), 'false');
+      await page.waitForLoadState('networkidle');
       assert.match(await page.locator('#regularDaemonStatus').textContent(), /暂停/);
       assert.equal(await page.evaluate(() => document.body.scrollWidth <= innerWidth + 2), true);
       await page.setViewportSize({width:960,height:620});

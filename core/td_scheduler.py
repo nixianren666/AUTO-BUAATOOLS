@@ -8,6 +8,7 @@ import time
 import uuid
 
 from core.td_client import TDClient, TDRejected, DEVICES
+from core import school_traffic
 from core.td_store import owner_key
 from core.td_policy import validate_settings, open_on_date
 from core.td_license import TDLicense
@@ -33,6 +34,7 @@ class TDEngine:
     def __init__(self, store, get_account, log, client=None, clock=local_now, licensing=None, schedule_delay=None):
         self.store, self.get_account, self.log = store, get_account, log
         self.client, self.clock = client or TDClient(), clock
+        self.request_budget = school_traffic.reserve if client is None else None
         self.locks, self.lock = {}, threading.Lock()
         self.stopping = False
         self.schedule_delay = schedule_delay or (lambda maximum: random.SystemRandom().uniform(0, maximum))
@@ -63,7 +65,9 @@ class TDEngine:
             validate_settings(profile, self.calendar(username))
         except ValueError:
             return False
-        return (self.licensing.status(username)['active'] and not self.stopping and account is not None and not account.removed and (manual or profile["enabled"]) and profile["confirmed"]
+        return (self.licensing.status(username)['active'] and not self.stopping and account is not None and not account.removed
+                and not getattr(account, "maintenance", False) and not getattr(account, "auth_requires_input", False)
+                and (manual or profile["enabled"]) and profile["confirmed"]
                 and re.fullmatch(r"[0-9]{5,16}", username) is not None
                 and open_on_date(profile, now)
                 and window_end(now) is not None and (stamp is None or 0 <= now.timestamp() - stamp < 420))
@@ -371,6 +375,19 @@ class TDEngine:
                 j.update(attempted=j["attempted"] + 1, entry_at=stamp, entry_image=entry, group_id=group['id'],
                          exit_image=exit_image, entry_device=random.SystemRandom().choice(devices[:3]),
                          exit_device=random.SystemRandom().choice(devices[3:]), period=[p["start"], p["end"],p['semester_start'],p['semester_end']])
+            if self.request_budget is not None:
+                try:
+                    # Reserve both messages before the pair starts. An unused
+                    # reservation remains charged after an interruption.
+                    self.request_budget(username, cost=2)
+                except school_traffic.SchoolTrafficPaused as error:
+                    unchanged = self.store.job(owner, day)
+                    unchanged.update(due=stamp + max(60, error.retry_after), note=str(error))
+                    self.store.save_job(owner, day, unchanged)
+                    self.log("info", str(error), username=username, category="td", notify=False)
+                    if manual_phase is not None:
+                        raise ValueError(str(error)) from None
+                    return
             j.update(state="sending_" + phase, sender_process=PROCESS_ID, note="正在请求，不能重复提交")
             self.store.save_job(owner, day, j)
         def guard():
