@@ -166,7 +166,7 @@ def trusted_url(url):
     from urllib.parse import urlsplit
     p = urlsplit(url)
     allowed = {"sso.buaa.edu.cn", "uc.buaa.edu.cn", "iclass.buaa.edu.cn", "bykc.buaa.edu.cn", "d.buaa.edu.cn"}
-    ports = (None, 443, 8346, 8347) if p.hostname == "iclass.buaa.edu.cn" else (None, 443)
+    ports = (None, 443, 8181, 8346, 8347) if p.hostname == "iclass.buaa.edu.cn" else (None, 443)
     if p.scheme != "https" or p.hostname not in allowed or p.username or p.password or p.port not in ports:
         raise ValueError("拒绝非可信学校认证跳转")
     if p.hostname == "d.buaa.edu.cn" and p.path.startswith(("/https/", "/https-", "/http/", "/http-")):

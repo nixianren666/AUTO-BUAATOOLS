@@ -615,7 +615,19 @@ class IclassClient:
             write_scope = self.final_write_guard.set(still_allowed)
             try:
                 self.actual_sign_posts += 1
-                response = await self.client.post(self.wrap_url("https://iclass.buaa.edu.cn:8347/app/course/stu_scan_sign.action"), headers={"sessionId": self.session_id}, params={"courseSchedId": course_id, "timestamp": str(timestamp)}, data={"id": self.user_id})
+                signin_form = {
+                    "id": str(self.user_id),
+                    "courseSchedId": str(course_id),
+                    "routerInfo": "02:00:00:00:00:00",
+                    "longitude": "0",
+                    "latitude": "0",
+                    "machineInfo": "Android",
+                }
+                response = await self.client.post(
+                    self.wrap_url("https://iclass.buaa.edu.cn:8181/app/course/stu_auto_sign.action"),
+                    headers={"sessionId": self.session_id},
+                    data=signin_form,
+                )
                 if response.status_code in (401, 403):
                     self.user_id = self.session_id = None
                     operations.ledger.finish(key, "failed")

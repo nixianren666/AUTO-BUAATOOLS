@@ -41,7 +41,7 @@ def seed(backend):
         def regular(request, classes=classes):
             if "get_timestamp" in request.url.path:
                 return httpx.Response(200,json={"STATUS":"0","timestamp":str(int(now().replace(tzinfo=CHINA).timestamp()*1000))})
-            if request.method == "POST" and "stu_scan_sign" in request.url.path:
+            if request.method == "POST" and ("stu_auto_sign" in request.url.path or "stu_scan_sign" in request.url.path):
                 classes[0]["signStatus"] = 1
                 return httpx.Response(200,json={"STATUS":"0","result":{"stuSignStatus":1}})
             if "get_stu_course_sched" in request.url.path:

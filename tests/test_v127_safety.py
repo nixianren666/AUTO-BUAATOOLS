@@ -155,7 +155,7 @@ class RegularWrites(unittest.IsolatedAsyncioTestCase):
         results = await asyncio.gather(self.client.perform_signin("1001"), self.client.perform_signin("1001", guard=lambda: True))
         self.assertTrue(all(x[0] for x in results))
         self.assertEqual(len(self.posts), 1)
-        self.assertEqual(self.posts[0].url.path, "/app/course/stu_scan_sign.action")
+        self.assertEqual(self.posts[0].url.path, "/app/course/stu_auto_sign.action")
 
     async def test_six_attempt_budget_and_group_cooldowns_count_actual_posts(self):
         self.failure = True
