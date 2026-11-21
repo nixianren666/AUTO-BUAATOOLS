@@ -107,11 +107,20 @@ const fs = require('node:fs');
     });
     await check('unknown-calendar-and-signinfo-cannot-invent-semester-pass', async () => {
       assert.equal(await page.evaluate(() => isCourseFinalPassed({checkin:5,pass:1,signInfo:'{"signIn":null}'})), false);
-      await page.evaluate(() => renderBoyaStatistics({semester_known:false,moral_completed:99}));
-      assert.match(await page.locator('#boyaCompletionRate').textContent(), /不能计算/);
-      assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '—');
-      await page.evaluate(() => renderBoyaStatistics({semester_known:true,moral_completed:1,labor_completed:0,art_completed:0,security_health_completed:0}));
-      assert.equal(await page.locator('#boyaEarnedCredits').textContent(), '1');
+      const res = await page.evaluate(() => {
+        renderBoyaStatistics({semester_known:false,moral_completed:99});
+        return {
+          rate: document.getElementById('boyaCompletionRate').textContent,
+          earned: document.getElementById('boyaEarnedCredits').textContent,
+        };
+      });
+      assert.match(res.rate, /不能计算/);
+      assert.equal(res.earned, '—');
+      const res2 = await page.evaluate(() => {
+        renderBoyaStatistics({semester_known:true,moral_completed:1,labor_completed:0,art_completed:0,security_health_completed:0});
+        return document.getElementById('boyaEarnedCredits').textContent;
+      });
+      assert.equal(res2, '1');
     });
     await check('sidebar-boya-shares-semester-category-caps-and-unknown-state', async () => {
       const samples=[
