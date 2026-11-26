@@ -7,8 +7,8 @@ import random
 from collections import defaultdict
 from contextlib import nullcontext
 from core.domain import now as china_now, parse_dt, regular_start, regular_window, CHINA
-from core.regular_policy import (MAX_POSTS, READ_RETRY_DELAYS, REGULAR_REFRESH_SECONDS, minimum_retry_delay,
-                                 regular_read_failed, regular_read_succeeded)
+from core.regular_policy import (BURST_POSTS, MAX_POSTS, READ_RETRY_DELAYS, REGULAR_REFRESH_SECONDS,
+                                 minimum_retry_delay, regular_read_failed, regular_read_succeeded)
 from core.iclass import IclassSessionExpired
 from core.school_traffic import SchoolTrafficPaused
 
@@ -194,6 +194,7 @@ class SigninScheduler:
         self.window_closed_notified.discard(key)
         if current < start - datetime.timedelta(minutes=10):
             return
+        five_min_before = start - datetime.timedelta(minutes=5)
         record_reader = getattr(item["client"], "signin_record", None)
         record = record_reader(cid) if callable(record_reader) else None
         if record:
@@ -212,12 +213,15 @@ class SigninScheduler:
                 self.failed_permanently.add(key)
                 return
             earliest = datetime.datetime.fromtimestamp(updated + minimum_retry_delay(attempts, self.clock() < start), CHINA).replace(tzinfo=None)
+            if attempts >= BURST_POSTS and earliest < five_min_before:
+                earliest = five_min_before
             # A manual failure replaces the unexecuted random first target.
             self.planned_targets[key] = earliest if attempts > previous_attempts else max(self.planned_targets.get(key, current), earliest)
         if key not in self.planned_targets:
-            remaining = (start-current).total_seconds()
-            offset = random.uniform(0, max(0, remaining-self.interval_seconds-5))
-            self.planned_targets[key] = current + datetime.timedelta(seconds=offset)
+            window_start = max(current, five_min_before)
+            remaining = (start - window_start).total_seconds()
+            offset = random.uniform(0, max(0, remaining - self.interval_seconds - 5))
+            self.planned_targets[key] = window_start + datetime.timedelta(seconds=offset)
         if self.clock() < self.planned_targets[key] or not allowed() or self.clock() > deadline:
             return
         before = getattr(item["client"], "actual_sign_posts", None)
@@ -266,7 +270,10 @@ class SigninScheduler:
                 self._delay_preflight(key)
             else:
                 self.preflight_failures.pop(key, None)
-                self.planned_targets[key] = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
+                next_target = self.clock() + datetime.timedelta(seconds=max(30, minimum_retry_delay(self.retry_counts[key], self.clock() < start)))
+                if self.retry_counts[key] >= BURST_POSTS and next_target < five_min_before:
+                    next_target = five_min_before
+                self.planned_targets[key] = next_target
                 if not getattr(item["client"], "session_id", None) and self.reconnect_account and item.get("account"):
                     await self.reconnect_account(item["account"])
 

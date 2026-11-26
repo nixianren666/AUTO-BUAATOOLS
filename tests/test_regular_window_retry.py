@@ -175,3 +175,20 @@ class SchedulerLessonRetries(unittest.IsolatedAsyncioTestCase):
         def delayed_record(cid):self.current+=timedelta(seconds=2);return None
         self.client.signin_record=delayed_record
         await self.scheduler.tick();self.assertEqual(self.calls,0)
+
+    async def test_early_ten_min_window_anchors_auto_target_to_five_min_before_start(self):
+        self.current=datetime(2026,10,17,8,50,15)
+        with patch('core.scheduler.random.uniform',return_value=60):
+            await self.scheduler.tick()
+        self.assertEqual(self.calls,0)
+        self.assertEqual(self.scheduler.planned_targets[self.key],datetime(2026,10,17,8,56))
+
+    async def test_early_manual_burst_holds_second_group_until_five_min_before_start(self):
+        self.current=datetime(2026,10,17,8,52)
+        self.record=('failed',3,self.current.replace(tzinfo=CHINA).timestamp())
+        await self.scheduler.tick();self.assertEqual(self.calls,0)
+        self.assertEqual(self.scheduler.planned_targets[self.key],datetime(2026,10,17,8,55))
+        self.current=datetime(2026,10,17,8,54,59)
+        await self.scheduler.tick();self.assertEqual(self.calls,0)
+        self.current=datetime(2026,10,17,8,55)
+        await self.scheduler.tick();self.assertEqual(self.calls,1)
