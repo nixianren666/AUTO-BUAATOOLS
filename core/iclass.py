@@ -371,9 +371,12 @@ class IclassClient:
         """
         login_name = await self.resolve_login_name()
         if not login_name:
-            self.last_error = "未取得可信课堂登录名，请重新认证"
+            verified_id = self.user_info.get("schoolid")
+            if isinstance(verified_id, str) and verified_id.strip():
+                login_name = verified_id.strip()
+                self.login_name = login_name
         if not login_name:
-            self.last_error = self.last_error or "无法从北航课堂系统中解析登录名 (loginName)"
+            self.last_error = self.last_error or "未取得可信课堂登录名，请重新认证"
             return False
 
         # 方案一：8346 端口 /esp/auth/signIn (当前官方移动端/外网主流接口，响应极速)

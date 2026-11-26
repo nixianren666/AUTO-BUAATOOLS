@@ -304,3 +304,26 @@ class ApiAuthentication(unittest.IsolatedAsyncioTestCase):
         finally:
             backend.active_username=original
             await acc.client.close();acc.boya_client.close()
+
+    async def test_login_iclass_falls_back_to_verified_schoolid_when_redirect_omits_login_name(self):
+        from core.iclass import IclassClient
+        seen = []
+        def transport(request):
+            seen.append(str(request.url))
+            if 'jumpMyCenter' in str(request.url):
+                return httpx.Response(200, text='<html>no loginName query</html>')
+            if '/esp/auth/signIn' in str(request.url):
+                self.assertEqual(request.url.params.get('loginName'), '20249999')
+                return httpx.Response(200, json={'meta': {'code': '0', 'success': True}, 'data': {'result': {'id': 99, 'sessionId': 'sid-ok'}}})
+            return httpx.Response(404)
+        client = IclassClient('direct')
+        client._client = httpx.AsyncClient(transport=httpx.MockTransport(transport), trust_env=False)
+        client.user_info = {'schoolid': '20249999', 'name': 'Test Student'}
+        try:
+            ok = await client.login_iclass()
+            self.assertTrue(ok)
+            self.assertEqual(client.user_id, '99')
+            self.assertEqual(client.session_id, 'sid-ok')
+            self.assertEqual(client.login_name, '20249999')
+        finally:
+            await client.close()

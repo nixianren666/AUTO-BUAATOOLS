@@ -345,6 +345,34 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
         reconnect.assert_not_awaited()
         self.assertTrue(self.acc.regular_health['stale'])
 
+    async def test_refresh_regular_classes_uses_login_iclass_before_full_reconnect_when_sso_active(self):
+        self.acc.client.session_id = None
+        self.acc.client.user_info = {'schoolid': self.acc.username, 'name': self.acc.name}
+        async def fake_login_iclass():
+            self.acc.client.user_id = '99'
+            self.acc.client.session_id = 'sid-restored'
+            return True
+        with patch.object(self.acc.client, 'login_iclass', AsyncMock(side_effect=fake_login_iclass)) as login_ic, \
+             patch.object(self.acc.client, 'get_today_classes', AsyncMock(return_value=[])) as read_ic, \
+             patch.object(backend, 'connect_single_account', AsyncMock()) as reconnect:
+            result = await backend.get_today_classes(username=self.acc.username)
+        login_ic.assert_awaited_once()
+        read_ic.assert_awaited_once()
+        reconnect.assert_not_awaited()
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(self.acc.boya_client.token, 'synthetic-boya-token')
+
+    async def test_connect_single_account_logs_rate_limit_message_and_respects_retry_after(self):
+        self.acc.auth_retry_after = 0
+        paused = {'status': 'failed', 'message': '已达到本应用的请求频率上限，请等待冷却后再试', 'retry_after': 120}
+        logs = []
+        with patch.object(self.acc.client, 'login_sso', AsyncMock(return_value=paused)), \
+             patch.object(backend, 'add_log', side_effect=lambda *a, **k: logs.append((a, k))):
+            ok = await backend.connect_single_account(self.acc)
+        self.assertFalse(ok)
+        self.assertTrue(any('已达到本应用的请求频率上限' in a[1] for a, _ in logs))
+        self.assertGreater(self.acc.auth_retry_after, time.monotonic() + 90)
+
     async def test_boya_unknown_exchange_result_does_not_submit_password(self):
         worker = BoyaScheduler(lambda: [], lambda *a, **k: None)
         for error in (None, BoyaApiError('cas_error', 'synthetic HTTP service failure'), BoyaApiError('token_acquire_failed', 'synthetic unknown response')):

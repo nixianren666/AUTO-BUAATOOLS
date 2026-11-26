@@ -600,10 +600,15 @@ async def on_startup():
 
 
 async def auto_connect_saved_accounts():
+    stagger = 0.0 if os.environ.get("TESTING") == "1" else 1.5
+    async def _staggered(idx, acc):
+        if idx > 0 and stagger > 0:
+            await asyncio.sleep(idx * stagger)
+        return await connect_single_account(acc)
+
     tasks = []
-    for acc in list(accounts.values()):
-        if acc.remember and acc.password:
-            tasks.append(connect_single_account(acc))
+    for idx, acc in enumerate(acc for acc in list(accounts.values()) if acc.remember and acc.password):
+        tasks.append(_staggered(idx, acc))
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -711,6 +716,10 @@ async def _connect_single_account(acc: AccountState) -> bool:
                 add_log("warning", "自动认证未通过，请手动核对账号凭据；已暂停自动登录。", username=acc.username)
                 return False
             elif not res.get("retry_other_route"):
+                if res.get("retry_after"):
+                    acc.auth_retry_after = max(acc.auth_retry_after, time.monotonic() + min(int(res["retry_after"]), 1800))
+                if res.get("message"):
+                    add_log("warning", f"学生 [{acc.name or acc.username}] 连接暂未完成: {res['message']}", username=acc.username, user_name=acc.name, notify=False)
                 return False
         except Exception as e:
             add_log("error", f"学生 [{acc.name}] 连接异常: {type(e).__name__}", username=acc.username, user_name=acc.name)
@@ -1090,10 +1099,16 @@ def regular_classes_cache(account, *, stale):
 async def refresh_regular_classes(curr):
     # 若尚未完成鉴权且存有密码，在获取前尝试自动建立连接
     if (not curr.client.is_authenticated() or not curr.client.session_id) and curr.password:
-        try:
-            await connect_single_account(curr)
-        except Exception as conn_err:
-            logger.debug(f"Auto connect before get_today_classes failed: {type(conn_err).__name__}")
+        if curr.client.is_authenticated() and not curr.client.session_id:
+            try:
+                await curr.client.login_iclass()
+            except Exception as iclass_err:
+                logger.debug(f"Direct login_iclass before get_today_classes failed: {type(iclass_err).__name__}")
+        if not curr.client.is_authenticated() or not curr.client.session_id:
+            try:
+                await connect_single_account(curr)
+            except Exception as conn_err:
+                logger.debug(f"Auto connect before get_today_classes failed: {type(conn_err).__name__}")
 
     # 若此时仍未鉴权（如离线或测试模式），坚决返回既有课表缓存，杜绝误显假空态
     if not curr.client.is_authenticated() or not curr.client.session_id:
