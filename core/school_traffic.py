@@ -15,7 +15,7 @@ from core.webvpn import from_webvpn_url
 
 
 # These are application ceilings, not estimates of the school's limits.
-ACCOUNT_LIMITS = ((60, 24), (3600, 120), (86400, 600))
+ACCOUNT_LIMITS = ((60, 36), (3600, 120), (86400, 600))
 INSTALLATION_LIMITS = ((60, 60), (3600, 360), (86400, 1800))
 ACTION_LIMITS = {"sms": ((90, 1), (3600, 3), (86400, 5)),
                  "login": ((600, 4), (3600, 10))}

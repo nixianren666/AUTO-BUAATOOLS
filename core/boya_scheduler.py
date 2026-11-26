@@ -403,6 +403,16 @@ class BoyaScheduler:
         finally:
             self._tick_lock.release()
 
+    def record_external_sync(self, acc):
+        stamp = time.monotonic()
+        pages = getattr(acc.boya_client, "course_pool_pages", 1)
+        if type(pages) is not int:
+            pages = 1
+        self.last_sync_times[acc.username] = stamp
+        self.next_pool_sync_times[acc.username] = stamp + max(
+            POOL_MIN_REFRESH_SECONDS, pages * POOL_SECONDS_PER_PAGE
+        )
+
     def _check_account(self, acc, event):
         from core.boya_actions import account_lock, reconcile_official
         def active():
@@ -417,8 +427,13 @@ class BoyaScheduler:
             return
         try:
             with account_lock(acc):
-                if not acc.boya_client.is_authenticated() and not self._renew_session(acc):
-                    raise BoyaSessionExpired("请重新认证或输入验证码")
+                if not acc.boya_client.is_authenticated():
+                    if getattr(acc, "maintenance", False) or time.monotonic() < max(
+                        getattr(acc, "boya_auth_retry_after", 0), getattr(acc, "auth_retry_after", 0)
+                    ):
+                        return
+                    if not self._renew_session(acc):
+                        raise BoyaSessionExpired("请重新认证或输入验证码")
                 stamp = time.monotonic()
                 synced_selected = synced_pool = False
                 probe_incident = incident and (incident["stable_at"] is None or stamp - incident["stable_at"] >= 60)

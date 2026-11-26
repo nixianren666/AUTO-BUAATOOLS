@@ -73,7 +73,7 @@ class DurableTrafficTests(unittest.TestCase):
         school_traffic.set_account_count_provider(lambda: 3)
         self.assertEqual(school_traffic.installation_limits(), school_traffic.INSTALLATION_LIMITS)
         school_traffic.set_account_count_provider(lambda: 4)
-        self.assertEqual(school_traffic.installation_limits(), ((60, 96), (3600, 480), (86400, 2400)))
+        self.assertEqual(school_traffic.installation_limits(), ((60, 144), (3600, 480), (86400, 2400)))
         users = [f"multi-student-{idx}" for idx in range(4)]
         admitted = [0] * len(users)
         with patch.object(operations, "ledger", ledger), patch("core.operations.time.time") as clock:
@@ -117,16 +117,17 @@ class DurableTrafficTests(unittest.TestCase):
         self.addCleanup(ledger.db.close)
         self.addCleanup(school_traffic.set_account_count_provider, None)
         school_traffic.set_account_count_provider(lambda: 1)
+        used = school_traffic.ACCOUNT_LIMITS[0][1] - 4
         with patch.object(operations, "ledger", ledger), patch("core.operations.time.time", return_value=300000):
-            for _ in range(20):
+            for _ in range(used):
                 school_traffic.reserve("headroom-student")
             before_count = ledger.db.execute("SELECT COALESCE(SUM(cost),0) FROM school_requests").fetchone()[0]
-            self.assertEqual(before_count, 20)
+            self.assertEqual(before_count, used)
             with self.assertRaises(school_traffic.SchoolTrafficPaused) as err:
                 school_traffic.ensure_headroom("headroom-student", 12)
             self.assertGreater(err.exception.retry_after, 0)
             after_count = ledger.db.execute("SELECT COALESCE(SUM(cost),0) FROM school_requests").fetchone()[0]
-            self.assertEqual(after_count, 20)
+            self.assertEqual(after_count, used)
             # Smaller request still fits cleanly because preflight did not burn a slot.
             school_traffic.reserve("headroom-student")
 

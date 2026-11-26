@@ -646,6 +646,7 @@ def sync_boya_login(acc, mode, cookies):
         acc.boya_all_courses, acc.boya_selected_courses, acc.boya_statistics = pool, selected, stats
         acc.boya_last_refresh_time = china_now().isoformat(timespec="seconds")
         acc.boya_health = {"stale":False,"last_success":acc.boya_last_refresh_time,"error":None}
+        boya_scheduler.record_external_sync(acc)
         real_name = extract_real_name_from_stats(stats)
         if real_name and real_name != acc.username:
             acc.name = real_name
@@ -696,17 +697,7 @@ async def _connect_single_account(acc: AccountState) -> bool:
                 if real_name and real_name != acc.username:
                     acc.name = real_name
 
-                # 优先同步博雅系统授权与课程数据
-                try:
-                    ready = await asyncio.to_thread(sync_boya_login, acc, attempt_mode, acc.client.client.cookies)
-                    if ready:
-                        add_log("success", "博雅授权与排课同步成功。", username=acc.username, user_name=acc.name, category="boya")
-                except Exception as be:
-                    logger.debug(f"Boya auto sync during connect: {type(be).__name__}")
-                if acc.auth_requires_input:
-                    return False
-
-                # 尝试接入常规课堂签到系统
+                # 先接入常规课堂签到系统（轻量请求，确保课程表与自动打卡优先就绪）
                 iclass_ok = await acc.client.login_iclass()
                 if acc.auth_requires_input:
                     return False
@@ -724,6 +715,16 @@ async def _connect_single_account(acc: AccountState) -> bool:
                         pass
                 else:
                     add_log("warning", "统一认证成功，常规考勤尚未就绪；博雅状态以授权指示为准。", username=acc.username, user_name=acc.name)
+
+                # 再同步博雅系统授权与课程数据
+                try:
+                    ready = await asyncio.to_thread(sync_boya_login, acc, attempt_mode, acc.client.client.cookies)
+                    if ready:
+                        add_log("success", "博雅授权与排课同步成功。", username=acc.username, user_name=acc.name, category="boya")
+                except Exception as be:
+                    logger.debug(f"Boya auto sync during connect: {type(be).__name__}")
+                if acc.auth_requires_input:
+                    return False
 
                 if acc.removed:
                     return False

@@ -465,4 +465,17 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
         fresh.boya_auth_retry_after = max(fresh.boya_auth_retry_after, time.monotonic() + 2.0)
         self.assertGreater(fresh.boya_auth_retry_after, time.monotonic() + 1.0)
 
+    async def test_boya_scheduler_defers_silently_while_retry_cooldown_active(self):
+        self.acc.boya_client.token = None
+        self.acc.boya_auth_retry_after = time.monotonic() + 30
+        self.acc.boya_auto_select = True
+        logs = []
+        worker = BoyaScheduler(lambda: [self.acc], lambda *a, **k: logs.append((a, k)))
+        with patch.object(self.acc.boya_client, 'acquire_token') as acquire:
+            worker._check_account(self.acc, None)
+        acquire.assert_not_called()
+        self.assertFalse(logs)
+        self.assertNotIn('error', getattr(self.acc, 'boya_health', {}))
+
+
 
