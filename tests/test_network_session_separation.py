@@ -459,3 +459,10 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(self.acc.boya_health.get('next_sync_in_seconds', 0), 179)
         self.assertFalse(any('BoyaSessionExpired' in str(a) for a, _ in logs))
 
+    async def test_fresh_account_state_initializes_boya_auth_retry_after_for_startup_stagger(self):
+        fresh = backend.AccountState('fresh-user')
+        self.assertEqual(fresh.boya_auth_retry_after, 0.0)
+        fresh.boya_auth_retry_after = max(fresh.boya_auth_retry_after, time.monotonic() + 2.0)
+        self.assertGreater(fresh.boya_auth_retry_after, time.monotonic() + 1.0)
+
+

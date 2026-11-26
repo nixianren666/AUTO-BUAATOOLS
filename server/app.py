@@ -237,6 +237,7 @@ class AccountState:
         self.maintenance = False
         self.auth_epoch = 0
         self.auth_retry_after = 0.0
+        self.boya_auth_retry_after = 0.0
         self.auth_input_reason = school_traffic.auth_pause(username)
         self.auth_requires_input = bool(self.auth_input_reason)
         self.protected_password = ""
