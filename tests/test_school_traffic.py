@@ -66,6 +66,51 @@ class DurableTrafficTests(unittest.TestCase):
         self.assertEqual(sum(admitted), 1800)
         self.assertTrue(all(0 < count <= 600 for count in admitted))
 
+    def test_installation_cap_scales_above_three_accounts_without_cross_starvation(self):
+        ledger = operations.OperationLedger()
+        self.addCleanup(ledger.db.close)
+        self.addCleanup(school_traffic.set_account_count_provider, None)
+        school_traffic.set_account_count_provider(lambda: 3)
+        self.assertEqual(school_traffic.installation_limits(), school_traffic.INSTALLATION_LIMITS)
+        school_traffic.set_account_count_provider(lambda: 4)
+        self.assertEqual(school_traffic.installation_limits(), ((60, 96), (3600, 480), (86400, 2400)))
+        users = [f"multi-student-{idx}" for idx in range(4)]
+        admitted = [0] * len(users)
+        with patch.object(operations, "ledger", ledger), patch("core.operations.time.time") as clock:
+            for batch in range(600):
+                # Monotonic timestamps within a single 24h window: <=20 req/min/user (80<=96 global),
+                # <=100 req/hr/user (400<=480 global), and 600 req/user total (2400<=2400 global).
+                clock.return_value = 200000 + (batch // 100) * 3605 + ((batch % 100) // 20) * 65 + (batch % 20) * 2
+                for idx, user in enumerate(users):
+                    try:
+                        school_traffic.reserve(user)
+                        admitted[idx] += 1
+                    except school_traffic.SchoolTrafficPaused:
+                        pass
+            # After all 4 reach 600/24h (2400 total), extra attempts on any account are blocked.
+            with self.assertRaises(school_traffic.SchoolTrafficPaused):
+                school_traffic.reserve(users[0])
+        self.assertEqual(admitted, [600, 600, 600, 600])
+
+    def test_ensure_headroom_blocks_insufficient_budget_without_consuming_slots(self):
+        ledger = operations.OperationLedger()
+        self.addCleanup(ledger.db.close)
+        self.addCleanup(school_traffic.set_account_count_provider, None)
+        school_traffic.set_account_count_provider(lambda: 1)
+        with patch.object(operations, "ledger", ledger), patch("core.operations.time.time", return_value=300000):
+            for _ in range(20):
+                school_traffic.reserve("headroom-student")
+            before_count = ledger.db.execute("SELECT COALESCE(SUM(cost),0) FROM school_requests").fetchone()[0]
+            self.assertEqual(before_count, 20)
+            with self.assertRaises(school_traffic.SchoolTrafficPaused) as err:
+                school_traffic.ensure_headroom("headroom-student", 12)
+            self.assertGreater(err.exception.retry_after, 0)
+            after_count = ledger.db.execute("SELECT COALESCE(SUM(cost),0) FROM school_requests").fetchone()[0]
+            self.assertEqual(after_count, 20)
+            # Smaller request still fits cleanly because preflight did not burn a slot.
+            school_traffic.reserve("headroom-student")
+
+
 
 class SharedTransportTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

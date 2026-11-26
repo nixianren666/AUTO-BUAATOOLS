@@ -158,6 +158,8 @@ app = FastAPI(title="BUAA Course Signin Multi-Account", version=VERSION)
 install_management(app)
 install_updates(app)
 operations.configure(CONFIG_FILE.with_name("operations.sqlite"))
+from core import school_traffic
+school_traffic.set_account_count_provider(lambda: max(1, len(accounts)))
 
 # 结构化运行日志
 logs_list: List[Dict[str, Any]] = []
@@ -603,7 +605,10 @@ async def auto_connect_saved_accounts():
     stagger = 0.0 if os.environ.get("TESTING") == "1" else 1.5
     async def _staggered(idx, acc):
         if idx > 0 and stagger > 0:
-            await asyncio.sleep(idx * stagger)
+            delay = idx * stagger
+            acc.auth_retry_after = max(acc.auth_retry_after, time.monotonic() + delay)
+            acc.boya_auth_retry_after = max(acc.boya_auth_retry_after, time.monotonic() + delay)
+            await asyncio.sleep(delay)
         return await connect_single_account(acc)
 
     tasks = []
@@ -661,6 +666,16 @@ async def connect_single_account(acc: AccountState) -> bool:
 
 
 async def _connect_single_account(acc: AccountState) -> bool:
+    try:
+        await asyncio.to_thread(school_traffic.ensure_headroom, acc.username, 12)
+        await asyncio.to_thread(school_traffic.ensure_headroom, acc.username, 1, action="login")
+    except school_traffic.SchoolTrafficPaused as exc:
+        if exc.retry_after:
+            until = time.monotonic() + min(int(exc.retry_after), 1800)
+            acc.auth_retry_after = max(acc.auth_retry_after, until)
+            acc.regular_background_retry_at = max(acc.regular_background_retry_at, until)
+        add_log("warning", f"学生 [{acc.name or acc.username}] 连接暂未完成: {exc}", username=acc.username, user_name=acc.name, notify=False)
+        return False
     add_log("info", f"正在为学生账号 [{acc.name or acc.username}] 建立连接...", username=acc.username, user_name=acc.name)
     modes_to_try = ["direct", "webvpn"] if acc.mode in ("auto", "direct") else [acc.mode]
 
@@ -717,7 +732,9 @@ async def _connect_single_account(acc: AccountState) -> bool:
                 return False
             elif not res.get("retry_other_route"):
                 if res.get("retry_after"):
-                    acc.auth_retry_after = max(acc.auth_retry_after, time.monotonic() + min(int(res["retry_after"]), 1800))
+                    until = time.monotonic() + min(int(res["retry_after"]), 1800)
+                    acc.auth_retry_after = max(acc.auth_retry_after, until)
+                    acc.regular_background_retry_at = max(acc.regular_background_retry_at, until)
                 if res.get("message"):
                     add_log("warning", f"学生 [{acc.name or acc.username}] 连接暂未完成: {res['message']}", username=acc.username, user_name=acc.name, notify=False)
                 return False

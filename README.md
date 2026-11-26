@@ -19,14 +19,14 @@
 
 **不用一直盯着软件：绑定微信助手，把运行结果、失败提醒和课前提醒送到自己的微信。**
 
-[![Version](https://img.shields.io/badge/version-1.4.21-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.4.22-38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8b5cf6)](#下载与安装)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/nixianren666/AUTO-BUAATOOLS/total?label=downloads&color=38bdf8)](https://github.com/nixianren666/AUTO-BUAATOOLS/releases)
 
 [**⬇️ 下载客户端**](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) · [💬 绑定微信助手](#微信助手) · [🖼️ 界面与功能](#界面展示) · [🛡️ 操作安全](#怎么减少漏选错选和重复操作)
 
-源码版本 **v1.4.21**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
+源码版本 **v1.4.22**。各平台附件、构建信息和校验值请以对应的 [Release 发行页](https://github.com/nixianren666/AUTO-BUAATOOLS/releases/latest) 为准。
 
 [⚠️ 使用前必读](#免责声明) · [🔐 账号隐私](#账号与隐私如何保护) · [🚀 三步上手](#第一次使用三步完成设置) · [⚙️ 后台部署](#源码与后台部署) · [💬 常见问题](#常见问题)
 

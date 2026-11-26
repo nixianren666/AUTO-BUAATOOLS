@@ -423,3 +423,39 @@ class ReadAndWorkerAuthentication(unittest.IsolatedAsyncioTestCase):
             login.assert_not_called()
         self.assertTrue(requests)
         self.assertTrue(all(r.method == 'GET' for r in requests))
+
+    async def test_connect_single_account_preflights_headroom_before_calling_sso(self):
+        from core import school_traffic
+        self.acc.auth_retry_after = 0
+        self.acc.regular_background_retry_at = 0
+        logs = []
+        paused = school_traffic.SchoolTrafficPaused('已达到本应用的请求频率上限，请等待冷却后再试', 240)
+        with patch.object(school_traffic, 'ensure_headroom', side_effect=paused), \
+             patch.object(self.acc.client, 'login_sso', AsyncMock()) as login_sso, \
+             patch.object(backend, 'add_log', side_effect=lambda *a, **k: logs.append((a, k))):
+            ok = await backend.connect_single_account(self.acc)
+        self.assertFalse(ok)
+        login_sso.assert_not_awaited()
+        self.assertGreater(self.acc.auth_retry_after, time.monotonic() + 200)
+        self.assertGreater(self.acc.regular_background_retry_at, time.monotonic() + 200)
+        self.assertTrue(any('已达到本应用的请求频率上限' in a[1] for a, _ in logs))
+
+    async def test_boya_rate_limit_pause_sets_local_request_pause_instead_of_session_expired(self):
+        from core import school_traffic
+        self.acc.boya_client.token = None
+        self.acc.boya_auth_retry_after = 0
+        self.acc.auth_retry_after = 0
+        self.acc.boya_auto_select = True
+        logs = []
+        worker = BoyaScheduler(lambda: [self.acc], lambda *a, **k: logs.append((a, k)))
+        paused = school_traffic.SchoolTrafficPaused('已达到本应用的请求频率上限，请等待冷却后再试', 180)
+        with patch.object(school_traffic, 'ensure_headroom', side_effect=paused), \
+             patch.object(self.acc.boya_client, 'acquire_token') as acquire, \
+             patch.object(self.acc.boya_client, 'login_with_credentials') as login:
+            worker._check_account(self.acc, None)
+        acquire.assert_not_called()
+        login.assert_not_called()
+        self.assertEqual(self.acc.boya_health.get('error'), 'local_request_pause')
+        self.assertGreaterEqual(self.acc.boya_health.get('next_sync_in_seconds', 0), 179)
+        self.assertFalse(any('BoyaSessionExpired' in str(a) for a, _ in logs))
+

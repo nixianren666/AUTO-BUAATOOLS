@@ -34,7 +34,7 @@ class OperationLedger:
         return hashlib.sha256(json.dumps([user, action, str(cid), str(day)]).encode()).hexdigest()
 
     def reserve_school_requests(self, owner, cost, action, account_limits, global_limits,
-                                action_limits, *, global_action_limits=(), allow_auth_pause=False):
+                                action_limits, *, global_action_limits=(), allow_auth_pause=False, dry_run=False):
         with self.lock:
             self.db.execute("BEGIN IMMEDIATE")
             try:
@@ -73,6 +73,9 @@ class OperationLedger:
                             delays.append(seconds)
                 if delays:
                     return max(delays)
+                if dry_run:
+                    self.db.rollback()
+                    return 0
                 self.db.execute("DELETE FROM school_requests WHERE stamp<=?", (stamp - 86400,))
                 self.db.execute("DELETE FROM school_cooldown WHERE until<=?", (stamp,))
                 self.db.execute("INSERT INTO school_requests VALUES (?,?,?,?)", (owner, stamp, cost, action))

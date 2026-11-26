@@ -21,6 +21,28 @@ ACTION_LIMITS = {"sms": ((90, 1), (3600, 3), (86400, 5)),
                  "login": ((600, 4), (3600, 10))}
 INSTALLATION_SMS_LIMITS = ((60, 3), (3600, 12), (86400, 30))
 
+_account_count_provider = lambda: 1
+
+
+def set_account_count_provider(provider):
+    global _account_count_provider
+    _account_count_provider = provider if callable(provider) else (lambda: 1)
+
+
+def installation_limits():
+    try:
+        count = max(1, int(_account_count_provider()))
+    except Exception:
+        count = 1
+    if count <= 3:
+        return INSTALLATION_LIMITS
+    scaled = min(count, 10)
+    return (
+        (60, max(INSTALLATION_LIMITS[0][1], ACCOUNT_LIMITS[0][1] * scaled)),
+        (3600, max(INSTALLATION_LIMITS[1][1], ACCOUNT_LIMITS[1][1] * scaled)),
+        (86400, max(INSTALLATION_LIMITS[2][1], ACCOUNT_LIMITS[2][1] * scaled)),
+    )
+
 
 class SchoolTrafficPaused(httpx.ConnectError):
     """The application stopped this request before it was sent."""
@@ -34,15 +56,16 @@ def owner_key(username):
     return operations.OperationLedger.key(username.strip().casefold(), "school-traffic", "", "")
 
 
-def reserve(username, *, cost=1, action="", allow_auth_pause=False):
+def _check_or_reserve(username, *, cost=1, action="", allow_auth_pause=False, dry_run=False):
     if not username:
         raise SchoolTrafficPaused("学校请求缺少已绑定账号")
     try:
         delay = operations.ledger.reserve_school_requests(
-            owner_key(username), cost, action, ACCOUNT_LIMITS, INSTALLATION_LIMITS,
+            owner_key(username), cost, action, ACCOUNT_LIMITS, installation_limits(),
             ACTION_LIMITS.get(action, ()),
             global_action_limits=INSTALLATION_SMS_LIMITS if action == "sms" else (),
             allow_auth_pause=allow_auth_pause,
+            dry_run=dry_run,
         )
     except sqlite3.Error:
         raise SchoolTrafficPaused("请求预算无法保存，已暂停学校请求") from None
@@ -50,6 +73,14 @@ def reserve(username, *, cost=1, action="", allow_auth_pause=False):
         raise SchoolTrafficPaused("账号需要本人完成学校验证")
     if delay:
         raise SchoolTrafficPaused("已达到本应用的请求频率上限，请等待冷却后再试", delay)
+
+
+def reserve(username, *, cost=1, action="", allow_auth_pause=False):
+    _check_or_reserve(username, cost=cost, action=action, allow_auth_pause=allow_auth_pause, dry_run=False)
+
+
+def ensure_headroom(username, cost, *, action="", allow_auth_pause=False):
+    _check_or_reserve(username, cost=cost, action=action, allow_auth_pause=allow_auth_pause, dry_run=True)
 
 
 def request_guard(client, request):

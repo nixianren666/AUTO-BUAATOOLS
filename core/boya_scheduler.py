@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from core.boya_client import BoyaClient, BoyaApiError, BoyaSessionExpired
 from core.boya_auto_rules import permanently_excluded
+from core import school_traffic
 from core.school_traffic import SchoolTrafficPaused
 
 logger = logging.getLogger(__name__)
@@ -336,12 +337,18 @@ class BoyaScheduler:
         if time.monotonic() < max(getattr(acc, "boya_auth_retry_after", 0), getattr(acc, "auth_retry_after", 0)):
             return False
         acc.boya_auth_retry_after = time.monotonic() + 60
+        owner = getattr(acc.boya_client, "operation_user", None) or getattr(acc, "username", "")
         try:
+            if owner:
+                school_traffic.ensure_headroom(owner, 4)
             acc.boya_client.sync_cookies_from(acc.client.client.cookies)
             token = acc.boya_client.acquire_token()
             if token:
                 return True
             return False
+        except SchoolTrafficPaused as exc:
+            acc.boya_auth_retry_after = max(getattr(acc, "boya_auth_retry_after", 0), time.monotonic() + exc.retry_after)
+            raise
         except BoyaApiError as exc:
             if exc.code in ("captcha_required", "sms_required", "verification_required"):
                 self._pause_auth(acc, exc.code)
@@ -356,7 +363,13 @@ class BoyaScheduler:
         if not getattr(acc, "password", None):
             return False
         try:
+            if owner:
+                school_traffic.ensure_headroom(owner, 6)
+                school_traffic.ensure_headroom(owner, 1, action="login")
             return bool(acc.boya_client.login_with_credentials(acc.username, acc.password))
+        except SchoolTrafficPaused as exc:
+            acc.boya_auth_retry_after = max(getattr(acc, "boya_auth_retry_after", 0), time.monotonic() + exc.retry_after)
+            raise
         except BoyaApiError as exc:
             if exc.code in ("captcha_required", "sms_required", "verification_required"):
                 self._pause_auth(acc, exc.code)
