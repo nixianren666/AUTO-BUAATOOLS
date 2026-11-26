@@ -91,6 +91,15 @@ class OperationLedger:
             self.db.execute("INSERT INTO school_cooldown VALUES (?,?) ON CONFLICT(owner) DO UPDATE SET until=MAX(until,excluded.until)",
                             (owner, until))
 
+    def recent_school_owners(self, seconds=86400):
+        with self.lock:
+            cutoff = time.time() - seconds
+            rows = self.db.execute(
+                "SELECT DISTINCT owner FROM school_requests WHERE stamp>?",
+                (cutoff,),
+            ).fetchall()
+            return {row[0] for row in rows if row and row[0]}
+
     def school_auth_pause(self, owner):
         with self.lock:
             row = self.db.execute("SELECT reason FROM school_auth_pause WHERE owner=?", (owner,)).fetchone()

@@ -30,13 +30,28 @@ def set_account_count_provider(provider):
 
 
 def installation_limits():
+    active_keys = None
+    count = 1
     try:
-        count = max(1, int(_account_count_provider()))
+        provided = _account_count_provider()
+        if isinstance(provided, (list, tuple, set, frozenset)):
+            active_keys = {owner_key(u) for u in provided if isinstance(u, str) and u.strip()}
+            count = max(1, len(active_keys))
+        else:
+            count = max(1, int(provided))
     except Exception:
         count = 1
+    try:
+        recent = operations.ledger.recent_school_owners()
+        if isinstance(recent, set):
+            count = max(count, len((active_keys or set()) | recent))
+        elif type(recent) is int:
+            count = max(count, recent)
+    except Exception:
+        pass
     if count <= 3:
         return INSTALLATION_LIMITS
-    scaled = min(count, 10)
+    scaled = min(count, 20)
     return (
         (60, max(INSTALLATION_LIMITS[0][1], ACCOUNT_LIMITS[0][1] * scaled)),
         (3600, max(INSTALLATION_LIMITS[1][1], ACCOUNT_LIMITS[1][1] * scaled)),

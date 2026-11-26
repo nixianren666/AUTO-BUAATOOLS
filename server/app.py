@@ -159,7 +159,7 @@ install_management(app)
 install_updates(app)
 operations.configure(CONFIG_FILE.with_name("operations.sqlite"))
 from core import school_traffic
-school_traffic.set_account_count_provider(lambda: max(1, len(accounts)))
+school_traffic.set_account_count_provider(lambda: list(accounts.keys()))
 
 # 结构化运行日志
 logs_list: List[Dict[str, Any]] = []
@@ -592,6 +592,12 @@ async def on_startup():
 
     if config.get("global_auto_checkin"):
         scheduler.start(interval_seconds=config.get("checkin_interval", 20))
+
+    if os.environ.get("TESTING") != "1":
+        # Hold BoyaScheduler back briefly so auto_connect_saved_accounts leads the initial SSO flow.
+        boot_now = time.monotonic()
+        for idx, acc in enumerate(a for a in accounts.values() if a.remember and a.password):
+            acc.boya_auth_retry_after = max(acc.boya_auth_retry_after, boot_now + 2.0 + idx * 1.5)
 
     # 若任一账号启用了博雅自动抢选或签到，启动博雅后台守护引擎
     if any(getattr(a, "boya_auto_select", False) or getattr(a, "boya_auto_sign", False) for a in accounts.values()):

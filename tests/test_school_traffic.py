@@ -92,6 +92,26 @@ class DurableTrafficTests(unittest.TestCase):
                 school_traffic.reserve(users[0])
         self.assertEqual(admitted, [600, 600, 600, 600])
 
+    def test_removed_account_history_does_not_starve_remaining_three_accounts(self):
+        ledger = operations.OperationLedger()
+        self.addCleanup(ledger.db.close)
+        self.addCleanup(school_traffic.set_account_count_provider, None)
+        # Simulate 3 currently configured accounts plus 1 deleted account with prior 24h traffic.
+        users = [f"active-{idx}" for idx in range(3)]
+        school_traffic.set_account_count_provider(lambda: users)
+        with patch.object(operations, "ledger", ledger), patch("core.operations.time.time") as clock:
+            for batch in range(460):
+                clock.return_value = 250000 + (batch // 100) * 3605 + ((batch % 100) // 20) * 65 + (batch % 20) * 2
+                school_traffic.reserve("removed-student")
+            self.assertEqual(school_traffic.installation_limits()[2][1], 2400)
+            admitted = [0] * len(users)
+            for batch in range(460, 1060):
+                clock.return_value = 250000 + (batch // 100) * 3605 + ((batch % 100) // 20) * 65 + (batch % 20) * 2
+                for idx, user in enumerate(users):
+                    school_traffic.reserve(user)
+                    admitted[idx] += 1
+        self.assertEqual(admitted, [600, 600, 600])
+
     def test_ensure_headroom_blocks_insufficient_budget_without_consuming_slots(self):
         ledger = operations.OperationLedger()
         self.addCleanup(ledger.db.close)
